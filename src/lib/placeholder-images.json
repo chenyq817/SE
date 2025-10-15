@@ -1,3 +1,82 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "news-1",
+      "description": "University building at dusk",
+      "imageUrl": "https://picsum.photos/seed/101/600/400",
+      "imageHint": "university campus"
+    },
+    {
+      "id": "news-2",
+      "description": "Students in a modern library",
+      "imageUrl": "https://picsum.photos/seed/102/600/400",
+      "imageHint": "students library"
+    },
+    {
+      "id": "news-3",
+      "description": "Scientific research in a lab",
+      "imageUrl": "https://picsum.photos/seed/103/600/400",
+      "imageHint": "science lab"
+    },
+    {
+      "id": "news-4",
+      "description": "University sports team celebrating",
+      "imageUrl": "https://picsum.photos/seed/104/600/400",
+      "imageHint": "sports team"
+    },
+    {
+      "id": "avatar-1",
+      "description": "Portrait of a smiling young woman",
+      "imageUrl": "https://picsum.photos/seed/201/100/100",
+      "imageHint": "woman portrait"
+    },
+    {
+      "id": "avatar-2",
+      "description": "Portrait of a young man with glasses",
+      "imageUrl": "https://picsum.photos/seed/202/100/100",
+      "imageHint": "man portrait"
+    },
+    {
+      "id": "avatar-3",
+      "description": "Portrait of a person in a cafe",
+      "imageUrl": "https://picsum.photos/seed/203/100/100",
+      "imageHint": "person portrait"
+    },
+    {
+      "id": "avatar-4",
+      "description": "Anonymous user avatar",
+      "imageUrl": "https://picsum.photos/seed/204/100/100",
+      "imageHint": "abstract pattern"
+    },
+    {
+      "id": "social-1",
+      "description": "Group of friends laughing on campus",
+      "imageUrl": "https://picsum.photos/seed/301/800/600",
+      "imageHint": "friends laughing"
+    },
+    {
+      "id": "social-2",
+      "description": "Close up of coffee art",
+      "imageUrl": "https://picsum.photos/seed/302/800/600",
+      "imageHint": "coffee art"
+    },
+    {
+      "id": "activity-1",
+      "description": "People at a technology lecture",
+      "imageUrl": "https://picsum.photos/seed/401/600/400",
+      "imageHint": "conference lecture"
+    },
+    {
+      "id": "activity-2",
+      "description": "People playing basketball",
+      "imageUrl": "https://picsum.photos/seed/402/600/400",
+      "imageHint": "basketball game"
+    },
+    {
+      "id": "activity-3",
+      "description": "Outdoor music festival",
+      "imageUrl": "https://picsum.photos/seed/403/600/400",
+      "imageHint": "music festival"
+    }
+  ]
 }
