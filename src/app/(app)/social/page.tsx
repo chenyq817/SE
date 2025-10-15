@@ -59,7 +59,7 @@ function CommentSection({ postId }: { postId: string }) {
     const handlePostComment = () => {
         if (!commentText.trim() || !user || !firestore) return;
 
-        const newComment: Omit<Comment, 'id'> = {
+        const newComment = {
             postId,
             authorId: user.uid,
             authorName: "You", // In a real app, this would be the user's actual name
@@ -233,7 +233,7 @@ export default function SocialPage() {
     const handlePost = () => {
         if (!newPostContent.trim() || !user || !firestore) return;
 
-        const newPost: Omit<Post, 'id'> = {
+        const newPost: Omit<Post, 'id' | 'likeIds' | 'createdAt'> & { likeIds: string[], createdAt: any } = {
             authorId: user.uid,
             authorName: "Anonymous User", // In a real app, you'd have user profiles
             authorAvatarId: "avatar-1", // Placeholder
