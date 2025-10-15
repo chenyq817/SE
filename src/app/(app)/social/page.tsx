@@ -34,7 +34,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogClose
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label";
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -224,7 +223,7 @@ export default function SocialPage() {
 
         const newPost: Omit<Post, 'id' | 'likeIds' | 'createdAt'> & { likeIds: string[], createdAt: any } = {
             authorId: user.uid,
-            authorName: "Anonymous User", // In a real app, you'd have user profiles
+            authorName: user.displayName || user.email?.split('@')[0] || "Anonymous User",
             authorAvatarId: "avatar-1", // Placeholder
             content: newPostContent,
             location: newPostLocation,

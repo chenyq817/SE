@@ -2,24 +2,32 @@
 
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
-import { useAuth, useFirebase } from "@/firebase";
+import { useUser } from "@/firebase";
 import { useEffect } from "react";
-import { signInAnonymously } from "firebase/auth";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
 export default function AppLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { auth } = useFirebase();
+  const { user, isUserLoading } = useUser();
+  const router = useRouter();
 
   useEffect(() => {
-    if (auth) {
-      signInAnonymously(auth).catch((error) => {
-        console.error("Anonymous sign-in failed:", error);
-      });
+    if (!isUserLoading && !user) {
+      router.push('/login');
     }
-  }, [auth]);
+  }, [user, isUserLoading, router]);
+
+  if (isUserLoading || !user) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <SidebarProvider>
