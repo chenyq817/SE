@@ -53,42 +53,48 @@ export function AppSidebar() {
         <SidebarMenu>
           {menuItems.map((item) => (
             <SidebarMenuItem key={item.href}>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname === item.href}
-                tooltip={item.label}
-              >
-                <Link href={item.href}>
-                  <item.icon />
-                  <span>{item.label}</span>
-                </Link>
-              </SidebarMenuButton>
+              <Link href={item.href} passHref>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname === item.href}
+                  tooltip={item.label}
+                >
+                  <>
+                    <item.icon />
+                    <span>{item.label}</span>
+                  </>
+                </SidebarMenuButton>
+              </Link>
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
         
         <SidebarMenu className="mt-auto">
           <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              isActive={pathname === adminMenuItem.href}
-              tooltip={adminMenuItem.label}
-            >
-              <Link href={adminMenuItem.href}>
-                <adminMenuItem.icon />
-                <span>{adminMenuItem.label}</span>
-              </Link>
-            </SidebarMenuButton>
+            <Link href={adminMenuItem.href} passHref>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === adminMenuItem.href}
+                tooltip={adminMenuItem.label}
+              >
+                <>
+                  <adminMenuItem.icon />
+                  <span>{adminMenuItem.label}</span>
+                </>
+              </SidebarMenuButton>
+            </Link>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
-        <SidebarMenuButton asChild tooltip="Profile">
-           <Link href="#">
-              <UserCircle />
-              <span>User Profile</span>
-            </Link>
-        </SidebarMenuButton>
+        <Link href="#" passHref>
+          <SidebarMenuButton asChild tooltip="Profile">
+             <>
+                <UserCircle />
+                <span>User Profile</span>
+              </>
+          </SidebarMenuButton>
+        </Link>
       </SidebarFooter>
     </Sidebar>
   );
