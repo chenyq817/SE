@@ -53,44 +53,38 @@ export function AppSidebar() {
         <SidebarMenu>
           {menuItems.map((item) => (
             <SidebarMenuItem key={item.href}>
-               <Link href={item.href} legacyBehavior passHref>
-                <SidebarMenuButton
-                  isActive={pathname === item.href}
-                  tooltip={item.label}
-                  as="a"
-                >
-                  <item.icon />
-                  <span>{item.label}</span>
-                </SidebarMenuButton>
-              </Link>
+              <SidebarMenuButton
+                href={item.href}
+                isActive={pathname === item.href}
+                tooltip={item.label}
+              >
+                <item.icon />
+                <span>{item.label}</span>
+              </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
         
         <SidebarMenu className="mt-auto">
           <SidebarMenuItem>
-            <Link href={adminMenuItem.href} legacyBehavior passHref>
-              <SidebarMenuButton
-                isActive={pathname === adminMenuItem.href}
-                tooltip={adminMenuItem.label}
-                 as="a"
-              >
-                  <adminMenuItem.icon />
-                  <span>{adminMenuItem.label}</span>
-              </SidebarMenuButton>
-            </Link>
+            <SidebarMenuButton
+              href={adminMenuItem.href}
+              isActive={pathname === adminMenuItem.href}
+              tooltip={adminMenuItem.label}
+            >
+                <adminMenuItem.icon />
+                <span>{adminMenuItem.label}</span>
+            </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
-         <Link href="#" legacyBehavior passHref>
-          <SidebarMenuButton tooltip="Profile" as="a">
+          <SidebarMenuButton href="#" tooltip="Profile">
              <div className="flex items-center gap-2">
                 <UserCircle />
                 <span>User Profile</span>
               </div>
           </SidebarMenuButton>
-        </Link>
       </SidebarFooter>
     </Sidebar>
   );
