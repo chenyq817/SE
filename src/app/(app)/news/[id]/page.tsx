@@ -9,9 +9,11 @@ import { Badge } from "@/components/ui/badge";
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { newsItems } from '@/lib/news-data';
 import { ArrowLeft } from 'lucide-react';
+import React from 'react';
 
 export default function NewsDetailPage({ params }: { params: { id: string } }) {
-  const newsItem = newsItems.find(item => item.id.toString() === params.id);
+  const resolvedParams = React.use(params);
+  const newsItem = newsItems.find(item => item.id.toString() === resolvedParams.id);
 
   if (!newsItem) {
     notFound();
