@@ -1,0 +1,175 @@
+/**
+ * @fileOverview Firestore Security Rules for Yu Garden Echo.
+ *
+ * Core Philosophy:
+ * This ruleset prioritizes user data ownership and restricts access based on authentication status.
+ * It uses path-based rules and denormalized data to ensure that only authorized users can read and
+ * modify specific documents and collections. Data validation is relaxed to allow for rapid prototyping.
+ *
+ * Data Structure:
+ * - /posts/{postId}: Public social media posts. Accessible for reading by everyone, but write-protected
+ *   to ensure that only the post's author can modify or delete it. The `authorId` field is denormalized
+ *   into each post to facilitate efficient authorization checks.
+ * - /users/{userId}: User profile data. Access restricted to the user themselves.
+ * - /users/{userId}/draft_posts/{postId}: Draft social media posts, only accessible by the owning user.
+ * - /comments/{commentId}: Comments on posts. Write access restricted to the comment's author.
+ * - /users/{userId}/schedules/{scheduleId}: User's schedules, only accessible by the owning user.
+ * - /activities/{activityId}: Public activities or events, with write access restricted to the organizer.
+ * - /interest_groups/{interestGroupId}: Interest groups with membership managed via the `memberIds` array.
+ *
+ * Key Security Decisions:
+ * - Public read access to posts enables broad discovery and engagement.
+ * - Draft posts are stored in a user-specific subcollection for maximum privacy and ownership.
+ * - The data model denormalizes `authorId` and `memberIds` to avoid costly `get()` calls in rules.
+ * - List operations are secured, preventing unauthorized data listing.
+ *
+ * Denormalization for Authorization:
+ * - `Post` documents contain `authorId` to enable ownership checks without additional reads.
+ * - `Comment` documents contain both `postId` and `authorId` for efficient authorization.
+ * - `Activity` documents contain `organizerId` to simplify organizer-based access control.
+ * - `InterestGroup` documents contain `memberIds` to enable membership-based access control.
+ *
+ * Structural Segregation:
+ * - Private user data (draft posts, schedules) is stored under /users/{userId} to enforce ownership.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Allows anyone to read public social media posts, but restricts write access to the author.
+     * @path /posts/{postId}
+     * @allow (get, list) Public read access.
+     * @allow (create) Authenticated user creates a post with request.auth.uid matching request.resource.data.authorId.
+     * @allow (update, delete) Authenticated user updates or deletes a post where request.auth.uid matches resource.data.authorId and the document exists.
+     * @deny (create) Attempt to create a post with a mismatched authorId.
+     * @deny (update, delete) Attempt to update or delete a post that doesn't exist.
+     * @principle Allows public reads but enforces document ownership for writes.
+     */
+    match /posts/{postId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
+      allow update, delete: if isSignedIn() && isExistingOwner(resource.data.authorId);
+    }
+
+    /**
+     * @description Restricts access to user profile data to the user themselves.
+     * @path /users/{userId}
+     * @allow (get) Authenticated user retrieves their own profile data.
+     * @allow (create) Authenticated user creates their own profile data with request.auth.uid matching userId.
+     * @allow (update, delete) Authenticated user updates or deletes their own profile data where request.auth.uid matches userId and the document exists.
+     * @deny (get, update, delete) Attempt to access, update, or delete another user's profile data.
+     * @principle Enforces strict user-ownership for profile data.
+     */
+    match /users/{userId} {
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update, delete: if isSignedIn() && isExistingOwner(userId);
+    }
+
+    /**
+     * @description Restricts access to draft social media posts to the owning user.
+     * @path /users/{userId}/draft_posts/{postId}
+     * @allow (get, list) Authenticated user retrieves their own draft posts.
+     * @allow (create) Authenticated user creates a draft post under their user ID.
+     * @allow (update, delete) Authenticated user updates or deletes their own draft posts where request.auth.uid matches userId and the document exists.
+     * @deny (get, list, create, update, delete) Attempt to access, create, update, or delete another user's draft posts.
+     * @principle Enforces strict user-ownership for draft posts.
+     */
+    match /users/{userId}/draft_posts/{postId} {
+      allow get, list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update, delete: if isSignedIn() && isExistingOwner(userId);
+    }
+
+    /**
+     * @description Allows authenticated users to read comments, but restricts write access to the comment's author.
+     * @path /comments/{commentId}
+     * @allow (get, list) Public read access.
+     * @allow (create) Authenticated user creates a comment with request.auth.uid matching request.resource.data.authorId.
+     * @allow (update, delete) Authenticated user updates or deletes their own comment where request.auth.uid matches resource.data.authorId and the document exists.
+     * @deny (create) Attempt to create a comment with a mismatched authorId.
+     * @deny (update, delete) Attempt to update or delete a comment that doesn't exist.
+     * @principle Allows public reads but enforces document ownership for writes.
+     */
+    match /comments/{commentId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
+      allow update, delete: if isSignedIn() && isExistingOwner(resource.data.authorId);
+    }
+
+    /**
+     * @description Restricts access to user schedules to the owning user.
+     * @path /users/{userId}/schedules/{scheduleId}
+     * @allow (get, list) Authenticated user retrieves their own schedules.
+     * @allow (create) Authenticated user creates a schedule under their user ID.
+     * @allow (update, delete) Authenticated user updates or deletes their own schedules where request.auth.uid matches userId and the document exists.
+     * @deny (get, list, create, update, delete) Attempt to access, create, update, or delete another user's schedules.
+     * @principle Enforces strict user-ownership for schedule data.
+     */
+    match /users/{userId}/schedules/{scheduleId} {
+      allow get, list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update, delete: if isSignedIn() && isExistingOwner(userId);
+    }
+
+    /**
+     * @description Allows anyone to read activities, but restricts write access to the activity organizer.
+     * @path /activities/{activityId}
+     * @allow (get, list) Public read access.
+     * @allow (create) Authenticated user creates an activity with request.auth.uid matching request.resource.data.organizerId.
+     * @allow (update, delete) Authenticated user updates or deletes an activity where request.auth.uid matches resource.data.organizerId and the document exists.
+     * @deny (create) Attempt to create an activity with a mismatched organizerId.
+     * @deny (update, delete) Attempt to update or delete an activity that doesn't exist.
+     * @principle Allows public reads but enforces document ownership for writes.
+     */
+    match /activities/{activityId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && request.resource.data.organizerId == request.auth.uid;
+      allow update, delete: if isSignedIn() && isExistingOwner(resource.data.organizerId);
+    }
+
+    /**
+     * @description Restricts access to activities created by a specific user to that user.
+     * @path /users/{userId}/activities/{activityId}
+     * @allow (get, list) Authenticated user retrieves activities they have created.
+     * @allow (create) Authenticated user creates an activity under their user ID.
+     * @allow (update, delete) Authenticated user updates or deletes activities they own, validating the activity document exists.
+     * @deny (get, list, create, update, delete) Attempt to access, create, update, or delete activities belonging to another user.
+     * @principle Enforces strict user-ownership for activities created by users.
+     */
+    match /users/{userId}/activities/{activityId} {
+      allow get, list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update, delete: if isSignedIn() && isExistingOwner(userId);
+    }
+
+    /**
+     * @description Allows members of an interest group to read information about the group.  Restricts write access to members of the interest group.
+     * @path /interest_groups/{interestGroupId}
+     * @allow (get, list) Public read access.
+     * @allow (create) Authenticated user creates an interest group.
+     * @allow (update, delete) Authenticated user updates or deletes an interest group where request.auth.uid is in the memberIds array and the document exists.
+     * @deny (update, delete) Attempt to update or delete an interest group where the document doesn't exist.
+     * @principle Allows public reads but enforces membership-based writes.
+     */
+    match /interest_groups/{interestGroupId} {
+      allow get, list: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if isSignedIn() && resource.data.memberIds.hasAny([request.auth.uid]) && resource != null;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function isExistingOwner(userId) {
+      return isSignedIn() && isOwner(userId) && resource != null;
+    }
+  }
+}

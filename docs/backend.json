@@ -1,0 +1,487 @@
+{
+  "entities": {
+    "Post": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Post",
+      "type": "object",
+      "description": "Represents a post in the campus social circle.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the post entity."
+        },
+        "authorId": {
+          "type": "string",
+          "description": "Reference to User who created the post. (Relationship: User 1:N Post)"
+        },
+        "content": {
+          "type": "string",
+          "description": "The text content of the post."
+        },
+        "mediaUrls": {
+          "type": "array",
+          "description": "URLs of media attached to the post.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "location": {
+          "type": "string",
+          "description": "Location associated with the post (e.g., building, library)."
+        },
+        "tags": {
+          "type": "array",
+          "description": "Tags associated with the post.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "likeIds": {
+          "type": "array",
+          "description": "References to Users who liked the post. (Relationship: User N:N Post (through Like))",
+          "items": {
+            "type": "string"
+          }
+        },
+        "commentIds": {
+          "type": "array",
+          "description": "References to Comments on the post. (Relationship: Comment 1:N Post)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the post was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the post was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "authorId",
+        "content",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user entity."
+        },
+        "userName": {
+          "type": "string",
+          "description": "User's username."
+        },
+        "email": {
+          "type": "string",
+          "description": "User's email address.",
+          "format": "email"
+        },
+        "role": {
+          "type": "string",
+          "description": "User's role within the application (e.g., student, admin)."
+        },
+        "interestTags": {
+          "type": "array",
+          "description": "User's interests represented as tags.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "scheduleIds": {
+          "type": "array",
+          "description": "References to Schedules created by the User. (Relationship: User 1:N Schedule)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user account was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user account was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userName",
+        "email",
+        "role",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Comment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Comment",
+      "type": "object",
+      "description": "Represents a comment on a post.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the comment entity."
+        },
+        "postId": {
+          "type": "string",
+          "description": "Reference to the Post this comment belongs to. (Relationship: Post 1:N Comment)"
+        },
+        "authorId": {
+          "type": "string",
+          "description": "Reference to User who created the comment. (Relationship: User 1:N Comment)"
+        },
+        "content": {
+          "type": "string",
+          "description": "The text content of the comment."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the comment was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the comment was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "postId",
+        "authorId",
+        "content",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Schedule": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Schedule",
+      "type": "object",
+      "description": "Represents a user's schedule for study/activities.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the schedule entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User who owns the schedule. (Relationship: User 1:N Schedule)"
+        },
+        "activityName": {
+          "type": "string",
+          "description": "Name of the activity."
+        },
+        "startTime": {
+          "type": "string",
+          "description": "Start time of the activity.",
+          "format": "date-time"
+        },
+        "endTime": {
+          "type": "string",
+          "description": "End time of the activity.",
+          "format": "date-time"
+        },
+        "location": {
+          "type": "string",
+          "description": "Location of the activity."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the schedule was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the schedule was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "activityName",
+        "startTime",
+        "endTime",
+        "location",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Activity": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Activity",
+      "type": "object",
+      "description": "Represents an online/offline activity or event.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the activity entity."
+        },
+        "organizerId": {
+          "type": "string",
+          "description": "Reference to User who organized the activity. (Relationship: User 1:N Activity)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the activity."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the activity."
+        },
+        "startTime": {
+          "type": "string",
+          "description": "Start time of the activity.",
+          "format": "date-time"
+        },
+        "endTime": {
+          "type": "string",
+          "description": "End time of the activity.",
+          "format": "date-time"
+        },
+        "location": {
+          "type": "string",
+          "description": "Location of the activity."
+        },
+        "participantIds": {
+          "type": "array",
+          "description": "References to Users participating in the Activity. (Relationship: User N:N Activity)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the activity was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the activity was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "organizerId",
+        "name",
+        "description",
+        "startTime",
+        "endTime",
+        "location",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "InterestGroup": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "InterestGroup",
+      "type": "object",
+      "description": "Represents a group of users with shared interests.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the interest group entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the interest group."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the interest group."
+        },
+        "memberIds": {
+          "type": "array",
+          "description": "References to Users who are members of the group. (Relationship: User N:N InterestGroup)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the group was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the group was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/posts/{postId}",
+        "definition": {
+          "entityName": "Post",
+          "schema": {
+            "$ref": "#/backend/entities/Post"
+          },
+          "description": "Represents a post in the campus social circle. Includes denormalized 'authorId' for authorization independence.",
+          "params": [
+            {
+              "name": "postId",
+              "description": "The unique identifier of the post."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Represents a user of the application.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/draft_posts/{postId}",
+        "definition": {
+          "entityName": "Post",
+          "schema": {
+            "$ref": "#/backend/entities/Post"
+          },
+          "description": "Represents a draft post belonging to a user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "postId",
+              "description": "The unique identifier of the post."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/comments/{commentId}",
+        "definition": {
+          "entityName": "Comment",
+          "schema": {
+            "$ref": "#/backend/entities/Comment"
+          },
+          "description": "Represents a comment on a post. Includes denormalized 'postId' and 'authorId' for authorization independence.",
+          "params": [
+            {
+              "name": "commentId",
+              "description": "The unique identifier of the comment."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/schedules/{scheduleId}",
+        "definition": {
+          "entityName": "Schedule",
+          "schema": {
+            "$ref": "#/backend/entities/Schedule"
+          },
+          "description": "Represents a schedule belonging to a user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "scheduleId",
+              "description": "The unique identifier of the schedule."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/activities/{activityId}",
+        "definition": {
+          "entityName": "Activity",
+          "schema": {
+            "$ref": "#/backend/entities/Activity"
+          },
+          "description": "Represents an activity or event.  Includes 'organizerId' for authorization.",
+          "params": [
+            {
+              "name": "activityId",
+              "description": "The unique identifier of the activity."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/activities/{activityId}",
+        "definition": {
+          "entityName": "Activity",
+          "schema": {
+            "$ref": "#/backend/entities/Activity"
+          },
+          "description": "Represents an activity created by a user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "activityId",
+              "description": "The unique identifier of the activity."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/interest_groups/{interestGroupId}",
+        "definition": {
+          "entityName": "InterestGroup",
+          "schema": {
+            "$ref": "#/backend/entities/InterestGroup"
+          },
+          "description": "Represents an interest group. Includes 'memberIds' for authorization.",
+          "params": [
+            {
+              "name": "interestGroupId",
+              "description": "The unique identifier of the interest group."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to provide a secure, scalable, and easily maintainable backend for the Yu Garden Echo application. It emphasizes authorization independence through denormalization and structural segregation to simplify security rules and ensure data integrity.\n\n*   **Posts:** Posts are stored under `/posts/{postId}` for public access and listing.  To support the user's request to persist posts, we maintain a single `posts` collection rather than separating public and draft posts. To enable listing posts while maintaining security (QAPs), the `posts` collection only contains data intended to be public.  Crucially, `authorId` is denormalized into the post document to allow security rules to easily check ownership without expensive `get()` operations. The `authorId` is also critical for the app requirement to display posts by a given user. `likeIds` and `commentIds` are stored in the `Post` document itself because the `Post` document will be accessed frequently and because these Ids are a part of the document (not the authorization context).\n*   **User Draft Posts:** Draft posts are stored under `/users/{userId}/draft_posts/{postId}`. Path-based ownership ensures that only the user can access their drafts.  This supports the user's request to persist social media posts they create, even if the user switches away from the app and then returns. \n*   **Users:** User profiles are stored under `/users/{userId}` using Path-Based ownership, restricting access to profile data. Schedules are stored under `/users/{userId}/schedules/{scheduleId}`. Activities created by a user are stored under `/users/{userId}/activities/{activityId}`.\n*   **Comments:** Comments are stored under `/comments/{commentId}` and include the denormalized `postId` and `authorId`. This approach enables efficient queries to retrieve comments associated with a specific post. The `authorId` is included to enable rules governing write access.\n*   **Activities:** Activities are stored under `/activities/{activityId}` and contain `organizerId` to enable rules governing write access.  The `participantIds` are stored in the `Activity` document itself because the `Activity` document will be accessed frequently and because these Ids are a part of the document (not the authorization context).\n*   **Interest Groups:** Interest groups are stored under `/interest_groups/{interestGroupId}`. To manage membership and facilitate access control, the `memberIds` array is stored within the `InterestGroup` document itself, providing a straightforward way to determine group membership.\n\nThis design adheres to Authorization Independence by denormalizing authorization-relevant data (e.g., `authorId`, `memberIds`) into the documents, eliminating the need for `get()` calls in security rules. Structural Segregation is achieved by separating public posts, draft posts, and user profiles into distinct collections with appropriate security postures.  This structure is highly scalable and optimized for listing operations (QAPs), enabling secure and efficient data retrieval."
+  }
+}
