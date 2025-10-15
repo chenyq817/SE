@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from 'react';
 import Image from "next/image";
 import { Header } from "@/components/layout/header";
 import {
@@ -12,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ThumbsUp, MessageSquare, MapPin, ImagePlus } from "lucide-react";
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
-const socialPosts = [
+const initialSocialPosts = [
   {
     id: 1,
     author: "Alice Johnson",
@@ -49,7 +52,30 @@ const socialPosts = [
 ];
 
 export default function SocialPage() {
+  const [socialPosts, setSocialPosts] = useState(initialSocialPosts);
+  const [newPostContent, setNewPostContent] = useState('');
+  
   const userAvatar = PlaceHolderImages.find(img => img.id === 'avatar-1');
+
+  const handlePost = () => {
+    if (!newPostContent.trim()) return;
+
+    const newPost = {
+      id: Date.now(),
+      author: "Alice Johnson", // Assuming the current user is Alice
+      avatarId: "avatar-1",
+      timestamp: "Just now",
+      location: "On Campus",
+      content: newPostContent,
+      imageId: null,
+      likes: 0,
+      comments: 0,
+    };
+
+    setSocialPosts([newPost, ...socialPosts]);
+    setNewPostContent('');
+  };
+
   return (
     <div className="flex flex-col h-full">
       <Header title="Campus Social Circle" />
@@ -62,13 +88,18 @@ export default function SocialPage() {
                 <AvatarFallback>U</AvatarFallback>
               </Avatar>}
               <div className="flex-grow">
-                <Textarea placeholder="What's on your mind?" className="mb-2" />
+                <Textarea 
+                  placeholder="What's on your mind?" 
+                  className="mb-2" 
+                  value={newPostContent}
+                  onChange={(e) => setNewPostContent(e.target.value)}
+                />
                 <div className="flex justify-between items-center">
                     <div className="flex gap-2">
                         <Button variant="ghost" size="icon" className="text-muted-foreground"><ImagePlus className="w-5 h-5"/></Button>
                         <Button variant="ghost" size="icon" className="text-muted-foreground"><MapPin className="w-5 h-5"/></Button>
                     </div>
-                    <Button>Post</Button>
+                    <Button onClick={handlePost}>Post</Button>
                 </div>
               </div>
             </CardHeader>
@@ -77,7 +108,7 @@ export default function SocialPage() {
           <div className="space-y-6">
             {socialPosts.map((post) => {
               const authorAvatar = PlaceHolderImages.find(img => img.id === post.avatarId);
-              const postImage = PlaceHolderImages.find(img => img.id === post.imageId);
+              const postImage = post.imageId ? PlaceHolderImages.find(img => img.id === post.imageId) : null;
               return (
               <Card key={post.id} className="hover:shadow-lg transition-shadow duration-300">
                 <CardHeader className="flex flex-row items-start gap-4">
