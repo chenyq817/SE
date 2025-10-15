@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import Image from "next/image";
 import { Header } from "@/components/layout/header";
 import {
@@ -17,8 +17,7 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { useCollection, useFirebase, useUser, useFirestore, useMemoFirebase } from '@/firebase';
-import { addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { useCollection, useFirestore, useUser, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
 import { collection, query, where, orderBy, serverTimestamp, arrayUnion, arrayRemove, doc } from 'firebase/firestore';
 import type { WithId } from '@/firebase';
 
@@ -37,7 +36,7 @@ type Post = {
 type Comment = {
   postId: string;
   authorId: string;
-  authorName: string; // Denormalized for display
+  authorName:string; // Denormalized for display
   authorAvatarId: string; // Denormalized for display
   content: string;
   createdAt: any; // Firestore Timestamp
@@ -77,7 +76,7 @@ function CommentSection({ postId }: { postId: string }) {
         <div className="px-6 pb-4 space-y-4">
             <Separator />
             <div className="space-y-4">
-                {isLoading && <p>Loading comments...</p>}
+                {isLoading && <p className="text-sm text-muted-foreground">Loading comments...</p>}
                 {comments?.map(comment => {
                     const commentAvatar = PlaceHolderImages.find(img => img.id === comment.authorAvatarId);
                     return (
@@ -143,6 +142,10 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
     
     const formatTimestamp = (timestamp: any) => {
       if (!timestamp) return 'Just now';
+      // Firestore Timestamps can be null before they are committed to the backend
+      if (typeof timestamp.toDate !== 'function') {
+        return 'Posting...';
+      }
       const date = timestamp.toDate();
       const now = new Date();
       const diff = now.getTime() - date.getTime();
@@ -275,7 +278,7 @@ export default function SocialPage() {
                     </Card>
 
                     <div className="space-y-6">
-                        {isLoading && <p>Loading posts...</p>}
+                        {isLoading && <p className="text-center text-muted-foreground">Loading posts...</p>}
                         {socialPosts?.map((post) => (
                             <SocialPostCard key={post.id} post={post} />
                         ))}
