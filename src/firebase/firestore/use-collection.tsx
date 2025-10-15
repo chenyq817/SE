@@ -94,7 +94,6 @@ export function useCollection<T = any>(
           path,
         })
         
-        console.error("useCollection error:", contextualError.message);
         setError(contextualError);
         setData(null);
         setIsLoading(false);

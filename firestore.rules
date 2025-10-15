@@ -2,61 +2,58 @@
  * @fileoverview Firestore Security Rules for Prototyping.
  *
  * Core Philosophy:
- * This ruleset prioritizes rapid prototyping by focusing on authorization and relationship enforcement, while relaxing data validation. It enforces a basic level of security, ensuring that only authorized users can access specific data. Data shape validation is minimized to allow for flexible schema changes during development.
+ * This ruleset prioritizes rapid prototyping by focusing on authorization while relaxing data validation.
+ * It enforces user-based ownership for write operations and allows public read access where appropriate.
  *
  * Data Structure:
- * - /posts/{postId}: Stores all campus posts. Publicly readable, but write-protected to enforce ownership.
- * - /comments/{commentId}: Stores comments on posts. Publicly readable, but write-protected to enforce ownership.
+ * - /posts/{postId}: Publicly readable posts, owned by a user.
+ * - /comments/{commentId}: Publicly readable comments, associated with posts.
  *
  * Key Security Decisions:
- * - Users are not allowed to list all users.
- * - All read operations (`get`, `list`) are explicitly defined. There are no implicit open reads.
- * - All write operations (`create`, `update`, `delete`) are explicitly authorized. There are no open writes.
+ * - Public read access is granted to posts and comments to enable open discovery.
+ * - Write access (create, update, delete) to posts and comments is restricted to the owner.
+ * - Data validation is minimized to accelerate development, but critical authorization fields are validated.
  *
  * Denormalization for Authorization:
- *  - The rules assume that the `authorId` field is present in both `posts` and `comments` collections to check ownership, ensuring that only the author can modify/delete their content.
+ * - Posts and Comments both have `authorId` to enable efficient ownership checks without needing additional reads.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Grants read access to all posts, but restricts write access to the author of the post.
-     * @path /databases/{database}/documents/posts/{postId}
-     * @allow (get, list): Any user can read any post.
-     * @allow (create): Only an authenticated user can create a post, and the authorId must match their UID.
-     * @allow (update, delete): Only the author of the post can update or delete it.
-     * @deny (create): An unauthenticated user cannot create a post.
-     * @deny (update, delete): A user who is not the author cannot update or delete the post.
-     * @principle Allows public read access while enforcing ownership for write access.
+     * @description Allows anyone to read posts, but only the author can create, update, or delete them.
+     * @path /posts/{postId}
+     * @allow (get, list): Any user can read posts.
+     * @allow (create): The user whose auth UID matches the post's authorId can create a post.
+     * @allow (update, delete): The user whose auth UID matches the post's authorId can update or delete the post.
+     * @deny (create): A user attempts to create a post with an authorId that doesn't match their own UID.
+     * @deny (update, delete): A user attempts to update or delete a post they don't own.
+     * @principle Public read with owner-only writes, enforcing document ownership for writes.
      */
     match /posts/{postId} {
-      allow get: if true;
-      allow list: if true;
+      allow get, list: if true;
       allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-      allow update: if isSignedIn() && isExistingOwner(resource.data.authorId);
-      allow delete: if isSignedIn() && isExistingOwner(resource.data.authorId);
+      allow update, delete: if isSignedIn() && isExistingOwner(resource.data.authorId);
     }
 
     /**
-     * @description Grants read access to all comments, but restricts write access to the author of the comment.
-     * @path /databases/{database}/documents/comments/{commentId}
-     * @allow (get, list): Any user can read any comment.
-     * @allow (create): Only an authenticated user can create a comment, and the authorId must match their UID.
-     * @allow (update, delete): Only the author of the comment can update or delete it.
-     * @deny (create): An unauthenticated user cannot create a comment.
-     * @deny (update, delete): A user who is not the author cannot update or delete the comment.
-     * @principle Allows public read access while enforcing ownership for write access.
+     * @description Allows anyone to read comments, but only the author can create, update, or delete them.
+     * @path /comments/{commentId}
+     * @allow (get, list): Any user can read comments.
+     * @allow (create): The user whose auth UID matches the comment's authorId can create a comment.
+     * @allow (update, delete): The user whose auth UID matches the comment's authorId can update or delete the comment.
+     * @deny (create): A user attempts to create a comment with an authorId that doesn't match their own UID.
+     * @deny (update, delete): A user attempts to update or delete a comment they don't own.
+     * @principle Public read with owner-only writes, enforcing document ownership for writes.
      */
     match /comments/{commentId} {
-      allow get: if true;
-      allow list: if true;
+      allow get, list: if true;
       allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-      allow update: if isSignedIn() && isExistingOwner(resource.data.authorId);
-      allow delete: if isSignedIn() && isExistingOwner(resource.data.authorId);
+      allow update, delete: if isSignedIn() && isExistingOwner(resource.data.authorId);
     }
 
-    // Helper functions
+
     function isSignedIn() {
       return request.auth != null;
     }
@@ -66,7 +63,7 @@ service cloud.firestore {
     }
 
     function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
+        return isOwner(userId) && resource != null;
     }
   }
 }
