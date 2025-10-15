@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Image from "next/image";
 import { Header } from "@/components/layout/header";
 import {
@@ -12,11 +12,9 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ThumbsUp, MessageSquare, MapPin, ImagePlus, Send } from "lucide-react";
+import { ThumbsUp, MessageSquare, MapPin, ImagePlus, X } from "lucide-react";
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn } from '@/lib/utils';
-import { Input } from '@/components/ui/input';
-import { Separator } from '@/components/ui/separator';
 import { useCollection, useFirestore, useUser, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
 import { collection, query, where, orderBy, serverTimestamp, arrayUnion, arrayRemove, doc } from 'firebase/firestore';
 import type { WithId } from '@/firebase';
@@ -28,7 +26,7 @@ type Post = {
   authorAvatarId: string; // Denormalized for display
   content: string;
   location?: string;
-  imageId?: string;
+  imageBase64?: string; // Storing image as Base64 data URI
   likeIds: string[];
   createdAt: any; // Firestore Timestamp
 };
@@ -39,7 +37,6 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
     const { user } = useUser();
 
     const authorAvatar = PlaceHolderImages.find(img => img.id === post.authorAvatarId);
-    const postImage = post.imageId ? PlaceHolderImages.find(img => img.id === post.imageId) : null;
     
     const isLiked = user ? post.likeIds.includes(user.uid) : false;
 
@@ -94,14 +91,13 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
             </CardHeader>
             <CardContent>
                 <p className="mb-4">{post.content}</p>
-                {postImage && (
+                {post.imageBase64 && (
                     <div className="relative aspect-video w-full">
                         <Image
-                            src={postImage.imageUrl}
+                            src={post.imageBase64}
                             alt="Social post image"
                             fill
                             className="rounded-md object-cover"
-                            data-ai-hint={postImage.imageHint}
                         />
                     </div>
                 )}
@@ -130,6 +126,8 @@ export default function SocialPage() {
     const firestore = useFirestore();
     const { user } = useUser();
     const [newPostContent, setNewPostContent] = useState('');
+    const [newPostImage, setNewPostImage] = useState<string | null>(null);
+    const imageInputRef = useRef<HTMLInputElement>(null);
   
     const postsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -140,8 +138,19 @@ export default function SocialPage() {
 
     const userAvatar = PlaceHolderImages.find(img => img.id === 'avatar-1');
 
+    const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setNewPostImage(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     const handlePost = () => {
-        if (!newPostContent.trim() || !user || !firestore) return;
+        if ((!newPostContent.trim() && !newPostImage) || !user || !firestore) return;
 
         const newPost: Omit<Post, 'id' | 'likeIds' | 'createdAt'> & { likeIds: string[], createdAt: any } = {
             authorId: user.uid,
@@ -153,8 +162,16 @@ export default function SocialPage() {
             createdAt: serverTimestamp(),
         };
 
+        if (newPostImage) {
+            newPost.imageBase64 = newPostImage;
+        }
+
         addDocumentNonBlocking(collection(firestore, 'posts'), newPost);
         setNewPostContent('');
+        setNewPostImage(null);
+        if(imageInputRef.current) {
+            imageInputRef.current.value = '';
+        }
     };
 
     return (
@@ -163,26 +180,55 @@ export default function SocialPage() {
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                 <div className="max-w-2xl mx-auto space-y-6">
                     <Card className="shadow-sm">
-                        <CardHeader className="flex flex-row items-start gap-4 p-4">
-                            {userAvatar && user && <Avatar>
-                                <AvatarImage src={userAvatar.imageUrl} alt="Your avatar" data-ai-hint={userAvatar.imageHint} />
-                                <AvatarFallback>U</AvatarFallback>
-                            </Avatar>}
-                            <div className="flex-grow">
-                                <Textarea 
-                                    placeholder="What's on your mind?" 
-                                    className="mb-2" 
-                                    value={newPostContent}
-                                    onChange={(e) => setNewPostContent(e.target.value)}
-                                    disabled={!user}
-                                />
-                                <div className="flex justify-between items-center">
-                                    <div className="flex gap-2">
-                                        <Button variant="ghost" size="icon" className="text-muted-foreground" disabled={!user}><ImagePlus className="w-5 h-5"/></Button>
-                                        <Button variant="ghost" size="icon" className="text-muted-foreground" disabled={!user}><MapPin className="w-5 h-5"/></Button>
-                                    </div>
-                                    <Button onClick={handlePost} disabled={!newPostContent.trim() || !user}>Post</Button>
+                        <CardHeader className="flex flex-col items-start gap-4 p-4">
+                            <div className="flex w-full gap-4">
+                                {userAvatar && user && <Avatar>
+                                    <AvatarImage src={userAvatar.imageUrl} alt="Your avatar" data-ai-hint={userAvatar.imageHint} />
+                                    <AvatarFallback>U</AvatarFallback>
+                                </Avatar>}
+                                <div className="flex-grow">
+                                    <Textarea 
+                                        placeholder="What's on your mind?" 
+                                        className="mb-2" 
+                                        value={newPostContent}
+                                        onChange={(e) => setNewPostContent(e.target.value)}
+                                        disabled={!user}
+                                    />
                                 </div>
+                            </div>
+                             {newPostImage && (
+                                <div className="relative w-full pl-16">
+                                    <Image src={newPostImage} alt="Preview" width={80} height={80} className="rounded-md object-cover" />
+                                    <Button
+                                        variant="destructive"
+                                        size="icon"
+                                        className="absolute top-1 right-1 h-6 w-6"
+                                        onClick={() => {
+                                            setNewPostImage(null);
+                                            if(imageInputRef.current) {
+                                                imageInputRef.current.value = '';
+                                            }
+                                        }}
+                                    >
+                                        <X className="h-4 w-4"/>
+                                    </Button>
+                                </div>
+                            )}
+                            <div className="w-full flex justify-between items-center pl-16">
+                                <div className="flex gap-2">
+                                    <input
+                                        type="file"
+                                        ref={imageInputRef}
+                                        onChange={handleImageChange}
+                                        className="hidden"
+                                        accept="image/*"
+                                    />
+                                    <Button variant="ghost" size="icon" className="text-muted-foreground" disabled={!user} onClick={() => imageInputRef.current?.click()}>
+                                        <ImagePlus className="w-5 h-5"/>
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="text-muted-foreground" disabled={!user}><MapPin className="w-5 h-5"/></Button>
+                                </div>
+                                <Button onClick={handlePost} disabled={(!newPostContent.trim() && !newPostImage) || !user}>Post</Button>
                             </div>
                         </CardHeader>
                     </Card>

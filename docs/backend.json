@@ -21,12 +21,9 @@
           "type": "string",
           "description": "The text content of the post."
         },
-        "mediaUrls": {
-          "type": "array",
-          "description": "URLs of media attached to the post.",
-          "items": {
-            "type": "string"
-          }
+        "imageBase64": {
+          "type": "string",
+          "description": "Base64 encoded string of the image attached to the post."
         },
         "location": {
           "type": "string",
