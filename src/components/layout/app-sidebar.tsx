@@ -23,7 +23,6 @@ import {
   Bot,
   UserCircle
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 const menuItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -54,40 +53,42 @@ export function AppSidebar() {
         <SidebarMenu>
           {menuItems.map((item) => (
             <SidebarMenuItem key={item.href}>
-              <Link href={item.href} legacyBehavior passHref>
-                <SidebarMenuButton
-                  isActive={pathname === item.href}
-                  tooltip={item.label}
-                >
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === item.href}
+                tooltip={item.label}
+              >
+                <Link href={item.href}>
                   <item.icon />
                   <span>{item.label}</span>
-                </SidebarMenuButton>
-              </Link>
+                </Link>
+              </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
         
         <SidebarMenu className="mt-auto">
           <SidebarMenuItem>
-              <Link href={adminMenuItem.href} legacyBehavior passHref>
-                <SidebarMenuButton
-                  isActive={pathname === adminMenuItem.href}
-                  tooltip={adminMenuItem.label}
-                >
-                  <adminMenuItem.icon />
-                  <span>{adminMenuItem.label}</span>
-                </SidebarMenuButton>
+            <SidebarMenuButton
+              asChild
+              isActive={pathname === adminMenuItem.href}
+              tooltip={adminMenuItem.label}
+            >
+              <Link href={adminMenuItem.href}>
+                <adminMenuItem.icon />
+                <span>{adminMenuItem.label}</span>
               </Link>
-            </SidebarMenuItem>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
-        <Link href="#" legacyBehavior passHref>
-           <SidebarMenuButton tooltip="Profile">
+        <SidebarMenuButton asChild tooltip="Profile">
+           <Link href="#">
               <UserCircle />
               <span>User Profile</span>
-            </SidebarMenuButton>
-        </Link>
+            </Link>
+        </SidebarMenuButton>
       </SidebarFooter>
     </Sidebar>
   );
