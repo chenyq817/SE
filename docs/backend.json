@@ -319,19 +319,17 @@
     ]
   },
   "firestore": {
-    "collections": [
-      {
-        "name": "posts",
-        "schema": {
-          "$ref": "#/entities/Post"
-        }
+    "/posts/{postId}": {
+      "schema": {
+        "$ref": "#/entities/Post"
       },
-      {
-        "name": "comments",
-        "schema": {
-          "$ref": "#/entities/Comment"
-        }
-      }
-    ]
+      "description": "Holds all the posts created by users in the social circle."
+    },
+    "/comments/{commentId}": {
+      "schema": {
+        "$ref": "#/entities/Comment"
+      },
+      "description": "Holds all comments associated with posts."
+    }
   }
 }
