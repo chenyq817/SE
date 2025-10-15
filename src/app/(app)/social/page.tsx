@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ThumbsUp, MessageSquare, MapPin, ImagePlus } from "lucide-react";
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { cn } from '@/lib/utils';
 
 const initialSocialPosts = [
   {
@@ -26,6 +27,7 @@ const initialSocialPosts = [
     imageId: "social-1",
     likes: 42,
     comments: 5,
+    isLiked: false,
   },
   {
     id: 2,
@@ -37,6 +39,7 @@ const initialSocialPosts = [
     imageId: "social-2",
     likes: 78,
     comments: 12,
+    isLiked: true,
   },
   {
     id: 3,
@@ -48,6 +51,7 @@ const initialSocialPosts = [
     imageId: null,
     likes: 105,
     comments: 23,
+    isLiked: false,
   },
 ];
 
@@ -70,6 +74,7 @@ export default function SocialPage() {
       imageId: null,
       likes: 0,
       comments: 0,
+      isLiked: false,
     };
 
     setSocialPosts([newPost, ...socialPosts]);
@@ -78,13 +83,22 @@ export default function SocialPage() {
 
   const handleLike = (postId: number) => {
     setSocialPosts(posts =>
-      posts.map(post =>
-        post.id === postId ? { ...post, likes: post.likes + 1 } : post
-      )
+      posts.map(post => {
+        if (post.id === postId) {
+          return { 
+            ...post, 
+            likes: post.isLiked ? post.likes - 1 : post.likes + 1,
+            isLiked: !post.isLiked,
+          };
+        }
+        return post;
+      })
     );
   };
 
   const handleComment = (postId: number) => {
+    // This is a placeholder for a real comment action.
+    // In a real app, this would open a comment modal or section.
     setSocialPosts(posts =>
       posts.map(post =>
         post.id === postId ? { ...post, comments: post.comments + 1 } : post
@@ -161,8 +175,15 @@ export default function SocialPage() {
                   )}
                 </CardContent>
                 <CardFooter className="flex justify-start gap-4 border-t pt-4">
-                  <Button variant="ghost" className="flex items-center gap-2 text-muted-foreground" onClick={() => handleLike(post.id)}>
-                    <ThumbsUp className="w-5 h-5" /> {post.likes}
+                  <Button 
+                    variant="ghost" 
+                    className={cn(
+                        "flex items-center gap-2",
+                        post.isLiked ? "text-primary" : "text-muted-foreground"
+                    )} 
+                    onClick={() => handleLike(post.id)}
+                  >
+                    <ThumbsUp className={cn("w-5 h-5", post.isLiked && "fill-current")} /> {post.likes}
                   </Button>
                   <Button variant="ghost" className="flex items-center gap-2 text-muted-foreground" onClick={() => handleComment(post.id)}>
                     <MessageSquare className="w-5 h-5" /> {post.comments}
