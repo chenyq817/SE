@@ -12,6 +12,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { ThumbsUp, MessageSquare, MapPin, ImagePlus, X, MoreHorizontal } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
@@ -24,7 +25,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label";
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn } from '@/lib/utils';
 import { useCollection, useFirestore, useUser, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
@@ -177,6 +189,9 @@ export default function SocialPage() {
     const { user } = useUser();
     const [newPostContent, setNewPostContent] = useState('');
     const [newPostImage, setNewPostImage] = useState<string | null>(null);
+    const [newPostLocation, setNewPostLocation] = useState('On Campus');
+    const [tempLocation, setTempLocation] = useState('On Campus');
+    const [isLocationDialogOpen, setIsLocationDialogOpen] = useState(false);
     const imageInputRef = useRef<HTMLInputElement>(null);
   
     const postsQuery = useMemoFirebase(() => {
@@ -198,6 +213,11 @@ export default function SocialPage() {
             reader.readAsDataURL(file);
         }
     };
+    
+    const handleLocationSave = () => {
+        setNewPostLocation(tempLocation);
+        setIsLocationDialogOpen(false);
+    }
 
     const handlePost = () => {
         if ((!newPostContent.trim() && !newPostImage) || !user || !firestore) return;
@@ -207,7 +227,7 @@ export default function SocialPage() {
             authorName: "Anonymous User", // In a real app, you'd have user profiles
             authorAvatarId: "avatar-1", // Placeholder
             content: newPostContent,
-            location: "On Campus",
+            location: newPostLocation,
             likeIds: [],
             createdAt: serverTimestamp(),
         };
@@ -219,6 +239,8 @@ export default function SocialPage() {
         addDocumentNonBlocking(collection(firestore, 'posts'), newPost);
         setNewPostContent('');
         setNewPostImage(null);
+        setNewPostLocation('On Campus');
+        setTempLocation('On Campus');
         if(imageInputRef.current) {
             imageInputRef.current.value = '';
         }
@@ -276,7 +298,37 @@ export default function SocialPage() {
                                     <Button variant="ghost" size="icon" className="text-muted-foreground" disabled={!user} onClick={() => imageInputRef.current?.click()}>
                                         <ImagePlus className="w-5 h-5"/>
                                     </Button>
-                                    <Button variant="ghost" size="icon" className="text-muted-foreground" disabled={!user}><MapPin className="w-5 h-5"/></Button>
+                                    <Dialog open={isLocationDialogOpen} onOpenChange={setIsLocationDialogOpen}>
+                                        <DialogTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="text-muted-foreground" disabled={!user}>
+                                                <MapPin className="w-5 h-5"/>
+                                            </Button>
+                                        </DialogTrigger>
+                                        <DialogContent className="sm:max-w-[425px]">
+                                            <DialogHeader>
+                                            <DialogTitle>Edit location</DialogTitle>
+                                            <DialogDescription>
+                                                Update your current location. This will be shown on your post.
+                                            </DialogDescription>
+                                            </DialogHeader>
+                                            <div className="grid gap-4 py-4">
+                                            <div className="grid grid-cols-4 items-center gap-4">
+                                                <Label htmlFor="location" className="text-right">
+                                                Location
+                                                </Label>
+                                                <Input
+                                                id="location"
+                                                value={tempLocation}
+                                                onChange={(e) => setTempLocation(e.target.value)}
+                                                className="col-span-3"
+                                                />
+                                            </div>
+                                            </div>
+                                            <DialogFooter>
+                                                <Button type="submit" onClick={handleLocationSave}>Save changes</Button>
+                                            </DialogFooter>
+                                        </DialogContent>
+                                    </Dialog>
                                 </div>
                                 <Button onClick={handlePost} disabled={(!newPostContent.trim() && !newPostImage) || !user}>Post</Button>
                             </div>
