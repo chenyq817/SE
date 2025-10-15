@@ -3,6 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Open_Sans, Roboto } from 'next/font/google';
 import './globals.css';
 import { cn } from '@/lib/utils';
+import { FirebaseClientProvider } from '@/firebase';
 
 const openSans = Open_Sans({
   subsets: ['latin'],
@@ -31,7 +32,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={cn("font-body antialiased", openSans.variable, roboto.variable)}>
-        {children}
+        <FirebaseClientProvider>
+          {children}
+        </FirebaseClientProvider>
         <Toaster />
       </body>
     </html>
