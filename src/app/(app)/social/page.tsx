@@ -33,97 +33,10 @@ type Post = {
   createdAt: any; // Firestore Timestamp
 };
 
-type Comment = {
-  postId: string;
-  authorId: string;
-  authorName:string; // Denormalized for display
-  authorAvatarId: string; // Denormalized for display
-  content: string;
-  createdAt: any; // Firestore Timestamp
-};
-
-function CommentSection({ postId }: { postId: string }) {
-    const firestore = useFirestore();
-    const { user } = useUser();
-    const [commentText, setCommentText] = useState('');
-
-    const commentsQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
-        return query(collection(firestore, 'comments'), where('postId', '==', postId), orderBy('createdAt', 'asc'));
-    }, [firestore, postId]);
-    
-    const { data: comments, isLoading } = useCollection<Comment>(commentsQuery);
-
-    const userAvatar = PlaceHolderImages.find(img => img.id === 'avatar-1'); // Placeholder for current user
-
-    const handlePostComment = () => {
-        if (!commentText.trim() || !user || !firestore) return;
-
-        const newComment = {
-            postId,
-            authorId: user.uid,
-            authorName: "You", // In a real app, this would be the user's actual name
-            authorAvatarId: 'avatar-1', // Placeholder
-            content: commentText,
-            createdAt: serverTimestamp(),
-        };
-
-        addDocumentNonBlocking(collection(firestore, 'comments'), newComment);
-        setCommentText('');
-    };
-
-    return (
-        <div className="px-6 pb-4 space-y-4">
-            <Separator />
-            <div className="space-y-4">
-                {isLoading && <p className="text-sm text-muted-foreground">Loading comments...</p>}
-                {comments?.map(comment => {
-                    const commentAvatar = PlaceHolderImages.find(img => img.id === comment.authorAvatarId);
-                    return (
-                        <div key={comment.id} className="flex items-start gap-3">
-                            {commentAvatar && <Avatar className="w-8 h-8">
-                                <AvatarImage src={commentAvatar.imageUrl} alt={comment.authorName} data-ai-hint={commentAvatar.imageHint} />
-                                <AvatarFallback>{comment.authorName.charAt(0)}</AvatarFallback>
-                            </Avatar>}
-                            <div className="flex-grow bg-secondary/50 rounded-lg px-3 py-2">
-                                <p className="font-semibold text-sm">{comment.authorName}</p>
-                                <p className="text-sm text-foreground">{comment.content}</p>
-                            </div>
-                        </div>
-                    )
-                })}
-            </div>
-            <div className="flex items-center gap-2">
-                {userAvatar && user && <Avatar className="w-8 h-8">
-                    <AvatarImage src={userAvatar.imageUrl} alt="Your avatar" data-ai-hint={userAvatar.imageHint} />
-                    <AvatarFallback>Y</AvatarFallback>
-                </Avatar>}
-                <Input 
-                    placeholder="Write a comment..." 
-                    value={commentText} 
-                    onChange={(e) => setCommentText(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handlePostComment()}
-                    disabled={!user}
-                />
-                <Button size="icon" onClick={handlePostComment} disabled={!commentText.trim() || !user}>
-                    <Send className="w-4 h-4"/>
-                </Button>
-            </div>
-        </div>
-    );
-}
 
 function SocialPostCard({ post }: { post: WithId<Post> }) {
     const firestore = useFirestore();
     const { user } = useUser();
-    const [showComments, setShowComments] = useState(false);
-
-    const commentsQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
-        return query(collection(firestore, 'comments'), where('postId', '==', post.id));
-    }, [firestore, post.id]);
-    
-    const { data: comments } = useCollection<Comment>(commentsQuery);
 
     const authorAvatar = PlaceHolderImages.find(img => img.id === post.authorAvatarId);
     const postImage = post.imageId ? PlaceHolderImages.find(img => img.id === post.imageId) : null;
@@ -137,8 +50,6 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
             likeIds: isLiked ? arrayRemove(user.uid) : arrayUnion(user.uid)
         });
     };
-
-    const handleCommentToggle = () => setShowComments(prev => !prev);
     
     const formatTimestamp = (timestamp: any) => {
       if (!timestamp) return 'Just now';
@@ -207,11 +118,10 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
                 >
                     <ThumbsUp className={cn("w-5 h-5", isLiked && "fill-current")} /> {post.likeIds.length}
                 </Button>
-                <Button variant="ghost" className="flex items-center gap-2 text-muted-foreground" onClick={handleCommentToggle}>
-                    <MessageSquare className="w-5 h-5" /> {comments?.length ?? 0}
+                <Button variant="ghost" className="flex items-center gap-2 text-muted-foreground" disabled>
+                    <MessageSquare className="w-5 h-5" /> 0
                 </Button>
             </CardFooter>
-            {showComments && <CommentSection postId={post.id} />}
         </Card>
     );
 }
