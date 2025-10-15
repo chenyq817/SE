@@ -59,10 +59,10 @@ export function AppSidebar() {
                   isActive={pathname === item.href}
                   tooltip={item.label}
                 >
-                  <>
+                  <div className="flex items-center gap-2">
                     <item.icon />
                     <span>{item.label}</span>
-                  </>
+                  </div>
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
@@ -77,10 +77,10 @@ export function AppSidebar() {
                 isActive={pathname === adminMenuItem.href}
                 tooltip={adminMenuItem.label}
               >
-                <>
+                 <div className="flex items-center gap-2">
                   <adminMenuItem.icon />
                   <span>{adminMenuItem.label}</span>
-                </>
+                 </div>
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>
@@ -89,10 +89,10 @@ export function AppSidebar() {
       <SidebarFooter>
         <Link href="#" passHref>
           <SidebarMenuButton asChild tooltip="Profile">
-             <>
+             <div className="flex items-center gap-2">
                 <UserCircle />
                 <span>User Profile</span>
-              </>
+              </div>
           </SidebarMenuButton>
         </Link>
       </SidebarFooter>
