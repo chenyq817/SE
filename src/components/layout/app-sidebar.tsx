@@ -53,10 +53,11 @@ export function AppSidebar() {
         <SidebarMenu>
           {menuItems.map((item) => (
             <SidebarMenuItem key={item.href}>
-              <Link href={item.href} passHref>
+               <Link href={item.href} legacyBehavior passHref>
                 <SidebarMenuButton
                   isActive={pathname === item.href}
                   tooltip={item.label}
+                  as="a"
                 >
                   <item.icon />
                   <span>{item.label}</span>
@@ -68,10 +69,11 @@ export function AppSidebar() {
         
         <SidebarMenu className="mt-auto">
           <SidebarMenuItem>
-            <Link href={adminMenuItem.href} passHref>
+            <Link href={adminMenuItem.href} legacyBehavior passHref>
               <SidebarMenuButton
                 isActive={pathname === adminMenuItem.href}
                 tooltip={adminMenuItem.label}
+                 as="a"
               >
                   <adminMenuItem.icon />
                   <span>{adminMenuItem.label}</span>
@@ -81,8 +83,8 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
-        <Link href="#" passHref>
-          <SidebarMenuButton tooltip="Profile">
+         <Link href="#" legacyBehavior passHref>
+          <SidebarMenuButton tooltip="Profile" as="a">
              <div className="flex items-center gap-2">
                 <UserCircle />
                 <span>User Profile</span>
