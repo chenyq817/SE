@@ -17,7 +17,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { ArrowRight } from 'lucide-react';
-import { PersonalizedNewsFeed } from './personalized-news-feed';
 
 const newsItems = [
   {
@@ -109,17 +108,12 @@ export default function NewsPage() {
     <div className="flex flex-col h-full">
       <Header title="Smart News Feed" />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
-        <Tabs defaultValue="for-you" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6">
-            <TabsTrigger value="for-you">For You</TabsTrigger>
+        <Tabs defaultValue="academics" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="academics">Academics</TabsTrigger>
             <TabsTrigger value="sports">Sports</TabsTrigger>
             <TabsTrigger value="campus-life">Campus Life</TabsTrigger>
           </TabsList>
-          
-          <TabsContent value="for-you">
-            <PersonalizedNewsFeed />
-          </TabsContent>
           
           <TabsContent value="academics">
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
