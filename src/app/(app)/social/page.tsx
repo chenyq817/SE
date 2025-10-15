@@ -12,9 +12,11 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ThumbsUp, MessageSquare, MapPin, ImagePlus } from "lucide-react";
+import { ThumbsUp, MessageSquare, MapPin, ImagePlus, Send } from "lucide-react";
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
 
 const initialSocialPosts = [
   {
@@ -26,8 +28,13 @@ const initialSocialPosts = [
     content: "Beautiful sunset view from the 5th floor of the library today! Perfect study break. 🌇 #campuslife",
     imageId: "social-1",
     likes: 42,
-    comments: 5,
+    comments: 2,
     isLiked: false,
+    showComments: false,
+    commentsData: [
+        { id: 1, author: "Bob Smith", avatarId: "avatar-2", content: "Wow, amazing shot!" },
+        { id: 2, author: "Charlie Brown", avatarId: "avatar-3", content: "I was just there! Missed this view." }
+    ]
   },
   {
     id: 2,
@@ -38,8 +45,12 @@ const initialSocialPosts = [
     content: "Finally tried the new seasonal latte at the campus cafe. 10/10 would recommend! ☕️",
     imageId: "social-2",
     likes: 78,
-    comments: 12,
+    comments: 1,
     isLiked: true,
+    showComments: false,
+    commentsData: [
+        { id: 1, author: "Alice Johnson", avatarId: "avatar-1", content: "I need to try that!" }
+    ]
   },
   {
     id: 3,
@@ -50,10 +61,78 @@ const initialSocialPosts = [
     content: "Late night grind on our final year project. Wish us luck! 💻🔬",
     imageId: null,
     likes: 105,
-    comments: 23,
+    comments: 0,
     isLiked: false,
+    showComments: false,
+    commentsData: []
   },
 ];
+
+type Comment = {
+  id: number;
+  author: string;
+  avatarId: string;
+  content: string;
+};
+
+type SocialPost = (typeof initialSocialPosts)[0];
+
+
+function CommentSection({ 
+    post,
+    onPostComment 
+}: { 
+    post: SocialPost,
+    onPostComment: (postId: number, commentText: string) => void 
+}) {
+    const [commentText, setCommentText] = useState('');
+    const userAvatar = PlaceHolderImages.find(img => img.id === 'avatar-1');
+
+    const handleCommentSubmit = () => {
+        if (!commentText.trim()) return;
+        onPostComment(post.id, commentText);
+        setCommentText('');
+    };
+
+    return (
+        <div className="px-6 pb-4 space-y-4">
+            <Separator />
+            <div className="space-y-4">
+                {post.commentsData.map(comment => {
+                    const commentAvatar = PlaceHolderImages.find(img => img.id === comment.avatarId);
+                    return (
+                        <div key={comment.id} className="flex items-start gap-3">
+                            {commentAvatar && <Avatar className="w-8 h-8">
+                                <AvatarImage src={commentAvatar.imageUrl} alt={comment.author} data-ai-hint={commentAvatar.imageHint} />
+                                <AvatarFallback>{comment.author.charAt(0)}</AvatarFallback>
+                            </Avatar>}
+                            <div className="flex-grow bg-secondary/50 rounded-lg px-3 py-2">
+                                <p className="font-semibold text-sm">{comment.author}</p>
+                                <p className="text-sm text-foreground">{comment.content}</p>
+                            </div>
+                        </div>
+                    )
+                })}
+            </div>
+            <div className="flex items-center gap-2">
+                {userAvatar && <Avatar className="w-8 h-8">
+                    <AvatarImage src={userAvatar.imageUrl} alt="Your avatar" data-ai-hint={userAvatar.imageHint} />
+                    <AvatarFallback>U</AvatarFallback>
+                </Avatar>}
+                <Input 
+                    placeholder="Write a comment..." 
+                    value={commentText} 
+                    onChange={(e) => setCommentText(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleCommentSubmit()}
+                />
+                <Button size="icon" onClick={handleCommentSubmit} disabled={!commentText.trim()}>
+                    <Send className="w-4 h-4"/>
+                </Button>
+            </div>
+        </div>
+    );
+}
+
 
 export default function SocialPage() {
   const [socialPosts, setSocialPosts] = useState(initialSocialPosts);
@@ -64,7 +143,7 @@ export default function SocialPage() {
   const handlePost = () => {
     if (!newPostContent.trim()) return;
 
-    const newPost = {
+    const newPost: SocialPost = {
       id: Date.now(),
       author: "Alice Johnson", // Assuming the current user is Alice
       avatarId: "avatar-1",
@@ -75,6 +154,8 @@ export default function SocialPage() {
       likes: 0,
       comments: 0,
       isLiked: false,
+      showComments: false,
+      commentsData: [],
     };
 
     setSocialPosts([newPost, ...socialPosts]);
@@ -97,13 +178,31 @@ export default function SocialPage() {
   };
 
   const handleComment = (postId: number) => {
-    // This is a placeholder for a real comment action.
-    // In a real app, this would open a comment modal or section.
     setSocialPosts(posts =>
       posts.map(post =>
-        post.id === postId ? { ...post, comments: post.comments + 1 } : post
+        post.id === postId ? { ...post, showComments: !post.showComments } : post
       )
     );
+  };
+
+  const handlePostComment = (postId: number, commentText: string) => {
+    const newComment: Comment = {
+        id: Date.now(),
+        author: "Alice Johnson",
+        avatarId: 'avatar-1',
+        content: commentText,
+    };
+
+    setSocialPosts(posts => posts.map(post => {
+        if (post.id === postId) {
+            return {
+                ...post,
+                comments: post.comments + 1,
+                commentsData: [...post.commentsData, newComment],
+            };
+        }
+        return post;
+    }));
   };
 
 
@@ -189,6 +288,7 @@ export default function SocialPage() {
                     <MessageSquare className="w-5 h-5" /> {post.comments}
                   </Button>
                 </CardFooter>
+                 {post.showComments && <CommentSection post={post} onPostComment={handlePostComment} />}
               </Card>
             )})}
           </div>
