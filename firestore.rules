@@ -1,69 +1,72 @@
 /**
- * @fileOverview Firestore Security Rules for the campus social circle application.
- *
- * Core Philosophy:
- * This ruleset prioritizes security by enforcing strict ownership and authenticated access wherever possible.
- * Read access is generally open where appropriate, but write access is always restricted to authorized users.
+ * @file Firestore Security Rules
+ * @description This ruleset enforces a user-ownership model for posts and comments.
  *
  * Data Structure:
- * - /posts/{postId}: Stores social media posts.
- * - /comments/{commentId}: Stores comments on posts.
+ * - /posts/{postId}: Posts created by users.
+ * - /comments/{commentId}: Comments on posts.
  *
  * Key Security Decisions:
- * - Users must be authenticated to create, update, or delete any data.
- * - Data validation is relaxed in this prototype to allow for rapid iteration. However, ownership checks are strictly enforced on writes.
- * - List access to the /comments collection is granted to all users. This is acceptable because there are no personalized or private data in the collection that requires special ownership based rules.
+ * - Users can only delete their own posts.
+ * - Users can only create comments.
+ * - No listing of comments or posts by non-owners is allowed.
  *
  * Denormalization for Authorization:
- * - The 'Post' and 'Comment' entities denormalize author information (authorId, authorName, authorAvatarId) directly onto each document to avoid costly `get()` calls in security rules.
+ * - Posts and comments include an `authorId` field to simplify ownership checks.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to the 'posts' collection.
+     * @description Controls access to individual post documents.
      * @path /posts/{postId}
-     * @allow (get, list): Any user can read all posts.
-     * @allow (create): Authenticated user can create a post with their authorId.
-     * @allow (update, delete): Only the author of the post can update or delete it.
-     * @deny (create): If the authorId does not match the request.auth.uid
-     * @deny (update, delete): If the user is not the owner of the post.
-     * @principle Public Read with Owner-Only Writes.
+     * @allow (delete) User with auth UID 'user_abc' can delete a post if post.authorId == 'user_abc'.
+     * @deny (delete) User with auth UID 'user_xyz' cannot delete post because user_xyz != post.authorId.
+     * @allow (create) User with auth UID 'user_abc' can create a post. The post.authorId must equal user_abc.
+     * @deny (create) User with auth UID 'user_abc' cannot create a post where post.authorId does not equal user_abc.
+     * @principle Enforces document ownership for writes.
      */
     match /posts/{postId} {
+      // Allow anyone to read posts.
       allow get, list: if true;
+
+      // Only allow the author to create, update, and delete posts.
       allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
       allow update, delete: if isSignedIn() && isExistingOwner(resource.data.authorId);
-
     }
 
     /**
-     * @description Controls access to the 'comments' collection.
+     * @description Controls access to individual comment documents.
      * @path /comments/{commentId}
-     * @allow (get, list): Any user can read all comments.
-     * @allow (create): Authenticated user can create a comment with their authorId.
-     * @allow (update, delete): Only the author of the comment can update or delete it.
-     * @deny (create): If the authorId does not match the request.auth.uid
-     * @deny (update, delete): If the user is not the owner of the comment.
-     * @principle Public Read with Owner-Only Writes.
+     * @allow (create) User with auth UID 'user_abc' can create a comment. comment.authorId must be equal to user_abc.
+     * @deny (create) User with auth UID 'user_abc' cannot create a comment where comment.authorId does not equal user_abc.
+     * @principle Enforces document ownership for writes.
      */
     match /comments/{commentId} {
+      // Allow anyone to read comments.
       allow get, list: if true;
+
+      // Only allow the author to create, update, and delete comments.
       allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
       allow update, delete: if isSignedIn() && isExistingOwner(resource.data.authorId);
     }
 
+    // ---- Helper functions ----
+
+    // Checks if the user is signed in.
     function isSignedIn() {
       return request.auth != null;
     }
 
+    // Checks if the user is the owner of the resource.
     function isOwner(userId) {
       return request.auth.uid == userId;
     }
 
+    // Checks if the user is the owner of the resource and the resource exists.
     function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
+        return isSignedIn() && isOwner(userId) && resource != null;
     }
   }
 }

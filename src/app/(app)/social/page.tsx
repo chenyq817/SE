@@ -12,11 +12,23 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ThumbsUp, MessageSquare, MapPin, ImagePlus, X } from "lucide-react";
+import { ThumbsUp, MessageSquare, MapPin, ImagePlus, X, MoreHorizontal } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn } from '@/lib/utils';
-import { useCollection, useFirestore, useUser, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
-import { collection, query, where, orderBy, serverTimestamp, arrayUnion, arrayRemove, doc } from 'firebase/firestore';
+import { useCollection, useFirestore, useUser, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
+import { collection, query, orderBy, serverTimestamp, arrayUnion, arrayRemove, doc } from 'firebase/firestore';
 import type { WithId } from '@/firebase';
 
 // Types matching Firestore data
@@ -35,10 +47,12 @@ type Post = {
 function SocialPostCard({ post }: { post: WithId<Post> }) {
     const firestore = useFirestore();
     const { user } = useUser();
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
     const authorAvatar = PlaceHolderImages.find(img => img.id === post.authorAvatarId);
     
     const isLiked = user ? post.likeIds.includes(user.uid) : false;
+    const isAuthor = user ? user.uid === post.authorId : false;
 
     const handleLike = () => {
         if (!user || !firestore) return;
@@ -47,6 +61,13 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
             likeIds: isLiked ? arrayRemove(user.uid) : arrayUnion(user.uid)
         });
     };
+
+    const handleDelete = () => {
+      if (!firestore) return;
+      const postRef = doc(firestore, 'posts', post.id);
+      deleteDocumentNonBlocking(postRef);
+      setIsDeleteDialogOpen(false);
+    }
     
     const formatTimestamp = (timestamp: any) => {
       if (!timestamp) return 'Just now';
@@ -88,6 +109,35 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
                         </div>
                     )}
                 </div>
+                {isAuthor && (
+                   <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                      <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                  <span className="sr-only">More options</span>
+                              </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                              <AlertDialogTrigger asChild>
+                                <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+                              </AlertDialogTrigger>
+                          </DropdownMenuContent>
+                      </DropdownMenu>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete your post.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                   </AlertDialog>
+                )}
             </CardHeader>
             <CardContent>
                 <p className="mb-4">{post.content}</p>
