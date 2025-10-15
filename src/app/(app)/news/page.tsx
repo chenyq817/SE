@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import { Header } from "@/components/layout/header";
 import {
   Card,
@@ -16,85 +17,39 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { newsItems } from '@/lib/news-data';
 import { ArrowRight } from 'lucide-react';
-
-const newsItems = [
-  {
-    id: 1,
-    title: "University Announces New AI Research Center",
-    category: "Academics",
-    excerpt: "The new center will focus on machine learning and data science, fostering collaboration between departments.",
-    imageId: "news-1",
-    date: "2024-10-26",
-  },
-  {
-    id: 2,
-    title: "Basketball Team Wins Championship",
-    category: "Sports",
-    excerpt: "A thrilling final match concludes with a victory for the home team, securing the national title.",
-    imageId: "news-4",
-    date: "2024-10-25",
-  },
-  {
-    id: 3,
-    title: "Student Art Exhibition Opens at Gallery",
-    category: "Arts & Culture",
-    excerpt: "Featuring works from over 50 student artists, the exhibition explores themes of identity and modernity.",
-    imageId: "news-2",
-    date: "2024-10-24",
-  },
-  {
-    id: 4,
-    title: "Career Fair Connects Students with Top Employers",
-    category: "Campus Life",
-    excerpt: "Hundreds of students attended the annual career fair, with major tech and finance companies recruiting.",
-    imageId: "news-3",
-    date: "2024-10-23",
-  },
-   {
-    id: 5,
-    title: "Volunteering Initiative for Local Community Launched",
-    category: "Campus Life",
-    excerpt: "A new student-led program aims to provide support and resources to local shelters and community centers.",
-    imageId: "news-1",
-    date: "2024-10-22",
-  },
-  {
-    id: 6,
-    title: "Debate Club Hosts Panel on Modern Politics",
-    category: "Academics",
-    excerpt: "Experts and students engaged in a lively discussion on the future of global political landscapes.",
-    imageId: "news-2",
-    date: "2024-10-21",
-  },
-];
 
 const NewsCard = ({ item }: { item: typeof newsItems[0] }) => {
   const image = PlaceHolderImages.find(img => img.id === item.imageId);
   return (
     <Card className="flex flex-col overflow-hidden hover:shadow-xl transition-shadow duration-300">
-      {image && (
-        <div className="relative aspect-video w-full">
-          <Image
-            src={image.imageUrl}
-            alt={image.description}
-            fill
-            className="object-cover"
-            data-ai-hint={image.imageHint}
-          />
-        </div>
-      )}
-      <CardHeader>
-        <CardTitle className="font-headline text-lg">{item.title}</CardTitle>
-        <Badge variant="secondary" className="w-fit">{item.category}</Badge>
-      </CardHeader>
-      <CardContent className="flex-grow">
-        <p className="text-muted-foreground">{item.excerpt}</p>
-      </CardContent>
-      <CardFooter className="flex justify-between items-center">
-        <p className="text-sm text-muted-foreground">{item.date}</p>
-        <Button variant="ghost" size="sm">Read More <ArrowRight className="ml-2 w-4 h-4" /></Button>
-      </CardFooter>
+      <Link href={`/news/${item.id}`} className="flex flex-col flex-grow">
+        {image && (
+          <div className="relative aspect-video w-full">
+            <Image
+              src={image.imageUrl}
+              alt={image.description}
+              fill
+              className="object-cover"
+              data-ai-hint={image.imageHint}
+            />
+          </div>
+        )}
+        <CardHeader>
+          <CardTitle className="font-headline text-lg">{item.title}</CardTitle>
+          <Badge variant="secondary" className="w-fit">{item.category}</Badge>
+        </CardHeader>
+        <CardContent className="flex-grow">
+          <p className="text-muted-foreground line-clamp-2">{item.excerpt}</p>
+        </CardContent>
+        <CardFooter className="flex justify-between items-center mt-auto">
+          <p className="text-sm text-muted-foreground">{item.date}</p>
+          <div className="flex items-center text-primary font-semibold text-sm">
+            Read More <ArrowRight className="ml-2 w-4 h-4" />
+          </div>
+        </CardFooter>
+      </Link>
     </Card>
   );
 };
