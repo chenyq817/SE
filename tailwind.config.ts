@@ -10,8 +10,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['Open Sans', 'sans-serif'],
-        headline: ['Roboto', 'sans-serif'],
+        body: ['var(--font-open-sans)'],
+        headline: ['var(--font-roboto)'],
         code: ['monospace'],
       },
       colors: {
