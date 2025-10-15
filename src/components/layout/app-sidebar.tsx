@@ -55,14 +55,11 @@ export function AppSidebar() {
             <SidebarMenuItem key={item.href}>
               <Link href={item.href} passHref>
                 <SidebarMenuButton
-                  asChild
                   isActive={pathname === item.href}
                   tooltip={item.label}
                 >
-                  <div className="flex items-center gap-2">
-                    <item.icon />
-                    <span>{item.label}</span>
-                  </div>
+                  <item.icon />
+                  <span>{item.label}</span>
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
@@ -73,14 +70,11 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <Link href={adminMenuItem.href} passHref>
               <SidebarMenuButton
-                asChild
                 isActive={pathname === adminMenuItem.href}
                 tooltip={adminMenuItem.label}
               >
-                 <div className="flex items-center gap-2">
                   <adminMenuItem.icon />
                   <span>{adminMenuItem.label}</span>
-                 </div>
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>
@@ -88,7 +82,7 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter>
         <Link href="#" passHref>
-          <SidebarMenuButton asChild tooltip="Profile">
+          <SidebarMenuButton tooltip="Profile">
              <div className="flex items-center gap-2">
                 <UserCircle />
                 <span>User Profile</span>
