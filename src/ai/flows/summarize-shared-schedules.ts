@@ -9,8 +9,8 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {googleAI} from '@genkit-ai/google-genai';
 import {z} from 'genkit';
+import {googleAI} from '@genkit-ai/google-genai';
 
 const ScheduleEntrySchema = z.object({
   day: z.string().describe('The day of the week (e.g., Monday, Tuesday).'),
@@ -66,7 +66,7 @@ const summarizeSharedSchedulesPrompt = ai.definePrompt({
   name: 'summarizeSharedSchedulesPrompt',
   input: {schema: SummarizeSharedSchedulesInputSchema},
   output: {schema: SummarizeSharedSchedulesOutputSchema},
-  model: googleAI.model('gemini-1.5-flash-latest'),
+  model: googleAI.model('gemini-1.5-flash'),
   prompt: `You are a helpful assistant designed to summarize the overlapping schedules of multiple users.
 
 Given the following user schedules, identify and summarize any shared time slots where users are available at the same time. For each shared time slot, provide the day, start time, end time, the list of users sharing the time, and a brief summary of the activities they are engaged in during that time.
