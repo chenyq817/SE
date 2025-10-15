@@ -76,6 +76,23 @@ export default function SocialPage() {
     setNewPostContent('');
   };
 
+  const handleLike = (postId: number) => {
+    setSocialPosts(posts =>
+      posts.map(post =>
+        post.id === postId ? { ...post, likes: post.likes + 1 } : post
+      )
+    );
+  };
+
+  const handleComment = (postId: number) => {
+    setSocialPosts(posts =>
+      posts.map(post =>
+        post.id === postId ? { ...post, comments: post.comments + 1 } : post
+      )
+    );
+  };
+
+
   return (
     <div className="flex flex-col h-full">
       <Header title="Campus Social Circle" />
@@ -144,10 +161,10 @@ export default function SocialPage() {
                   )}
                 </CardContent>
                 <CardFooter className="flex justify-start gap-4 border-t pt-4">
-                  <Button variant="ghost" className="flex items-center gap-2 text-muted-foreground">
+                  <Button variant="ghost" className="flex items-center gap-2 text-muted-foreground" onClick={() => handleLike(post.id)}>
                     <ThumbsUp className="w-5 h-5" /> {post.likes}
                   </Button>
-                  <Button variant="ghost" className="flex items-center gap-2 text-muted-foreground">
+                  <Button variant="ghost" className="flex items-center gap-2 text-muted-foreground" onClick={() => handleComment(post.id)}>
                     <MessageSquare className="w-5 h-5" /> {post.comments}
                   </Button>
                 </CardFooter>
