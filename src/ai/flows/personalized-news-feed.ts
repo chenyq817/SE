@@ -9,6 +9,7 @@
  */
 
 import {ai} from '@/ai/genkit';
+import {googleAI} from '@genkit-ai/google-genai';
 import {z} from 'genkit';
 
 const PersonalizedNewsFeedInputSchema = z.object({
@@ -44,6 +45,7 @@ const prompt = ai.definePrompt({
   name: 'personalizedNewsFeedPrompt',
   input: {schema: PersonalizedNewsFeedInputSchema},
   output: {schema: PersonalizedNewsFeedOutputSchema},
+  model: googleAI.model('gemini-1.5-flash-latest'),
   prompt: `You are a news personalization expert. Given a user's role ({{{userRole}}}) and interests ({{{interests}}}), and a list of news items, filter and prioritize the news items based on their relevance to the user.
 
 News Items:
