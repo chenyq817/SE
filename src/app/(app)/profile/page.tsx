@@ -14,15 +14,16 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { useUser, useFirestore, useDoc, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
+import { useUser, useFirestore, useDoc, useMemoFirebase, updateDocumentNonBlocking, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { doc, writeBatch, collection, query, where, getDocs } from 'firebase/firestore';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, User as UserIcon } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { updateProfile } from 'firebase/auth';
 
 const profileSchema = z.object({
-  displayName: z.string(), // Keep for data fetching, but will be read-only
+  displayName: z.string().min(3, { message: 'Display name must be at least 3 characters.' }),
   bio: z.string().max(160, { message: 'Bio must be 160 characters or less.' }).optional(),
   age: z.coerce.number().min(0).optional(),
   gender: z.string().optional(),
@@ -116,52 +117,80 @@ export default function ProfilePage() {
   const onSubmit = async (data: ProfileFormValues) => {
     if (!userProfileRef || !firestore || !user) return;
     setIsSaving(true);
-    
-    // Create a mutable copy of the form data to be sent to Firestore
+
     const updatedData: Partial<ProfileFormValues> = { ...data };
     
-    // 1. Remove the read-only displayName
-    delete updatedData.displayName;
-
-    // 2. Clean up avatar fields: If imageBase64 is empty, remove it from the update payload.
     if (updatedData.imageBase64 === '') {
       delete updatedData.imageBase64;
     }
-    
-    // Use the non-blocking update function with contextual error handling
+
+    if (user.displayName !== data.displayName) {
+        await updateProfile(user, { displayName: data.displayName });
+    }
+
     updateDocumentNonBlocking(userProfileRef, updatedData);
 
-    // --- LOGIC TO UPDATE POSTS ---
-    // Check if the avatar was actually changed
+    const nameChanged = data.displayName !== userProfile?.displayName;
     const avatarChanged = data.avatarId !== userProfile?.avatarId || data.imageBase64 !== userProfile?.imageBase64;
-    if (avatarChanged) {
+
+    if (nameChanged || avatarChanged) {
         const postsRef = collection(firestore, 'posts');
-        const q = query(postsRef, where('authorId', '==', user.uid));
-        
-        // This part can remain async as it's a subsequent operation
+        const commentsRef = collection(firestore, 'wallMessages');
+
+        const userPostsQuery = query(postsRef, where('authorId', '==', user.uid));
+        const userCommentsQuery = query(commentsRef, where('authorId', '==', user.uid));
+
         try {
-            const querySnapshot = await getDocs(q);
-            if (!querySnapshot.empty) {
-                const batch = writeBatch(firestore);
-                querySnapshot.forEach(postDoc => {
+            const [postsSnapshot, commentsSnapshot] = await Promise.all([
+                getDocs(userPostsQuery),
+                getDocs(userCommentsQuery),
+            ]);
+            
+            const batch = writeBatch(firestore);
+
+            if (!postsSnapshot.empty) {
+                postsSnapshot.forEach(postDoc => {
                     const postRef = doc(firestore, 'posts', postDoc.id);
-                    batch.update(postRef, { 
-                        authorAvatarId: data.avatarId,
-                        authorImageBase64: data.imageBase64
-                    });
+                    const updatePayload: any = {};
+                    if(nameChanged) updatePayload.authorName = data.displayName;
+                    if(avatarChanged) {
+                         updatePayload.authorAvatarId = data.avatarId;
+                         updatePayload.authorImageBase64 = data.imageBase64;
+                    }
+                    batch.update(postRef, updatePayload);
                 });
-                await batch.commit();
+            }
+
+            if (!commentsSnapshot.empty) {
+                commentsSnapshot.forEach(commentDoc => {
+                    const commentRef = doc(firestore, 'wallMessages', commentDoc.id);
+                    if(nameChanged) {
+                        batch.update(commentRef, { authorName: data.displayName });
+                    }
+                });
+            }
+
+            if (!postsSnapshot.empty || !commentsSnapshot.empty) {
+                 batch.commit().catch(error => {
+                    const permissionError = new FirestorePermissionError({
+                      path: 'batch update',
+                      operation: 'update',
+                      requestResourceData: data,
+                    });
+                    errorEmitter.emit('permission-error', permissionError);
+                });
             }
         } catch (error) {
-             console.error("Error updating posts in batch: ", error);
-             // Optionally notify user that post avatars might not be updated
-             toast({ variant: 'destructive', title: 'Error updating posts', description: 'Your profile was saved, but we failed to update avatars on your old posts.' });
+            const permissionError = new FirestorePermissionError({
+                path: 'batch read',
+                operation: 'list',
+            });
+            errorEmitter.emit('permission-error', permissionError);
         }
     }
-    // --- END OF LOGIC ---
 
     toast({ title: 'Profile update initiated!' });
-    form.reset(data); // Optimistically reset the form
+    form.reset(data);
     setIsSaving(false);
   };
   
@@ -228,14 +257,15 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
                 <CardTitle>Personal Information</CardTitle>
-                <CardDescription>Update your details below. Your display name cannot be changed.</CardDescription>
+                <CardDescription>Update your details below.</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                         <Label htmlFor="displayName">Display Name</Label>
-                        <Input id="displayName" {...form.register('displayName')} disabled />
+                        <Input id="displayName" {...form.register('displayName')} />
+                        {form.formState.errors.displayName && <p className="text-sm text-destructive">{form.formState.errors.displayName.message}</p>}
                     </div>
                      <div className="space-y-2">
                         <Label htmlFor="email">Email</Label>
@@ -290,3 +320,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+    
