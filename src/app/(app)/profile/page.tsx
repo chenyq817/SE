@@ -21,12 +21,11 @@ import { Loader2, User as UserIcon } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const profileSchema = z.object({
-  displayName: z.string().min(3, { message: 'Display name must be at least 3 characters.' }),
+  displayName: z.string(), // Keep for data fetching, but will be read-only
   bio: z.string().max(160, { message: 'Bio must be 160 characters or less.' }).optional(),
   age: z.coerce.number().min(0).optional(),
   gender: z.string().optional(),
   address: z.string().optional(),
-  // Add avatar fields to the schema for unified form handling
   avatarId: z.string().optional(),
   imageBase64: z.string().optional(),
 });
@@ -36,7 +35,7 @@ type ProfileFormValues = z.infer<typeof profileSchema>;
 type UserProfile = {
   displayName: string;
   avatarId: string;
-  avatarUrl?: string; // Keep for backwards compatibility if needed, but prefer imageBase64
+  avatarUrl?: string; 
   imageBase64?: string;
   bio?: string;
   age?: number;
@@ -73,7 +72,6 @@ export default function ProfilePage() {
     },
   });
 
-  // Effect to reset form with data fetched from Firestore
   useEffect(() => {
     if (userProfile) {
       form.reset({
@@ -88,17 +86,15 @@ export default function ProfilePage() {
     }
   }, [userProfile, form]);
   
-  // Update form state when a default avatar is selected
   const handleAvatarSelect = (avatarId: string) => {
     form.setValue('avatarId', avatarId);
-    form.setValue('imageBase64', ''); // Clear custom image
+    form.setValue('imageBase64', ''); 
   };
   
-  // Update form state when a new image is uploaded
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.size > 1048487) { // 1MB limit
+      if (file.size > 1048487) {
         toast({
           variant: 'destructive',
           title: 'Image is too large',
@@ -110,25 +106,25 @@ export default function ProfilePage() {
       reader.onloadend = () => {
         const base64String = reader.result as string;
         form.setValue('imageBase64', base64String);
-        form.setValue('avatarId', ''); // Clear default avatar selection
+        form.setValue('avatarId', ''); 
       };
       reader.readAsDataURL(file);
     }
   };
 
-  // Unified submit logic
   const onSubmit = async (data: ProfileFormValues) => {
     if (!userProfileRef) return;
     setIsSaving(true);
     
-    // Data from the form is now the single source of truth
     const updatedData: Partial<UserProfile> = {
         ...data,
-        avatarUrl: null, // Deprecate and clear avatarUrl
+        avatarUrl: undefined,
     };
+    // Ensure displayName is not part of the update
+    delete (updatedData as any).displayName;
+
 
     try {
-      // Use the complete data object from the form
       updateDocumentNonBlocking(userProfileRef, updatedData);
       toast({ title: 'Profile updated successfully!' });
     } catch (error: any) {
@@ -148,7 +144,6 @@ export default function ProfilePage() {
     );
   }
 
-  // Watch form values to determine the avatar to display
   const watchedAvatarId = form.watch('avatarId');
   const watchedImageBase64 = form.watch('imageBase64');
   
@@ -202,15 +197,14 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
                 <CardTitle>Personal Information</CardTitle>
-                <CardDescription>Update your details below.</CardDescription>
+                <CardDescription>Update your details below. Your display name cannot be changed.</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                         <Label htmlFor="displayName">Display Name</Label>
-                        <Input id="displayName" {...form.register('displayName')} />
-                        {form.formState.errors.displayName && <p className="text-sm text-destructive">{form.formState.errors.displayName.message}</p>}
+                        <Input id="displayName" {...form.register('displayName')} disabled />
                     </div>
                      <div className="space-y-2">
                         <Label htmlFor="email">Email</Label>

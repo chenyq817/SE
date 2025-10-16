@@ -30,12 +30,19 @@ import { useAuth, useUser, useFirestore, setDocumentNonBlocking } from '@/fireba
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { doc } from 'firebase/firestore';
 
-const formSchema = z.object({
+const signInSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
 });
 
-type FormValues = z.infer<typeof formSchema>;
+const signUpSchema = z.object({
+  displayName: z.string().min(3, { message: 'Display name must be at least 3 characters.' }),
+  email: z.string().email({ message: 'Invalid email address.' }),
+  password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
+});
+
+type SignInFormValues = z.infer<typeof signInSchema>;
+type SignUpFormValues = z.infer<typeof signUpSchema>;
 
 const defaultAvatars = ['avatar-1', 'avatar-2', 'avatar-3', 'avatar-4'];
 
@@ -54,51 +61,31 @@ export default function LoginPage() {
     }
   }, [user, isUserLoading, router]);
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
+  const signInForm = useForm<SignInFormValues>({
+    resolver: zodResolver(signInSchema),
+    defaultValues: { email: '', password: '' },
   });
 
-  const onSubmit = async (values: FormValues) => {
+  const signUpForm = useForm<SignUpFormValues>({
+    resolver: zodResolver(signUpSchema),
+    defaultValues: { displayName: '', email: '', password: '' },
+  });
+
+
+  const handleSignIn = async (values: SignInFormValues) => {
     setIsLoading(true);
-    if (!auth || !firestore) {
+    if (!auth) {
         toast({
             variant: 'destructive',
             title: 'Firebase not initialized',
-            description: 'Please try again later.',
         });
         setIsLoading(false);
         return;
     }
     try {
-      if (activeTab === 'signin') {
-        await signInWithEmailAndPassword(auth, values.email, values.password);
-        toast({ title: 'Sign in successful!' });
-        router.push('/');
-      } else {
-        const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
-        const newUser = userCredential.user;
-        
-        const userProfileRef = doc(firestore, 'users', newUser.uid);
-        const randomAvatarId = defaultAvatars[Math.floor(Math.random() * defaultAvatars.length)];
-        
-        await setDocumentNonBlocking(userProfileRef, {
-          displayName: values.email.split('@')[0],
-          avatarId: randomAvatarId,
-          bio: '',
-          age: null,
-          gender: 'Prefer not to say',
-          address: '',
-          avatarUrl: null,
-        }, {});
-
-        toast({ title: 'Sign up successful! Please sign in.' });
-        setActiveTab('signin'); 
-        form.reset();
-      }
+      await signInWithEmailAndPassword(auth, values.email, values.password);
+      toast({ title: 'Sign in successful!' });
+      router.push('/');
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -109,6 +96,50 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
+
+  const handleSignUp = async (values: SignUpFormValues) => {
+    setIsLoading(true);
+    if (!auth || !firestore) {
+        toast({
+            variant: 'destructive',
+            title: 'Firebase not initialized',
+        });
+        setIsLoading(false);
+        return;
+    }
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+        const newUser = userCredential.user;
+        
+        const userProfileRef = doc(firestore, 'users', newUser.uid);
+        const randomAvatarId = defaultAvatars[Math.floor(Math.random() * defaultAvatars.length)];
+        
+        setDocumentNonBlocking(userProfileRef, {
+          displayName: values.displayName,
+          avatarId: randomAvatarId,
+          bio: '',
+          age: null,
+          gender: 'Prefer not to say',
+          address: '',
+          avatarUrl: null,
+        }, { merge: true });
+
+        toast({ title: 'Sign up successful! Please sign in.' });
+        setActiveTab('signin'); 
+        signUpForm.reset();
+        signInForm.reset();
+
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Sign Up Failed',
+        description: error.message || 'An unknown error occurred.',
+      });
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
   
   if (isUserLoading || user) {
     return (
@@ -139,7 +170,40 @@ export default function LoginPage() {
               <CardDescription>Enter your credentials to access your account.</CardDescription>
             </CardHeader>
             <CardContent>
-              <AuthForm form={form} onSubmit={onSubmit} isLoading={isLoading} buttonText="Sign In" />
+              <Form {...signInForm}>
+                <form onSubmit={signInForm.handleSubmit(handleSignIn)} className="space-y-4">
+                  <FormField
+                      control={signInForm.control}
+                      name="email"
+                      render={({ field }) => (
+                      <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                          <Input placeholder="name@example.com" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                      </FormItem>
+                      )}
+                  />
+                  <FormField
+                      control={signInForm.control}
+                      name="password"
+                      render={({ field }) => (
+                      <FormItem>
+                          <FormLabel>Password</FormLabel>
+                          <FormControl>
+                          <Input type="password" placeholder="••••••••" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                      </FormItem>
+                      )}
+                  />
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                      {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Sign In
+                  </Button>
+                </form>
+              </Form>
             </CardContent>
           </Card>
         </TabsContent>
@@ -150,7 +214,53 @@ export default function LoginPage() {
               <CardDescription>Create a new account to get started.</CardDescription>
             </CardHeader>
             <CardContent>
-              <AuthForm form={form} onSubmit={onSubmit} isLoading={isLoading} buttonText="Sign Up" />
+              <Form {...signUpForm}>
+                <form onSubmit={signUpForm.handleSubmit(handleSignUp)} className="space-y-4">
+                  <FormField
+                      control={signUpForm.control}
+                      name="displayName"
+                      render={({ field }) => (
+                      <FormItem>
+                          <FormLabel>Display Name</FormLabel>
+                          <FormControl>
+                          <Input placeholder="Your Name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                      </FormItem>
+                      )}
+                  />
+                  <FormField
+                      control={signUpForm.control}
+                      name="email"
+                      render={({ field }) => (
+                      <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                          <Input placeholder="name@example.com" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                      </FormItem>
+                      )}
+                  />
+                  <FormField
+                      control={signUpForm.control}
+                      name="password"
+                      render={({ field }) => (
+                      <FormItem>
+                          <FormLabel>Password</FormLabel>
+                          <FormControl>
+                          <Input type="password" placeholder="••••••••" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                      </FormItem>
+                      )}
+                  />
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                      {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Sign Up
+                  </Button>
+                </form>
+              </Form>
             </CardContent>
           </Card>
         </TabsContent>
@@ -158,52 +268,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-
-interface AuthFormProps {
-    form: ReturnType<typeof useForm<FormValues>>;
-    onSubmit: (values: FormValues) => void;
-    isLoading: boolean;
-    buttonText: string;
-}
-
-function AuthForm({ form, onSubmit, isLoading, buttonText }: AuthFormProps) {
-    return (
-        <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                    <Input placeholder="name@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-                )}
-            />
-            <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-                )}
-            />
-            <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {buttonText}
-            </Button>
-            </form>
-      </Form>
-    )
-}
-
-    
