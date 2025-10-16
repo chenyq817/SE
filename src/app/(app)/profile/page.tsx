@@ -117,8 +117,16 @@ export default function ProfilePage() {
     if (!userProfileRef || !firestore || !user) return;
     setIsSaving(true);
     
+    // Create a mutable copy of the form data to be sent to Firestore
     const updatedData: Partial<ProfileFormValues> = { ...data };
+    
+    // 1. Remove the read-only displayName
     delete updatedData.displayName;
+
+    // 2. Clean up avatar fields: If imageBase64 is empty, remove it from the update payload.
+    if (updatedData.imageBase64 === '') {
+      delete updatedData.imageBase64;
+    }
     
     // Use the non-blocking update function with contextual error handling
     updateDocumentNonBlocking(userProfileRef, updatedData);
@@ -282,4 +290,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
