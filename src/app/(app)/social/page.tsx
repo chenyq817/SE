@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect } from "react";
@@ -13,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { UserPlus, Search, Loader2, MessageSquare, UserX, Check, X } from "lucide-react";
-import { useFirestore, useUser, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking, useCollection } from "@/firebase";
+import { useFirestore, useUser, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking, useCollection, useDoc } from "@/firebase";
 import { collection, query, where, getDocs, doc, writeBatch, arrayUnion, arrayRemove, serverTimestamp, orderBy } from "firebase/firestore";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
@@ -235,25 +236,25 @@ export default function SocialPage() {
     if (!firestore || !user) return null;
     return doc(firestore, "users", user.uid);
   }, [firestore, user]);
-  const { data: currentUserProfile } = useCollection<UserProfile>(userProfileRef as any);
+  const { data: currentUserProfile } = useDoc<UserProfile>(userProfileRef);
 
   // Friend Requests state
   const friendRequestsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(collection(firestore, "friendRequests"), where("toId", "==", user.uid), where("status", "==", "pending"));
   }, [firestore, user]);
-  const { data: friendRequests, refetch: refetchRequests } = useCollection<FriendRequest>(friendRequestsQuery as any);
+  const { data: friendRequests, refetch: refetchRequests } = useCollection<FriendRequest>(friendRequestsQuery);
 
   // Friends list state
   const [friends, setFriends] = useState<WithId<UserProfile>[]>([]);
   useEffect(() => {
-    if (!firestore || !currentUserProfile?.[0]?.friendIds || currentUserProfile[0].friendIds.length === 0) {
+    if (!firestore || !currentUserProfile?.friendIds || currentUserProfile.friendIds.length === 0) {
         setFriends([]);
         return;
     }
     const fetchFriends = async () => {
         const usersRef = collection(firestore, "users");
-        const friendIds = currentUserProfile[0].friendIds;
+        const friendIds = currentUserProfile.friendIds;
         // Firestore 'in' query is limited to 10 items. For a real app, paginate or restructure data.
         const q = query(usersRef, where("__name__", "in", friendIds.slice(0, 10)));
         const snapshot = await getDocs(q);
@@ -294,13 +295,13 @@ export default function SocialPage() {
   };
 
   const handleAddFriend = (targetUserId: string) => {
-      if (!firestore || !user || !currentUserProfile?.[0]) return;
+      if (!firestore || !user || !currentUserProfile) return;
 
       const request: Omit<FriendRequest, 'createdAt'> = {
           fromId: user.uid,
-          fromName: currentUserProfile[0].displayName,
-          fromAvatarId: currentUserProfile[0].avatarId,
-          fromImageBase64: currentUserProfile[0].imageBase64,
+          fromName: currentUserProfile.displayName,
+          fromAvatarId: currentUserProfile.avatarId,
+          fromImageBase64: currentUserProfile.imageBase64,
           toId: targetUserId,
           status: 'pending',
       }
@@ -441,3 +442,4 @@ export default function SocialPage() {
     </div>
   );
 }
+
