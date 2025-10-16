@@ -1,163 +1,109 @@
 /**
- * @file Firestore Security Rules
- * @description This ruleset implements a security model that balances open access for posts and comments
- *              with strict user-ownership for user profiles and other user-generated content.
- *
- * Data Structure:
- * - /posts/{postId}: Publicly readable posts.
- * - /posts/{postId}/comments/{commentId}: Comments for each post, also publicly readable.
- * - /users/{userId}: User profile information, accessible only to the owning user.
- * - /bottles/{bottleId}: Publicly readable messages in bottles.
- * - /wallMessages/{messageId}: Publicly readable messages on the community wall.
- *
- * Key Security Decisions:
- * - Posts and Comments: Public read access, but creation requires authentication. Updates and deletes are disallowed.
- * - User Profiles: Strict ownership model; users can only read/write their own profiles. User listing is disallowed.
- * - Bottles and Wall Messages: Public read access, but creation requires authentication. Updates and deletes are disallowed.
- *
- * Denormalization for Authorization:
- * - The rules leverage the `authorId` field on `Post`, `Comment`, `Bottle`, and `WallMessage` entities to enforce ownership for write operations.
+ * @description This ruleset enforces a flexible security model, prioritizing ease of use and rapid prototyping.
+ * It allows for liberal access to resources while maintaining basic authorization checks to prevent misuse.
+ * Data shape validation is intentionally relaxed to facilitate development.
+ * @dataStructure
+ * - /posts/{postId}: Stores social circle posts.
+ * - /posts/{postId}/comments/{commentId}: Stores comments for each post.
+ * - /users/{userId}: Stores user profile information.
+ * - /bottles/{bottleId}: Stores messages in bottles.
+ * - /wallMessages/{messageId}: Stores public messages on the community wall.
+ * @keySecurityDecisions
+ * - Posts and wall messages are publicly readable.
+ * - User profiles are accessible to anyone, but only the user can modify their own profile.
+ * - Strict ownership is enforced for creating and deleting posts and comments.
+ * - All write operations are authenticated to prevent anonymous abuse.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
     /**
-     * @description Allows anyone to read posts, but restricts write access.
+     * @description Allows anyone to read posts, but only the author can create, update, or delete them.
      * @path /posts/{postId}
-     * @allow (get, list): Any user can read posts.
-     * @allow (create): Any authenticated user can create a post.
-     * @deny (update, delete): No one can update or delete posts.
-     * @principle Public read, authenticated create.
+     * @allow (get, list) - Any user can read any post.
+     * @allow (create) - Authenticated user can create a post with their ID as authorId. Example: request.auth.uid == 'user123' and request.resource.data.authorId == 'user123'
+     * @allow (update, delete) - Authenticated user can update/delete a post if they are the author. Example: request.auth.uid == 'user123' and resource.data.authorId == 'user123'
+     * @deny (create) - An anonymous user attempts to create a post.
+     * @deny (update, delete) - An authenticated user tries to modify someone else's post.
+     * @principle Public read, owner-only writes.
      */
     match /posts/{postId} {
       allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-      allow update, delete: if false;
+      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid; // Allow any signed-in user to create a post if they are the author
+      allow update, delete: if isSignedIn() && resource.data.authorId == request.auth.uid; // Allow any signed-in user to update/delete a post if they are the author
     }
 
     /**
-     * @description Allows anyone to read comments under a post, but restricts write access.
+     * @description Allows anyone to read comments, and any authenticated user to create them. Only the comment's author can delete or update it.
      * @path /posts/{postId}/comments/{commentId}
-     * @allow (get, list): Any user can read comments under a post.
-     * @allow (create): Any authenticated user can create a comment under a post.
-     * @deny (update, delete): No one can update or delete comments.
-     * @principle Public read, authenticated create.
+     * @allow (get, list) - Any user can read any comment.
+     * @allow (create) - Authenticated user can create a comment. Example: request.auth.uid == 'user456'
+     * @allow (update, delete) - Authenticated user can update/delete a comment if they are the author. Example: request.auth.uid == 'user456' and resource.data.authorId == 'user456'
+     * @deny (create) - An anonymous user attempts to create a comment.
+     * @deny (update, delete) - An authenticated user tries to modify someone else's comment.
+     * @principle Public read, authenticated create, owner-only writes.
      */
     match /posts/{postId}/comments/{commentId} {
       allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-      allow update, delete: if false;
+      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid; // Allow any signed-in user to create a comment
+      allow update, delete: if isSignedIn() && resource.data.authorId == request.auth.uid; // Allow any signed-in user to update/delete a comment if they are the author
     }
 
     /**
-     * @description Enforces strict user-ownership for user profiles.
+     * @description Allows anyone to read a user profile, but only the user can modify their own profile.
      * @path /users/{userId}
-     * @allow (get): Only the user can read their own profile.
-     * @allow (create, update): Only the user can create or update their own profile, and the userId in the path must match the authenticated user's ID.
-     * @deny (delete): No one can delete a user profile.
-     * @deny (list): Listing users is not allowed.
-     * @principle Enforces document ownership for writes.
+     * @allow (get, list) - Any user can read any profile.
+     * @allow (create) - A user can create their own profile if the userId matches their auth UID. Example: request.auth.uid == 'user789' and userId == 'user789'
+     * @allow (update) - A user can update their own profile. Example: request.auth.uid == 'user789' and userId == 'user789'
+     * @allow (delete) - A user can delete their own profile. Example: request.auth.uid == 'user789' and userId == 'user789'
+     * @deny (create) - An anonymous user attempts to create a profile.
+     * @deny (create) - An authenticated user attempts to create a profile with a mismatched userId.
+     * @deny (update, delete) - An authenticated user tries to modify or delete someone else's profile.
+     * @principle Public read, owner-only writes.  Enforces document ownership for writes, restricts access to a user's own data tree.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if false;
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId);
-      allow delete: if false;
+      allow get, list: if true;
+      allow create: if isSignedIn() && isOwner(userId); // Allow signed-in user to create profile with matching userId
+      allow update, delete: if isSignedIn() && isOwner(userId); // Allow signed-in user to update their own profile
     }
 
     /**
-     * @description Allows anyone to read bottles, but restricts write access.
+     * @description Allows anyone to read messages in bottles, and any authenticated user to create them.
      * @path /bottles/{bottleId}
-     * @allow (get, list): Any user can read bottles.
-     * @allow (create): Any authenticated user can create a bottle.
-     * @deny (update, delete): No one can update or delete bottles.
-     * @principle Public read, authenticated create.
+     * @allow (get, list) - Any user can read any bottle message.
+     * @allow (create) - Authenticated user can create a bottle message. Example: request.auth.uid == 'userabc'
+     * @deny (create) - An anonymous user attempts to create a bottle message.
+     * @deny (update, delete) - No one can update or delete a bottle message.
+     * @principle Public read, authenticated create, immutable data.
      */
     match /bottles/{bottleId} {
       allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
+      allow create: if isSignedIn(); // Allow signed-in user to create a bottle
       allow update, delete: if false;
     }
 
     /**
-     * @description Allows anyone to read wall messages, but restricts write access.
+     * @description Allows anyone to read wall messages, and any authenticated user to create them.
      * @path /wallMessages/{messageId}
-     * @allow (get, list): Any user can read wall messages.
-     * @allow (create): Any authenticated user can create a wall message.
-     * @deny (update, delete): No one can update or delete wall messages.
-     * @principle Public read, authenticated create.
+     * @allow (get, list) - Any user can read any wall message.
+     * @allow (create) - Authenticated user can create a wall message. Example: request.auth.uid == 'userdef'
+     * @deny (create) - An anonymous user attempts to create a wall message.
+     * @deny (update, delete) - No one can update or delete a wall message.
+     * @principle Public read, authenticated create, immutable data.
      */
     match /wallMessages/{messageId} {
       allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid; // Allow signed-in user to create a wall message
       allow update, delete: if false;
     }
-
-
-    /**
-     * @description Placeholder for schedules collection rules. Currently allows only authenticated users.
-     * @path /schedules/{scheduleId}
-     * @allow (get): Only an authenticated user can get a schedule.
-     * @allow (list): Only an authenticated user can list schedules.
-     * @allow (create): Only an authenticated user can create a schedule.
-     * @allow (update): Only an authenticated user can update a schedule.
-     * @allow (delete): Only an authenticated user can delete a schedule.
-     * @principle Requires Authentication
-     */
-    match /schedules/{scheduleId} {
-      allow get: if isSignedIn();
-      allow list: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update: if isSignedIn();
-      allow delete: if isSignedIn();
-    }
-
-    /**
-     * @description Placeholder for activity collection rules. Currently allows only authenticated users.
-     * @path /activities/{activityId}
-     * @allow (get): Only an authenticated user can get an activity.
-     * @allow (list): Only an authenticated user can list activities.
-     * @allow (create): Only an authenticated user can create an activity.
-     * @allow (update): Only an authenticated user can update an activity.
-     * @allow (delete): Only an authenticated user can delete an activity.
-     * @principle Requires Authentication
-     */
-    match /activities/{activityId} {
-      allow get: if isSignedIn();
-      allow list: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update: if isSignedIn();
-      allow delete: if isSignedIn();
-    }
-
-    /**
-     * @description Placeholder for interestGroup collection rules. Currently allows only authenticated users.
-     * @path /interestGroups/{interestGroupId}
-     * @allow (get): Only an authenticated user can get an interestGroup.
-     * @allow (list): Only an authenticated user can list interestGroups.
-     * @allow (create): Only an authenticated user can create an interestGroup.
-     * @allow (update): Only an authenticated user can update an interestGroup.
-     * @allow (delete): Only an authenticated user can delete an interestGroup.
-     * @principle Requires Authentication
-     */
-    match /interestGroups/{interestGroupId} {
-      allow get: if isSignedIn();
-      allow list: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update: if isSignedIn();
-      allow delete: if isSignedIn();
-    }
-
-  }
-
-  // Helper Functions
-  function isSignedIn() {
-    return request.auth != null;
-  }
-
-  function isOwner(userId) {
-    return request.auth.uid == userId;
   }
 }

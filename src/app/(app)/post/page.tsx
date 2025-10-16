@@ -168,7 +168,7 @@ function CommentSection({ post }: { post: WithId<Post>}) {
         }
 
         addDocumentNonBlocking(commentsColRef, commentData);
-        updateDoc(postRef, { commentCount: increment(1) });
+        updateDocumentNonBlocking(postRef, { commentCount: increment(1) });
         
         setNewCommentContent('');
     };
@@ -218,11 +218,15 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
     const canDelete = isAdmin || isAuthor;
 
     const handleLike = () => {
-        if (!user || !firestore) return;
+        if (!firestore) return;
         const postRef = doc(firestore, 'posts', post.id);
-        updateDocumentNonBlocking(postRef, {
-            likeIds: isLiked ? arrayRemove(user.uid) : arrayUnion(user.uid)
-        });
+        
+        if (user) {
+            updateDocumentNonBlocking(postRef, {
+                likeIds: isLiked ? arrayRemove(user.uid) : arrayUnion(user.uid)
+            });
+        }
+        // Anonymous users can't like, so we do nothing if user is null.
     };
 
     const handleDelete = () => {
