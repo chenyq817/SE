@@ -101,13 +101,6 @@
         "imageBase64": {
           "type": "string",
           "description": "Base64 encoded string of the user's avatar."
-        },
-        "friendIds": {
-          "type": "array",
-          "description": "Array of user IDs who are friends.",
-          "items": {
-            "type": "string"
-          }
         }
       },
       "required": [
@@ -434,87 +427,6 @@
         "authorName",
         "createdAt"
       ]
-    },
-     "FriendRequest": {
-      "title": "Friend Request",
-      "type": "object",
-      "description": "Represents a friend request from one user to another.",
-      "properties": {
-        "fromId": {
-          "type": "string",
-          "description": "ID of the user sending the request."
-        },
-        "fromName": {
-          "type": "string",
-          "description": "Name of the user sending the request."
-        },
-        "fromAvatarId": {
-            "type": "string"
-        },
-        "fromImageBase64": {
-            "type": "string"
-        },
-        "toId": {
-          "type": "string",
-          "description": "ID of the user receiving the request."
-        },
-        "status": {
-          "type": "string",
-          "description": "The status of the request.",
-          "enum": ["pending", "accepted", "rejected"]
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the request was sent.",
-          "format": "date-time"
-        }
-      },
-      "required": ["fromId", "fromName", "toId", "status", "createdAt"]
-    },
-    "Conversation": {
-      "title": "Conversation",
-      "type": "object",
-      "description": "Represents a private conversation between two or more users.",
-      "properties": {
-        "participantIds": {
-          "type": "array",
-          "description": "Array of user IDs participating in the conversation.",
-          "items": { "type": "string" }
-        },
-        "lastMessage": {
-            "type": "string"
-        },
-        "updatedAt": {
-          "type": "string",
-          "format": "date-time"
-        }
-      },
-      "required": ["participantIds", "updatedAt"]
-    },
-    "Message": {
-      "title": "Message",
-      "type": "object",
-      "description": "Represents a single message within a conversation.",
-      "properties": {
-        "conversationId": {
-          "type": "string",
-          "description": "ID of the conversation this message belongs to."
-        },
-        "senderId": {
-          "type": "string",
-          "description": "ID of the user who sent the message."
-        },
-        "content": {
-          "type": "string",
-          "description": "The text content of the message."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the message was sent.",
-          "format": "date-time"
-        }
-      },
-      "required": ["conversationId", "senderId", "content", "createdAt"]
     }
   },
   "auth": {
@@ -553,18 +465,6 @@
         "$ref": "#/entities/WallMessage"
       },
       "description": "Holds all public messages on the community wall."
-    },
-    "/friendRequests/{requestId}": {
-        "schema": { "$ref": "#/entities/FriendRequest" },
-        "description": "Holds all friend requests between users."
-    },
-    "/conversations/{conversationId}": {
-        "schema": { "$ref": "#/entities/Conversation" },
-        "description": "Holds metadata for private conversations."
-    },
-    "/conversations/{conversationId}/messages/{messageId}": {
-        "schema": { "$ref": "#/entities/Message" },
-        "description": "Holds all messages for a specific conversation."
     }
   }
 }
