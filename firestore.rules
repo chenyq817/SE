@@ -1,91 +1,50 @@
 /**
  * @file Firestore Security Rules
- * @description This ruleset enforces a user-ownership model for user profiles and allows public read access to posts.
- *
- * Data Structure:
- * - /posts/{postId}: Publicly readable posts with owner-only writes, enforced via the `authorId` field.
- * - /comments/{commentId}: Comments associated with posts, write access based on `authorId`.
- * - /users/{userId}: User profiles, accessible only to the owning user.
- *
- * Key Security Decisions:
- * - Posts are publicly readable to encourage engagement, but only the author can modify or delete them.
- * - User profiles are private; only the user can modify their own profile. Listing all users is disallowed.
- *
- * Denormalization for Authorization:
- * - The `posts` collection requires that each document contains an `authorId` field.  This is enforced during creation.
+ * @description This ruleset enforces open access to all data, effectively disabling security.
+ *              This is due to the user's explicit request to "取消该安全性规则".
+ * @note This configuration is highly insecure and should ONLY be used for prototyping and local development.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /**
-     * @description Checks if the request is authenticated.
-     */
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    /**
-     * @description Checks if the authenticated user is the owner of the resource.
-     */
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
-    /**
-     * @description Checks if the authenticated user is the owner of the resource and the resource exists.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-
-    /**
-     * @description Publicly readable posts with owner-only writes.
-     * @path /posts/{postId}
-     * @allow (get, list): Any user can read any post.
-     * @allow (create): Authenticated user can create a post with their `authorId`.
-     * @allow (update, delete): Only the author of the post can modify or delete it.
-     * @deny (create): An unauthenticated user cannot create a post.
-     * @deny (update, delete): A different authenticated user cannot modify or delete a post.
-     * @principle Allows public reads while enforcing ownership for writes.
-     */
+    // Open access to all posts.
     match /posts/{postId} {
+      /**
+       * @description Allows any user to read, create, update, and delete posts.
+       * @path /posts/{postId}
+       * @allow (get, list, create, update, delete) - Any user.
+       * @deny None. This rule is intentionally open.
+       * @principle Security is disabled.
+       */
       allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-      allow update, delete: if isExistingOwner(resource.data.authorId);
+      allow create, update, delete: if true;
     }
 
-    /**
-     * @description Comments associated with posts.
-     * @path /comments/{commentId}
-     * @allow (get, list): Any user can read any comment.
-     * @allow (create): Authenticated user can create a comment with their `authorId`.
-     * @allow (update, delete): Only the author of the comment can modify or delete it.
-     * @deny (create): An unauthenticated user cannot create a comment.
-     * @deny (update, delete): A different authenticated user cannot modify or delete a comment.
-     * @principle Enforces ownership for comment writes.
-     */
+    // Open access to all comments.
     match /comments/{commentId} {
+      /**
+       * @description Allows any user to read, create, update, and delete comments.
+       * @path /comments/{commentId}
+       * @allow (get, list, create, update, delete) - Any user.
+       * @deny None. This rule is intentionally open.
+       * @principle Security is disabled.
+       */
       allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-      allow update, delete: if isExistingOwner(resource.data.authorId);
+      allow create, update, delete: if true;
     }
 
-    /**
-     * @description User profiles, accessible only to the owning user.
-     * @path /users/{userId}
-     * @allow (get): Only the user can read their own profile.
-     * @allow (create): Only the user can create their own profile.  The userId in the path must match the authenticated user's ID.
-     * @allow (update, delete): Only the user can modify or delete their own profile.
-     * @deny (get, update, delete): Another user cannot read, modify, or delete this profile.
-     * @deny (list): Listing all users is not allowed.
-     * @principle Restricts access to a user's own data tree.
-     */
+    // Open access to all user profiles.
     match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if false;
-      allow create: if isOwner(userId);
-      allow update, delete: if isExistingOwner(userId);
+      /**
+       * @description Allows any user to read, create, update, and delete user profiles.
+       * @path /users/{userId}
+       * @allow (get, list, create, update, delete) - Any user.
+       * @deny None. This rule is intentionally open.
+       * @principle Security is disabled.
+       */
+      allow get, list: if true;
+      allow create, update, delete: if true;
     }
   }
 }
