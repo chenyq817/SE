@@ -209,8 +209,7 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
     const firestore = useFirestore();
     const { user } = useUser();
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-    const [showComments, setShowComments] = useState(false);
-
+    
     // Prioritize new imageBase64 field for author avatar
     const authorAvatarSrc = post.authorImageBase64 || PlaceHolderImages.find(img => img.id === post.authorAvatarId)?.imageUrl;
     
@@ -316,7 +315,6 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
                         />
                     </div>
                 )}
-                 {showComments && <CommentSection post={post} />}
             </CardContent>
             <CardFooter className="flex justify-start gap-4 border-t pt-4">
                 <Button 
@@ -333,7 +331,7 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
                 <Button 
                     variant="ghost" 
                     className="flex items-center gap-2 text-muted-foreground"
-                    onClick={() => setShowComments(!showComments)}
+                    disabled={true}
                 >
                     <MessageSquare className="w-5 h-5" /> {post.commentCount || 0}
                 </Button>
@@ -551,4 +549,3 @@ export default function PostPage() {
     );
 }
 
-    
