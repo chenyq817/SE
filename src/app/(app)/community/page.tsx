@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from "react";
@@ -22,8 +23,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Waves, Columns, Send, Sailboat, Inbox, Loader2 } from "lucide-react";
-import { useUser, useFirestore, addDocumentNonBlocking, useDoc } from "@/firebase";
-import { collection, query, where, getDocs, serverTimestamp, limit } from "firebase/firestore";
+import { useUser, useFirestore, addDocumentNonBlocking, useDoc, useMemoFirebase } from "@/firebase";
+import { collection, query, where, getDocs, serverTimestamp, limit, doc } from "firebase/firestore";
 import type { WithId } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 
@@ -49,8 +50,13 @@ export default function CommunityPage() {
   const [bottleContent, setBottleContent] = useState("");
   const [pickedBottle, setPickedBottle] = useState<WithId<Bottle> | null>(null);
   
-  const userProfileRef = useDoc(firestore && user ? `users/${user.uid}` : null);
-  const displayName = (userProfileRef.data as any)?.displayName || "Anonymous";
+  const userProfileRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+
+  const { data: userProfile } = useDoc(userProfileRef);
+  const displayName = (userProfile as any)?.displayName || "Anonymous";
 
   const handleThrowBottle = async () => {
     if (!bottleContent.trim() || !user || !firestore) return;
