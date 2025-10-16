@@ -40,7 +40,7 @@ import { Label } from "@/components/ui/label";
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn } from '@/lib/utils';
 import { useCollection, useFirestore, useUser, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking, useDoc } from '@/firebase';
-import { collection, query, orderBy, serverTimestamp, arrayUnion, arrayRemove, doc, writeBatch, increment, runTransaction, where } from 'firebase/firestore';
+import { collection, query, orderBy, serverTimestamp, arrayUnion, arrayRemove, doc, writeBatch, increment, runTransaction, where, addDoc, updateDoc } from 'firebase/firestore';
 import type { WithId } from '@/firebase';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Separator } from '@/components/ui/separator';
@@ -142,7 +142,7 @@ function CommentSection({ post }: { post: WithId<Post>}) {
         if (!newCommentContent.trim() || !user || !firestore || !userProfile) return;
 
         const postRef = doc(firestore, 'posts', post.id);
-        const commentRef = doc(collection(firestore, 'comments'));
+        const commentsColRef = collection(firestore, 'comments');
 
         const commentData: Comment = {
             postId: post.id,
@@ -158,15 +158,18 @@ function CommentSection({ post }: { post: WithId<Post>}) {
             commentData.authorAvatarId = userProfile.avatarId;
         }
 
-        try {
-            await runTransaction(firestore, async (transaction) => {
-                transaction.set(commentRef, commentData);
-                transaction.update(postRef, { commentCount: increment(1) });
-            });
+        // Use sequential, non-blocking writes instead of a transaction
+        // First, add the comment
+        addDoc(commentsColRef, commentData)
+          .then(() => {
+            // On success, update the post's comment count
+            updateDoc(postRef, { commentCount: increment(1) });
             setNewCommentContent('');
-        } catch (e) {
-            console.error("Transaction failed: ", e);
-        }
+          })
+          .catch((e) => {
+            console.error("Error creating comment: ", e);
+            // Here you could show a toast to the user
+          });
     };
     
     const userAvatarSrc = userProfile?.imageBase64 || PlaceHolderImages.find(img => img.id === userProfile?.avatarId)?.imageUrl;
@@ -448,7 +451,7 @@ export default function SocialPage() {
                                         className="hidden"
                                         accept="image/*"
                                     />
-                                    <Button variant="ghost" size="icon" className="text-muted-foreground" disabled={!user} onClick={() => imageInput.current?.click()}>
+                                    <Button variant="ghost" size="icon" className="text-muted-foreground" disabled={!user} onClick={() => imageInputRef.current?.click()}>
                                         <ImagePlus className="w-5 h-5"/>
                                     </Button>
                                     <Dialog open={isLocationDialogOpen} onOpenChange={setIsLocationDialogOpen}>
