@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -14,7 +13,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, UserPlus, Loader2 } from 'lucide-react';
-import { useFirestore, useUser } from '@/firebase';
+import { useFirestore, useUser, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -68,8 +67,16 @@ export default function SocialPage() {
                 }
             });
             setSearchResults(results);
-        } catch (error) {
-            console.error("Error searching for users:", error);
+        } catch (error: any) {
+            if (error.code === 'permission-denied') {
+                const contextualError = new FirestorePermissionError({
+                    operation: 'list',
+                    path: 'users',
+                });
+                errorEmitter.emit('permission-error', contextualError);
+            } else {
+                console.error("An unexpected error occurred during user search:", error);
+            }
             setSearchResults([]);
         } finally {
             setIsLoading(false);
