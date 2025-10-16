@@ -20,12 +20,14 @@ import {
   Anchor,
   Shield,
   Bot,
+  MessageSquare,
 } from "lucide-react";
 import { useUser } from "@/firebase";
 
 const menuItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/news", label: "News", icon: Newspaper },
+  { href: "/post", label: "Posts", icon: MessageSquare },
   { href: "/social", label: "Social", icon: Users },
   { href: "/schedules", label: "Schedules", icon: Calendar },
   { href: "/activities", label: "Activities", icon: Flame },
@@ -86,3 +88,5 @@ export function AppSidebar() {
     </Sidebar>
   );
 }
+
+    
