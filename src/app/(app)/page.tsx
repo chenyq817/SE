@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/layout/header";
-import { PlayCircle, Newspaper, Calendar, ArrowRight, Rss, Anchor } from "lucide-react";
+import { PlayCircle, Newspaper, Calendar, ArrowRight, Rss, Anchor, FileText } from "lucide-react";
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
@@ -126,18 +126,24 @@ export default function DashboardPage() {
                 </div>
               <CardDescription>Connect with fellow students.</CardDescription>
             </CardHeader>
-            <CardContent className="flex-grow grid grid-rows-1 gap-4">
-              <Link href="/social" passHref>
+            <CardContent className="flex-grow grid grid-rows-2 gap-4">
+              <Link href="/post" passHref>
                 <div className="rounded-lg border p-4 hover:bg-accent/10 transition-colors h-full flex flex-col justify-center">
-                  <h3 className="font-semibold text-center">Campus Social Circle</h3>
+                  <h3 className="font-semibold text-center">Campus Posts</h3>
                   <p className="text-sm text-muted-foreground text-center">See what's happening right now.</p>
+                </div>
+              </Link>
+               <Link href="/community" passHref>
+                <div className="rounded-lg border p-4 hover:bg-accent/10 transition-colors h-full flex flex-col justify-center">
+                  <h3 className="font-semibold text-center">Community Fun</h3>
+                  <p className="text-sm text-muted-foreground text-center">Wall messages and more.</p>
                 </div>
               </Link>
             </CardContent>
             <CardFooter>
-                <Link href="/community" className="w-full" passHref>
+                <Link href="/social" className="w-full" passHref>
                     <Button variant="outline" className="w-full">
-                        Join the Community
+                        Manage Friends
                         <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                 </Link>
