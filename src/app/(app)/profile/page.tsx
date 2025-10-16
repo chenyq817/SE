@@ -87,8 +87,8 @@ export default function ProfilePage() {
   }, [userProfile, form]);
   
   const handleAvatarSelect = (avatarId: string) => {
-    form.setValue('avatarId', avatarId);
-    form.setValue('imageBase64', ''); 
+    form.setValue('avatarId', avatarId, { shouldDirty: true });
+    form.setValue('imageBase64', '', { shouldDirty: true }); 
   };
   
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -105,8 +105,8 @@ export default function ProfilePage() {
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64String = reader.result as string;
-        form.setValue('imageBase64', base64String);
-        form.setValue('avatarId', ''); 
+        form.setValue('imageBase64', base64String, { shouldDirty: true });
+        form.setValue('avatarId', '', { shouldDirty: true }); 
       };
       reader.readAsDataURL(file);
     }
@@ -116,17 +116,17 @@ export default function ProfilePage() {
     if (!userProfileRef) return;
     setIsSaving(true);
     
-    const updatedData: Partial<UserProfile> = {
-        ...data,
-        avatarUrl: undefined,
-    };
-    // Ensure displayName is not part of the update
-    delete (updatedData as any).displayName;
+    // Create a copy of the data to be sent to Firestore
+    const updatedData: Partial<ProfileFormValues> = { ...data };
 
-
+    // IMPORTANT: Remove the displayName from the object that will be sent for update,
+    // as it should not be editable by the user on this page.
+    delete updatedData.displayName;
+    
     try {
       updateDocumentNonBlocking(userProfileRef, updatedData);
       toast({ title: 'Profile updated successfully!' });
+      form.reset(data); // Resets the form's dirty state
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error updating profile', description: error.message || 'Please try again.' });
     } finally {
