@@ -41,7 +41,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn } from '@/lib/utils';
-import { useCollection, useFirestore, useUser, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking, useDoc } from '@/firebase';
+import { useCollection, useFirestore, useUser, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, useDoc, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { collection, query, orderBy, serverTimestamp, arrayUnion, arrayRemove, doc, writeBatch, increment, getDocs, updateDoc } from 'firebase/firestore';
 import type { WithId } from '@/firebase';
 import { Separator } from '@/components/ui/separator';
@@ -208,7 +208,6 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
     const firestore = useFirestore();
     const { user } = useUser();
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-    const [isCommentSectionOpen, setIsCommentSectionOpen] = useState(false);
     
     const authorAvatarSrc = post.authorImageBase64 || PlaceHolderImages.find(img => img.id === post.authorAvatarId)?.imageUrl;
     
@@ -230,20 +229,22 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
       const postRef = doc(firestore, 'posts', post.id);
       const commentsRef = collection(firestore, 'posts', post.id, 'comments');
   
-      try {
-        const batch = writeBatch(firestore);
-  
-        const commentsSnapshot = await getDocs(commentsRef);
-        commentsSnapshot.forEach(commentDoc => {
-          batch.delete(commentDoc.ref);
+      const querySnapshot = await getDocs(commentsRef);
+      const batch = writeBatch(firestore);
+      
+      querySnapshot.forEach(commentDoc => {
+        batch.delete(commentDoc.ref);
+      });
+      
+      batch.delete(postRef);
+      
+      batch.commit().catch(error => {
+        const contextualError = new FirestorePermissionError({
+          operation: 'delete',
+          path: postRef.path,
         });
-  
-        batch.delete(postRef);
-  
-        await batch.commit();
-      } catch (error) {
-        console.error("Error deleting post and comments:", error);
-      }
+        errorEmitter.emit('permission-error', contextualError);
+      });
   
       setIsDeleteDialogOpen(false);
     }
@@ -325,12 +326,10 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
               <Button 
                   variant="ghost" 
                   className="flex items-center gap-2 text-muted-foreground"
-                   onClick={() => setIsCommentSectionOpen(prev => !prev)}
               >
                   <MessageSquare className="w-5 h-5" /> {post.commentCount || 0}
               </Button>
             </CardFooter>
-            {isCommentSectionOpen && <CommentSection post={post} />}
         </Card>
     );
 }
