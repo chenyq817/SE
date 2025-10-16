@@ -1,3 +1,4 @@
+
 "use client";
 
 import { usePathname } from "next/navigation";
@@ -20,6 +21,7 @@ import {
   Shield,
   Bot,
 } from "lucide-react";
+import { useUser } from "@/firebase";
 
 const menuItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -34,6 +36,8 @@ const adminMenuItem = { href: "/admin", label: "Admin", icon: Shield };
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const { user } = useUser();
+  const isAdmin = user?.email === 'admin@111.com';
 
   return (
     <Sidebar>
@@ -61,18 +65,20 @@ export function AppSidebar() {
           ))}
         </SidebarMenu>
         
-        <SidebarMenu className="mt-auto">
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              href={adminMenuItem.href}
-              isActive={pathname === adminMenuItem.href}
-              tooltip={adminMenuItem.label}
-            >
-                <adminMenuItem.icon />
-                <span>{adminMenuItem.label}</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        {isAdmin && (
+          <SidebarMenu className="mt-auto">
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                href={adminMenuItem.href}
+                isActive={pathname === adminMenuItem.href}
+                tooltip={adminMenuItem.label}
+              >
+                  <adminMenuItem.icon />
+                  <span>{adminMenuItem.label}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        )}
       </SidebarContent>
       <SidebarFooter>
         {/* User profile button removed from here, now handled by UserNav in Header */}

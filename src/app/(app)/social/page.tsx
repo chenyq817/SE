@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -40,9 +41,8 @@ import { Label } from "@/components/ui/label";
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn } from '@/lib/utils';
 import { useCollection, useFirestore, useUser, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking, useDoc } from '@/firebase';
-import { collection, query, orderBy, serverTimestamp, arrayUnion, arrayRemove, doc, writeBatch, increment, runTransaction, where, addDoc, updateDoc } from 'firebase/firestore';
+import { collection, query, orderBy, serverTimestamp, arrayUnion, arrayRemove, doc, writeBatch, increment, addDoc, updateDoc } from 'firebase/firestore';
 import type { WithId } from '@/firebase';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Separator } from '@/components/ui/separator';
 
 // Types matching Firestore data
@@ -132,11 +132,12 @@ function CommentSection({ post }: { post: WithId<Post>}) {
     }, [firestore, user]);
     const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
     
-    const commentsQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
-        return query(collection(firestore, 'comments'), where('postId', '==', post.id), orderBy('createdAt', 'asc'));
-    }, [firestore, post.id]);
-    const { data: comments, isLoading } = useCollection<Comment>(commentsQuery);
+    // This part is temporarily disabled
+    // const commentsQuery = useMemoFirebase(() => {
+    //     if (!firestore) return null;
+    //     return query(collection(firestore, 'comments'), where('postId', '==', post.id), orderBy('createdAt', 'asc'));
+    // }, [firestore, post.id]);
+    // const { data: comments, isLoading } = useCollection<Comment>(commentsQuery);
 
     const handleComment = async () => {
         if (!newCommentContent.trim() || !user || !firestore || !userProfile) return;
@@ -177,10 +178,12 @@ function CommentSection({ post }: { post: WithId<Post>}) {
     return (
         <div className="pt-4 space-y-4">
             <Separator />
+            {/* Temporarily disabled comment display
             <div className="space-y-4">
                 {isLoading && <p className="text-sm text-muted-foreground">Loading comments...</p>}
                 {comments?.map(comment => <CommentCard key={comment.id} comment={comment} />)}
             </div>
+            */}
 
             {user && userProfile && (
                 <div className="flex items-start gap-3 pt-4">
@@ -214,7 +217,9 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
     const authorAvatarSrc = post.authorImageBase64 || PlaceHolderImages.find(img => img.id === post.authorAvatarId)?.imageUrl;
     
     const isLiked = user ? post.likeIds.includes(user.uid) : false;
+    const isAdmin = user?.email === 'admin@111.com';
     const isAuthor = user ? user.uid === post.authorId : false;
+    const canDelete = isAdmin || isAuthor;
 
     const handleLike = () => {
         if (!user || !firestore) return;
@@ -251,7 +256,7 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
                         </div>
                     )}
                 </div>
-                {isAuthor && (
+                {canDelete && (
                    <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                       <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -500,4 +505,5 @@ export default function SocialPage() {
     
 
     
+
 
