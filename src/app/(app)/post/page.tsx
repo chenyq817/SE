@@ -208,6 +208,7 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
     const firestore = useFirestore();
     const { user } = useUser();
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [isCommentSectionOpen, setIsCommentSectionOpen] = useState(false);
     
     const authorAvatarSrc = post.authorImageBase64 || PlaceHolderImages.find(img => img.id === post.authorAvatarId)?.imageUrl;
     
@@ -224,21 +225,21 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
         });
     };
 
-    const handleDelete = async () => {
+    const handleDelete = () => {
       if (!firestore) return;
       const postRef = doc(firestore, 'posts', post.id);
       const commentsRef = collection(firestore, 'posts', post.id, 'comments');
-  
-      const querySnapshot = await getDocs(commentsRef);
-      const batch = writeBatch(firestore);
       
-      querySnapshot.forEach(commentDoc => {
-        batch.delete(commentDoc.ref);
+      const batchPromise = getDocs(commentsRef).then(querySnapshot => {
+        const batch = writeBatch(firestore);
+        querySnapshot.forEach(commentDoc => {
+          batch.delete(commentDoc.ref);
+        });
+        batch.delete(postRef);
+        return batch.commit();
       });
-      
-      batch.delete(postRef);
-      
-      batch.commit().catch(error => {
+  
+      batchPromise.catch(error => {
         const contextualError = new FirestorePermissionError({
           operation: 'delete',
           path: postRef.path,
@@ -326,10 +327,12 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
               <Button 
                   variant="ghost" 
                   className="flex items-center gap-2 text-muted-foreground"
+                  onClick={() => setIsCommentSectionOpen(prev => !prev)}
               >
                   <MessageSquare className="w-5 h-5" /> {post.commentCount || 0}
               </Button>
             </CardFooter>
+            {isCommentSectionOpen && <CommentSection post={post} />}
         </Card>
     );
 }
