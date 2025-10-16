@@ -16,7 +16,6 @@ import {
   Users,
   Calendar,
   Flame,
-  HeartHandshake,
   Anchor,
   Shield,
   Bot,
@@ -28,7 +27,6 @@ const menuItems = [
   { href: "/social", label: "Social", icon: Users },
   { href: "/schedules", label: "Schedules", icon: Calendar },
   { href: "/activities", label: "Activities", icon: Flame },
-  { href: "/confessions", label: "Confessions", icon: HeartHandshake },
   { href: "/community", label: "Community", icon: Anchor },
 ];
 

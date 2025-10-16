@@ -126,17 +126,11 @@ export default function DashboardPage() {
                 </div>
               <CardDescription>Connect with fellow students.</CardDescription>
             </CardHeader>
-            <CardContent className="flex-grow grid grid-rows-2 gap-4">
+            <CardContent className="flex-grow grid grid-rows-1 gap-4">
               <Link href="/social" passHref>
                 <div className="rounded-lg border p-4 hover:bg-accent/10 transition-colors h-full flex flex-col justify-center">
                   <h3 className="font-semibold text-center">Campus Social Circle</h3>
                   <p className="text-sm text-muted-foreground text-center">See what's happening right now.</p>
-                </div>
-              </Link>
-              <Link href="/confessions" passHref>
-                <div className="rounded-lg border p-4 hover:bg-accent/10 transition-colors h-full flex flex-col justify-center">
-                  <h3 className="font-semibold text-center">Anonymous Confessions</h3>
-                  <p className="text-sm text-muted-foreground text-center">Share your thoughts freely.</p>
                 </div>
               </Link>
             </CardContent>
