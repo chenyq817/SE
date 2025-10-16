@@ -1,6 +1,7 @@
 
 'use client';
 
+import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +23,7 @@ import { doc } from 'firebase/firestore';
 type UserProfile = {
   displayName: string;
   avatarId: string;
+  avatarUrl?: string;
 };
 
 export function UserNav() {
@@ -37,7 +39,8 @@ export function UserNav() {
 
     const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
     
-    const userAvatar = PlaceHolderImages.find(img => img.id === userProfile?.avatarId);
+    const defaultAvatar = PlaceHolderImages.find(img => img.id === userProfile?.avatarId);
+    const avatarSrc = userProfile?.avatarUrl || defaultAvatar?.imageUrl;
 
     const handleLogout = async () => {
         await signOut(auth);
@@ -55,7 +58,7 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            {userAvatar && <AvatarImage src={userAvatar.imageUrl} alt="User avatar" data-ai-hint={userAvatar.imageHint} />}
+            {avatarSrc && <AvatarImage src={avatarSrc} alt="User avatar" />}
             <AvatarFallback>
                 {userProfile?.displayName?.charAt(0) || <UserIcon className="h-5 w-5"/>}
             </AvatarFallback>
@@ -75,10 +78,13 @@ export function UserNav() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem>
-            Profile
-          </DropdownMenuItem>
-          <DropdownMenuItem>
+           <Link href="/profile" passHref>
+              <DropdownMenuItem>
+                <UserIcon className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </DropdownMenuItem>
+            </Link>
+          <DropdownMenuItem disabled>
             Settings
           </DropdownMenuItem>
         </DropdownMenuGroup>
@@ -91,3 +97,5 @@ export function UserNav() {
     </DropdownMenu>
   );
 }
+
+    

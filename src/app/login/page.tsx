@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -63,6 +64,15 @@ export default function LoginPage() {
 
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
+    if (!auth || !firestore) {
+        toast({
+            variant: 'destructive',
+            title: 'Firebase not initialized',
+            description: 'Please try again later.',
+        });
+        setIsLoading(false);
+        return;
+    }
     try {
       if (activeTab === 'signin') {
         await signInWithEmailAndPassword(auth, values.email, values.password);
@@ -72,17 +82,21 @@ export default function LoginPage() {
         const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
         const newUser = userCredential.user;
         
-        // Create user profile in Firestore
         const userProfileRef = doc(firestore, 'users', newUser.uid);
         const randomAvatarId = defaultAvatars[Math.floor(Math.random() * defaultAvatars.length)];
         
         await setDocumentNonBlocking(userProfileRef, {
           displayName: values.email.split('@')[0],
           avatarId: randomAvatarId,
+          bio: '',
+          age: null,
+          gender: 'Prefer not to say',
+          address: '',
+          avatarUrl: null,
         }, {});
 
         toast({ title: 'Sign up successful! Please sign in.' });
-        setActiveTab('signin'); // Switch to sign in tab after successful registration
+        setActiveTab('signin'); 
         form.reset();
       }
     } catch (error: any) {
@@ -191,3 +205,5 @@ function AuthForm({ form, onSubmit, isLoading, buttonText }: AuthFormProps) {
       </Form>
     )
 }
+
+    

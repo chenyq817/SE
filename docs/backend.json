@@ -17,6 +17,10 @@
           "type": "string",
           "description": "Avatar ID of the user who created the post."
         },
+        "authorAvatarUrl": {
+          "type": "string",
+          "description": "Custom avatar URL of the user who created the post."
+        },
         "content": {
           "type": "string",
           "description": "The text content of the post."
@@ -45,7 +49,6 @@
       "required": [
         "authorId",
         "authorName",
-        "authorAvatarId",
         "content",
         "likeIds",
         "createdAt"
@@ -62,7 +65,28 @@
         },
         "avatarId": {
           "type": "string",
-          "description": "The ID for the user's avatar image from the placeholder list."
+          "description": "The ID for the user's default avatar image from the placeholder list."
+        },
+        "avatarUrl": {
+            "type": "string",
+            "description": "URL of the user's custom uploaded avatar."
+        },
+        "bio": {
+            "type": "string",
+            "description": "A short bio or signature for the user."
+        },
+        "age": {
+            "type": "number",
+            "description": "The user's age."
+        },
+        "gender": {
+            "type": "string",
+            "description": "The user's gender.",
+            "enum": ["Male", "Female", "Other", "Prefer not to say"]
+        },
+        "address": {
+            "type": "string",
+            "description": "The user's address or location."
         }
       },
       "required": ["displayName", "avatarId"]

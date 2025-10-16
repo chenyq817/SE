@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef } from 'react';
@@ -45,18 +46,20 @@ import type { WithId } from '@/firebase';
 // Types matching Firestore data
 type Post = {
   authorId: string;
-  authorName: string; // Denormalized for display
-  authorAvatarId: string; // Denormalized for display
+  authorName: string; 
+  authorAvatarId?: string; 
+  authorAvatarUrl?: string;
   content: string;
   location?: string;
-  imageBase64?: string; // Storing image as Base64 data URI
+  imageBase64?: string; 
   likeIds: string[];
-  createdAt: any; // Firestore Timestamp
+  createdAt: any; 
 };
 
 type UserProfile = {
   displayName: string;
   avatarId: string;
+  avatarUrl?: string;
 };
 
 
@@ -65,7 +68,8 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
     const { user } = useUser();
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-    const authorAvatar = PlaceHolderImages.find(img => img.id === post.authorAvatarId);
+    const authorDefaultAvatar = PlaceHolderImages.find(img => img.id === post.authorAvatarId);
+    const authorAvatarSrc = post.authorAvatarUrl || authorDefaultAvatar?.imageUrl;
     
     const isLiked = user ? post.likeIds.includes(user.uid) : false;
     const isAuthor = user ? user.uid === post.authorId : false;
@@ -87,7 +91,6 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
     
     const formatTimestamp = (timestamp: any) => {
       if (!timestamp) return 'Just now';
-      // Firestore Timestamps can be null before they are committed to the backend
       if (typeof timestamp.toDate !== 'function') {
         return 'Posting...';
       }
@@ -109,10 +112,10 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
     return (
         <Card className="hover:shadow-lg transition-shadow duration-300">
             <CardHeader className="flex flex-row items-start gap-4">
-                {authorAvatar && <Avatar>
-                    <AvatarImage src={authorAvatar.imageUrl} alt={post.authorName} data-ai-hint={authorAvatar.imageHint} />
+                <Avatar>
+                    {authorAvatarSrc && <AvatarImage src={authorAvatarSrc} alt={post.authorName} />}
                     <AvatarFallback>{post.authorName.charAt(0)}</AvatarFallback>
-                </Avatar>}
+                </Avatar>
                 <div className="flex-grow">
                     <div className="flex items-center gap-2">
                         <p className="font-semibold">{post.authorName}</p>
@@ -211,7 +214,8 @@ export default function SocialPage() {
     }, [firestore, user]);
     const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
 
-    const userAvatar = PlaceHolderImages.find(img => img.id === userProfile?.avatarId);
+    const userDefaultAvatar = PlaceHolderImages.find(img => img.id === userProfile?.avatarId);
+    const userAvatarSrc = userProfile?.avatarUrl || userDefaultAvatar?.imageUrl;
 
     const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -240,9 +244,13 @@ export default function SocialPage() {
             likeIds: [],
             createdAt: serverTimestamp(),
         };
+        
+        if (userProfile.avatarUrl) {
+            postData.authorAvatarUrl = userProfile.avatarUrl;
+        }
 
-        if (newPostLocation && newPostLocation !== 'On Campus') {
-          postData.location = newPostLocation;
+        if (newPostLocation && newPostLocation.trim() && newPostLocation !== 'On Campus') {
+            postData.location = newPostLocation;
         }
 
         if (newPostImage) {
@@ -268,10 +276,12 @@ export default function SocialPage() {
                     <Card className="shadow-sm">
                         <CardHeader className="flex flex-col items-start gap-4 p-4">
                             <div className="flex w-full gap-4">
-                                {userAvatar && user && <Avatar>
-                                    <AvatarImage src={userAvatar.imageUrl} alt="Your avatar" data-ai-hint={userAvatar.imageHint} />
+                                {user && userProfile && (
+                                <Avatar>
+                                    {userAvatarSrc && <AvatarImage src={userAvatarSrc} alt="Your avatar" />}
                                     <AvatarFallback>{userProfile?.displayName.charAt(0) || 'U'}</AvatarFallback>
-                                </Avatar>}
+                                </Avatar>
+                                )}
                                 <div className="flex-grow">
                                     <Textarea 
                                         placeholder="What's on your mind?" 
