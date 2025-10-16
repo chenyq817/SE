@@ -2,6 +2,16 @@ import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */
+  experimental: {
+    serverActions: {
+      allowedOrigins: [
+        '*.google.com',
+        '*.firebase.app',
+        '*.cloud.run',
+        'localhost:9002',
+      ],
+    },
+  },
   typescript: {
     ignoreBuildErrors: true,
   },
