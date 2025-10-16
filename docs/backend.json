@@ -40,6 +40,10 @@
             "type": "string"
           }
         },
+        "commentCount": {
+            "type": "number",
+            "description": "The number of comments on the post."
+        },
         "createdAt": {
           "type": "string",
           "description": "Timestamp indicating when the post was created.",
@@ -51,6 +55,7 @@
         "authorName",
         "content",
         "likeIds",
+        "commentCount",
         "createdAt"
       ]
     },
@@ -180,6 +185,10 @@
           "type": "string",
           "description": "Avatar ID of the user who created the comment."
         },
+        "authorImageBase64": {
+          "type": "string",
+          "description": "Base64 encoded string of the user's avatar."
+        },
         "content": {
           "type": "string",
           "description": "The text content of the comment."
@@ -194,7 +203,6 @@
         "postId",
         "authorId",
         "authorName",
-        "authorAvatarId",
         "content",
         "createdAt"
       ]
@@ -388,3 +396,5 @@
     }
   }
 }
+
+    

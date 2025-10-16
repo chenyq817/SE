@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Image from "next/image";
 import { Header } from "@/components/layout/header";
 import {
@@ -14,7 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { ThumbsUp, MessageSquare, MapPin, ImagePlus, X, MoreHorizontal } from "lucide-react";
+import { ThumbsUp, MessageSquare, MapPin, ImagePlus, X, MoreHorizontal, Send } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
@@ -40,8 +40,10 @@ import { Label } from "@/components/ui/label";
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn } from '@/lib/utils';
 import { useCollection, useFirestore, useUser, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking, useDoc } from '@/firebase';
-import { collection, query, orderBy, serverTimestamp, arrayUnion, arrayRemove, doc } from 'firebase/firestore';
+import { collection, query, orderBy, serverTimestamp, arrayUnion, arrayRemove, doc, writeBatch, increment, runTransaction, where } from 'firebase/firestore';
 import type { WithId } from '@/firebase';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Separator } from '@/components/ui/separator';
 
 // Types matching Firestore data
 type Post = {
@@ -54,7 +56,18 @@ type Post = {
   location?: string;
   imageBase64?: string; 
   likeIds: string[];
+  commentCount: number;
   createdAt: any; 
+};
+
+type Comment = {
+    postId: string;
+    authorId: string;
+    authorName: string;
+    authorAvatarId?: string;
+    authorImageBase64?: string;
+    content: string;
+    createdAt: any;
 };
 
 type UserProfile = {
@@ -68,6 +81,126 @@ type UserProfile = {
   address?: string;
 };
 
+const formatTimestamp = (timestamp: any) => {
+      if (!timestamp) return 'Just now';
+      if (typeof timestamp.toDate !== 'function') {
+        return 'Posting...';
+      }
+      const date = timestamp.toDate();
+      const now = new Date();
+      const diff = now.getTime() - date.getTime();
+      const seconds = Math.floor(diff / 1000);
+      const minutes = Math.floor(seconds / 60);
+      const hours = Math.floor(minutes / 60);
+      const days = Math.floor(hours / 24);
+
+      if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
+      if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+      if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+      return 'Just now';
+};
+
+
+function CommentCard({ comment }: { comment: WithId<Comment>}) {
+    const authorAvatarSrc = comment.authorImageBase64 || PlaceHolderImages.find(img => img.id === comment.authorAvatarId)?.imageUrl;
+
+    return (
+        <div className="flex items-start gap-3">
+             <Avatar className="h-9 w-9">
+                {authorAvatarSrc && <AvatarImage src={authorAvatarSrc} alt={comment.authorName} />}
+                <AvatarFallback>{comment.authorName.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div className="flex-grow bg-secondary/50 rounded-lg px-4 py-2">
+                <div className="flex items-center gap-2">
+                    <p className="font-semibold text-sm">{comment.authorName}</p>
+                    <p className="text-xs text-muted-foreground">{formatTimestamp(comment.createdAt)}</p>
+                </div>
+                <p className="text-sm">{comment.content}</p>
+            </div>
+        </div>
+    )
+}
+
+function CommentSection({ post }: { post: WithId<Post>}) {
+    const firestore = useFirestore();
+    const { user } = useUser();
+    const [newCommentContent, setNewCommentContent] = useState('');
+
+    const userProfileRef = useMemoFirebase(() => {
+        if (!firestore || !user) return null;
+        return doc(firestore, 'users', user.uid);
+    }, [firestore, user]);
+    const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
+    
+    const commentsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, 'comments'), where('postId', '==', post.id), orderBy('createdAt', 'asc'));
+    }, [firestore, post.id]);
+    const { data: comments, isLoading } = useCollection<Comment>(commentsQuery);
+
+    const handleComment = async () => {
+        if (!newCommentContent.trim() || !user || !firestore || !userProfile) return;
+
+        const postRef = doc(firestore, 'posts', post.id);
+        const commentRef = doc(collection(firestore, 'comments'));
+
+        const commentData: Comment = {
+            postId: post.id,
+            authorId: user.uid,
+            authorName: userProfile.displayName,
+            content: newCommentContent,
+            createdAt: serverTimestamp(),
+        };
+
+        if (userProfile.imageBase64) {
+            commentData.authorImageBase64 = userProfile.imageBase64;
+        } else {
+            commentData.authorAvatarId = userProfile.avatarId;
+        }
+
+        try {
+            await runTransaction(firestore, async (transaction) => {
+                transaction.set(commentRef, commentData);
+                transaction.update(postRef, { commentCount: increment(1) });
+            });
+            setNewCommentContent('');
+        } catch (e) {
+            console.error("Transaction failed: ", e);
+        }
+    };
+    
+    const userAvatarSrc = userProfile?.imageBase64 || PlaceHolderImages.find(img => img.id === userProfile?.avatarId)?.imageUrl;
+
+    return (
+        <div className="pt-4 space-y-4">
+            <Separator />
+            <div className="space-y-4">
+                {isLoading && <p className="text-sm text-muted-foreground">Loading comments...</p>}
+                {comments?.map(comment => <CommentCard key={comment.id} comment={comment} />)}
+            </div>
+
+            {user && userProfile && (
+                <div className="flex items-start gap-3 pt-4">
+                    <Avatar className="h-9 w-9">
+                        {userAvatarSrc && <AvatarImage src={userAvatarSrc} alt={userProfile.displayName} />}
+                        <AvatarFallback>{userProfile.displayName.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-grow flex items-center gap-2">
+                        <Textarea 
+                            placeholder="Write a comment..." 
+                            className="min-h-0 h-10"
+                            value={newCommentContent}
+                            onChange={(e) => setNewCommentContent(e.target.value)}
+                        />
+                        <Button size="icon" onClick={handleComment} disabled={!newCommentContent.trim()}>
+                            <Send className="w-4 h-4" />
+                        </Button>
+                    </div>
+                </div>
+            )}
+        </div>
+    )
+}
 
 function SocialPostCard({ post }: { post: WithId<Post> }) {
     const firestore = useFirestore();
@@ -92,30 +225,12 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
       if (!firestore) return;
       const postRef = doc(firestore, 'posts', post.id);
       deleteDocumentNonBlocking(postRef);
+      // TODO: Also delete associated comments
       setIsDeleteDialogOpen(false);
     }
     
-    const formatTimestamp = (timestamp: any) => {
-      if (!timestamp) return 'Just now';
-      if (typeof timestamp.toDate !== 'function') {
-        return 'Posting...';
-      }
-      const date = timestamp.toDate();
-      const now = new Date();
-      const diff = now.getTime() - date.getTime();
-      const seconds = Math.floor(diff / 1000);
-      const minutes = Math.floor(seconds / 60);
-      const hours = Math.floor(minutes / 60);
-      const days = Math.floor(hours / 24);
-
-      if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
-      if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-      if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-      return 'Just now';
-    }
-
-
     return (
+        <Collapsible>
         <Card className="hover:shadow-lg transition-shadow duration-300">
             <CardHeader className="flex flex-row items-start gap-4">
                 <Avatar>
@@ -153,7 +268,7 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
                         <AlertDialogHeader>
                           <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete your post.
+                            This action cannot be undone. This will permanently delete your post and all its comments.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -189,11 +304,18 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
                 >
                     <ThumbsUp className={cn("w-5 h-5", isLiked && "fill-current")} /> {post.likeIds.length}
                 </Button>
-                <Button variant="ghost" className="flex items-center gap-2 text-muted-foreground" disabled>
-                    <MessageSquare className="w-5 h-5" /> 0
-                </Button>
+                <CollapsibleTrigger asChild>
+                    <Button variant="ghost" className="flex items-center gap-2 text-muted-foreground">
+                        <MessageSquare className="w-5 h-5" /> {post.commentCount || 0}
+                    </Button>
+                </CollapsibleTrigger>
             </CardFooter>
+            
+            <CollapsibleContent className="px-6 pb-4">
+                <CommentSection post={post} />
+            </CollapsibleContent>
         </Card>
+        </Collapsible>
     );
 }
 
@@ -243,9 +365,10 @@ export default function SocialPage() {
 
         const postData: Partial<Post> = {
             authorId: user.uid,
-            authorName: userProfile.displayName || "Anonymous User",
+            authorName: userProfile.displayName,
             content: newPostContent,
             likeIds: [],
+            commentCount: 0,
             createdAt: serverTimestamp(),
         };
         
@@ -325,7 +448,7 @@ export default function SocialPage() {
                                         className="hidden"
                                         accept="image/*"
                                     />
-                                    <Button variant="ghost" size="icon" className="text-muted-foreground" disabled={!user} onClick={() => imageInputRef.current?.click()}>
+                                    <Button variant="ghost" size="icon" className="text-muted-foreground" disabled={!user} onClick={() => imageInput.current?.click()}>
                                         <ImagePlus className="w-5 h-5"/>
                                     </Button>
                                     <Dialog open={isLocationDialogOpen} onOpenChange={setIsLocationDialogOpen}>
@@ -376,6 +499,8 @@ export default function SocialPage() {
         </div>
     );
 }
+
+    
 
     
 
