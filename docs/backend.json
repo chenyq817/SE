@@ -102,6 +102,27 @@
         "imageBase64": {
           "type": "string",
           "description": "Base64 encoded string of the user's avatar."
+        },
+        "friendIds": {
+          "type": "array",
+          "description": "List of user IDs that are friends with this user.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "friendRequestsSent": {
+          "type": "array",
+          "description": "List of user IDs to whom this user has sent a friend request.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "friendRequestsReceived": {
+          "type": "array",
+          "description": "List of user IDs who have sent a friend request to this user.",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "required": [
@@ -465,5 +486,3 @@
     }
   }
 }
-
-    
