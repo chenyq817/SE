@@ -30,12 +30,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  experimental: {
-    // This is required to allow the Next.js dev server to accept requests from the
-    // Firebase Studio Cloud IDE.
-    // The value is a wildcard that allows any subdomain of cloudworkstations.dev.
-    allowedDevOrigins: ["*.cloudworkstations.dev"],
-  }
 };
 
 export default nextConfig;
