@@ -1,7 +1,6 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import Link from "next/link";
 import {
   Sidebar,
   SidebarHeader,
@@ -21,22 +20,7 @@ import {
   Anchor,
   Shield,
   Bot,
-  UserCircle,
-  KeyRound,
 } from "lucide-react";
-import { useUser } from "@/firebase";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { useState } from "react";
 
 const menuItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -52,8 +36,6 @@ const adminMenuItem = { href: "/admin", label: "Admin", icon: Shield };
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { user } = useUser();
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   return (
     <Sidebar>
@@ -95,35 +77,7 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
-        <Dialog open={isProfileOpen} onOpenChange={setIsProfileOpen}>
-          <DialogTrigger asChild>
-            <SidebarMenuButton tooltip="Profile">
-              <div className="flex items-center gap-2">
-                  <UserCircle />
-                  <span>User Profile</span>
-                </div>
-            </SidebarMenuButton>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>User Profile</DialogTitle>
-              <DialogDescription>
-                You are currently logged in anonymously.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm">
-                <KeyRound className="w-4 h-4 text-muted-foreground"/>
-                <span className="font-mono text-xs text-muted-foreground break-all">{user?.uid ?? 'Loading...'}</span>
-              </div>
-            </div>
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline">Close</Button>
-              </DialogClose>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        {/* User profile button removed from here, now handled by UserNav in Header */}
       </SidebarFooter>
     </Sidebar>
   );

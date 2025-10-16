@@ -1,6 +1,5 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
-import { UserCircle } from "lucide-react";
+import { UserNav } from "@/components/layout/user-nav";
 
 type HeaderProps = {
   title: string;
@@ -13,10 +12,7 @@ export function Header({ title }: HeaderProps) {
         <SidebarTrigger className="md:hidden" />
         <h1 className="text-lg font-semibold font-headline md:text-xl">{title}</h1>
       </div>
-      <Button variant="ghost" size="icon">
-        <UserCircle className="h-6 w-6" />
-        <span className="sr-only">User Profile</span>
-      </Button>
+      <UserNav />
     </header>
   );
 }
