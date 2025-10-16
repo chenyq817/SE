@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from "react";
@@ -12,7 +13,8 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Columns, Send } from "lucide-react";
+import { Columns, Send, Smile } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useUser, useFirestore, addDocumentNonBlocking, useCollection, useMemoFirebase, useDoc } from "@/firebase";
 import { collection, query, serverTimestamp, orderBy, doc } from "firebase/firestore";
 import type { WithId } from "@/firebase";
@@ -34,6 +36,8 @@ const WallMessageCard = ({ children, className }: { children: React.ReactNode, c
     </div>
 )
 
+const emojis = ['😀', '😂', '😍', '🤔', '👍', '❤️', '🔥', '🎉', '😊', '🙏', '💯', '🙌'];
+
 export default function CommunityPage() {
   const { user } = useUser();
   const firestore = useFirestore();
@@ -51,6 +55,10 @@ export default function CommunityPage() {
   }, [firestore]);
 
   const { data: wallMessages, isLoading: wallMessagesLoading } = useCollection<WallMessage>(wallMessagesQuery);
+  
+  const handleEmojiSelect = (emoji: string) => {
+    setNewWallMessage(prev => prev + emoji);
+  };
   
   const handlePostWallMessage = () => {
     if (!newWallMessage.trim() || !user || !firestore || !userProfile) return;
@@ -72,31 +80,7 @@ export default function CommunityPage() {
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="grid gap-8 lg:grid-cols-1">
           
-          {/* HUST Bottle feature temporarily disabled
-          <Card className="hover:shadow-xl transition-shadow duration-300">
-            <CardHeader>
-                <div className="flex items-center gap-3">
-                    <Waves className="w-8 h-8 text-primary" />
-                    <div>
-                        <CardTitle className="font-headline text-2xl">HUST Bottle</CardTitle>
-                        <CardDescription>Send a message into the digital sea, or find one from a stranger.</CardDescription>
-                    </div>
-                </div>
-            </CardHeader>
-            <CardContent className="text-center space-y-4">
-                <p className="text-6xl">🌊</p>
-                <p className="text-muted-foreground">The tide is calm. What will you do?</p>
-            </CardContent>
-            <CardFooter className="flex gap-4 justify-center">
-                <Button size="lg" onClick={() => setIsThrowing(true)} disabled={!user}>
-                    <Sailboat className="mr-2"/> Throw a Bottle
-                </Button>
-                <Button size="lg" variant="outline" onClick={handlePickBottle} disabled={!user}>
-                    <Inbox className="mr-2"/> Pick One Up
-                </Button>
-            </CardFooter>
-          </Card>
-          */}
+          {/* HUST Bottle feature temporarily disabled */}
 
           <Card className="hover:shadow-xl transition-shadow duration-300">
             <CardHeader>
@@ -129,6 +113,28 @@ export default function CommunityPage() {
                       value={newWallMessage}
                       onChange={(e) => setNewWallMessage(e.target.value)}
                     />
+                     <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="ghost" size="icon" className="text-muted-foreground" disabled={!user}>
+                                <Smile className="w-5 h-5"/>
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto border-none bg-transparent shadow-none">
+                           <div className="grid grid-cols-6 gap-2 p-2 rounded-lg bg-background border shadow-lg">
+                                {emojis.map(emoji => (
+                                    <Button 
+                                        key={emoji}
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleEmojiSelect(emoji)}
+                                        className="text-2xl"
+                                    >
+                                        {emoji}
+                                    </Button>
+                                ))}
+                            </div>
+                        </PopoverContent>
+                    </Popover>
                     <Button 
                       size="icon" 
                       aria-label="Post message" 

@@ -15,7 +15,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { ThumbsUp, MessageSquare, MapPin, ImagePlus, X, MoreHorizontal, Send } from "lucide-react";
+import { ThumbsUp, MessageSquare, MapPin, ImagePlus, X, MoreHorizontal, Send, Smile } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
@@ -26,7 +27,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
   Dialog,
@@ -319,6 +319,8 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
     );
 }
 
+const emojis = ['😀', '😂', '😍', '🤔', '👍', '❤️', '🔥', '🎉', '😊', '🙏', '💯', '🙌'];
+
 export default function SocialPage() {
     const firestore = useFirestore();
     const { user } = useUser();
@@ -359,6 +361,10 @@ export default function SocialPage() {
         setNewPostLocation(tempLocation);
         setIsLocationDialogOpen(false);
     }
+    
+    const handleEmojiSelect = (emoji: string) => {
+        setNewPostContent(prev => prev + emoji);
+    };
 
     const handlePost = () => {
         if ((!newPostContent.trim() && !newPostImage) || !user || !firestore || !userProfile) return;
@@ -482,6 +488,28 @@ export default function SocialPage() {
                                             </DialogFooter>
                                         </DialogContent>
                                     </Dialog>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="text-muted-foreground" disabled={!user}>
+                                                <Smile className="w-5 h-5"/>
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto border-none bg-transparent shadow-none">
+                                            <div className="grid grid-cols-6 gap-2 p-2 rounded-lg bg-background border shadow-lg">
+                                                {emojis.map(emoji => (
+                                                    <Button 
+                                                        key={emoji}
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => handleEmojiSelect(emoji)}
+                                                        className="text-2xl"
+                                                    >
+                                                        {emoji}
+                                                    </Button>
+                                                ))}
+                                            </div>
+                                        </PopoverContent>
+                                    </Popover>
                                 </div>
                                 <Button onClick={handlePost} disabled={(!newPostContent.trim() && !newPostImage) || !user}>Post</Button>
                             </div>
@@ -505,6 +533,7 @@ export default function SocialPage() {
     
 
     
+
 
 
 
