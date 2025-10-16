@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, UserPlus, Loader2 } from 'lucide-react';
 import { useFirestore, useUser } from '@/firebase';
-import { collection, query, where, getDocs, DocumentData } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
@@ -44,7 +44,7 @@ export default function SocialPage() {
         setIsLoading(true);
         setSearchPerformed(true);
         const usersRef = collection(firestore, 'users');
-        // Use a range query for prefix matching instead of an exact match.
+        
         const q = query(
             usersRef, 
             where('displayName', '>=', searchQuery),
@@ -55,10 +55,8 @@ export default function SocialPage() {
             const querySnapshot = await getDocs(q);
             const results: UserSearchResult[] = [];
             querySnapshot.forEach((doc) => {
-                // Exclude current user from search results
                 if (doc.id !== user?.uid) {
                     const data = doc.data();
-                    // Perform case-insensitive client-side filtering
                     if (data.displayName.toLowerCase().startsWith(searchQuery.toLowerCase())) {
                       results.push({
                           id: doc.id,
