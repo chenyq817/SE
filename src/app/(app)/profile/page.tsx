@@ -20,7 +20,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, User as UserIcon } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-
 const profileSchema = z.object({
   displayName: z.string().min(3, { message: 'Display name must be at least 3 characters.' }),
   bio: z.string().max(160, { message: 'Bio must be 160 characters or less.' }).optional(),
@@ -35,6 +34,7 @@ type UserProfile = {
   displayName: string;
   avatarId: string;
   avatarUrl?: string;
+  imageBase64?: string;
   bio?: string;
   age?: number;
   gender?: string;
@@ -49,6 +49,9 @@ export default function ProfilePage() {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  
+  // State to manage avatar changes before saving
+  const [newAvatar, setNewAvatar] = useState<{ id?: string; base64?: string | null }>({});
 
   const userProfileRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -77,33 +80,54 @@ export default function ProfilePage() {
         gender: userProfile.gender || '',
         address: userProfile.address || '',
       });
+      // Initialize avatar state
+      setNewAvatar({ id: userProfile.avatarId, base64: userProfile.imageBase64 || null });
     }
   }, [userProfile, form]);
-
+  
   const handleAvatarSelect = (avatarId: string) => {
-    if (!userProfileRef) return;
-    updateDocumentNonBlocking(userProfileRef, { avatarId, avatarUrl: null });
-    toast({ title: 'Avatar updated!' });
+    setNewAvatar({ id: avatarId, base64: null });
   };
   
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file && userProfileRef) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            const base64String = reader.result as string;
-            updateDocumentNonBlocking(userProfileRef, { avatarUrl: base64String });
-            toast({ title: 'Avatar updated!' });
-        };
-        reader.readAsDataURL(file);
+    if (file) {
+      if (file.size > 1048487) {
+        toast({
+          variant: 'destructive',
+          title: 'Image is too large',
+          description: 'Please upload an image smaller than 1MB.',
+        });
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setNewAvatar({ base64: base64String, id: undefined });
+      };
+      reader.readAsDataURL(file);
     }
   };
 
   const onSubmit = async (data: ProfileFormValues) => {
     if (!userProfileRef) return;
     setIsSaving(true);
+    
+    const updatedData: Partial<UserProfile> = { ...data };
+
+    // Consolidate avatar information
+    if (newAvatar.base64) {
+      updatedData.imageBase64 = newAvatar.base64;
+      updatedData.avatarUrl = null; // Deprecated, ensure it's cleared
+      updatedData.avatarId = ''; // Clear default avatar id
+    } else if (newAvatar.id) {
+      updatedData.avatarId = newAvatar.id;
+      updatedData.imageBase64 = null;
+      updatedData.avatarUrl = null;
+    }
+
     try {
-      await updateDocumentNonBlocking(userProfileRef, data);
+      updateDocumentNonBlocking(userProfileRef, updatedData);
       toast({ title: 'Profile updated successfully!' });
     } catch (error) {
       toast({ variant: 'destructive', title: 'Error updating profile', description: 'Please try again.' });
@@ -122,9 +146,16 @@ export default function ProfilePage() {
     );
   }
 
-  const currentAvatarUrl = userProfile?.avatarUrl || PlaceHolderImages.find(img => img.id === userProfile?.avatarId)?.imageUrl;
-
-
+  // Determine which avatar to display based on local state first, then remote data
+  let currentAvatarUrl;
+  if (newAvatar.base64) {
+    currentAvatarUrl = newAvatar.base64;
+  } else if (newAvatar.id) {
+    currentAvatarUrl = PlaceHolderImages.find(img => img.id === newAvatar.id)?.imageUrl;
+  } else {
+    currentAvatarUrl = userProfile?.imageBase64 || PlaceHolderImages.find(img => img.id === userProfile?.avatarId)?.imageUrl;
+  }
+  
   return (
     <div className="flex flex-col h-full">
       <Header title="My Profile" />
@@ -140,7 +171,7 @@ export default function ProfilePage() {
                         </AvatarFallback>
                     </Avatar>
                     <div>
-                        <CardTitle className="text-3xl font-headline">{userProfile?.displayName}</CardTitle>
+                        <CardTitle className="text-3xl font-headline">{form.watch('displayName')}</CardTitle>
                         <CardDescription>Manage your profile settings and personal information.</CardDescription>
                     </div>
                 </div>
@@ -151,7 +182,7 @@ export default function ProfilePage() {
                     <div className="flex flex-wrap gap-4 items-center">
                         {defaultAvatars.map(avatar => (
                             <button key={avatar.id} onClick={() => handleAvatarSelect(avatar.id)}>
-                                <Avatar className={`h-16 w-16 transition-transform hover:scale-110 ${userProfile?.avatarId === avatar.id && !userProfile.avatarUrl ? 'ring-2 ring-primary ring-offset-2' : ''}`}>
+                                <Avatar className={`h-16 w-16 transition-transform hover:scale-110 ${newAvatar.id === avatar.id && !newAvatar.base64 ? 'ring-2 ring-primary ring-offset-2' : ''}`}>
                                     <AvatarImage src={avatar.imageUrl} alt={avatar.description} />
                                     <AvatarFallback>{avatar.id.slice(-1)}</AvatarFallback>
                                 </Avatar>
@@ -198,7 +229,7 @@ export default function ProfilePage() {
                             control={form.control}
                             name="gender"
                             render={({ field }) => (
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <Select onValueChange={field.onChange} value={field.value}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select gender" />
                                     </SelectTrigger>

@@ -24,6 +24,7 @@ type UserProfile = {
   displayName: string;
   avatarId: string;
   avatarUrl?: string;
+  imageBase64?: string;
 };
 
 export function UserNav() {
@@ -39,10 +40,11 @@ export function UserNav() {
 
     const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
     
-    const defaultAvatar = PlaceHolderImages.find(img => img.id === userProfile?.avatarId);
-    const avatarSrc = userProfile?.avatarUrl || defaultAvatar?.imageUrl;
+    // Prioritize imageBase64 for custom avatar, then avatarId for default, then fallback.
+    const avatarSrc = userProfile?.imageBase64 || PlaceHolderImages.find(img => img.id === userProfile?.avatarId)?.imageUrl;
 
     const handleLogout = async () => {
+        if (!auth) return;
         await signOut(auth);
         router.push('/login');
     };

@@ -47,7 +47,8 @@ type Post = {
   authorId: string;
   authorName: string; 
   authorAvatarId?: string; 
-  authorAvatarUrl?: string;
+  authorAvatarUrl?: string; // For backward compatibility
+  authorImageBase64?: string; // For custom uploads
   content: string;
   location?: string;
   imageBase64?: string; 
@@ -58,7 +59,8 @@ type Post = {
 type UserProfile = {
   displayName: string;
   avatarId: string;
-  avatarUrl?: string;
+  avatarUrl?: string; // For backward compatibility
+  imageBase64?: string;
   bio?: string;
   age?: number;
   gender?: string;
@@ -71,8 +73,8 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
     const { user } = useUser();
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-    const authorDefaultAvatar = PlaceHolderImages.find(img => img.id === post.authorAvatarId);
-    const authorAvatarSrc = post.authorAvatarUrl || authorDefaultAvatar?.imageUrl;
+    // Prioritize new imageBase64 field for author avatar
+    const authorAvatarSrc = post.authorImageBase64 || PlaceHolderImages.find(img => img.id === post.authorAvatarId)?.imageUrl;
     
     const isLiked = user ? post.likeIds.includes(user.uid) : false;
     const isAuthor = user ? user.uid === post.authorId : false;
@@ -217,8 +219,7 @@ export default function SocialPage() {
     }, [firestore, user]);
     const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
 
-    const userDefaultAvatar = PlaceHolderImages.find(img => img.id === userProfile?.avatarId);
-    const userAvatarSrc = userProfile?.avatarUrl || userDefaultAvatar?.imageUrl;
+    const userAvatarSrc = userProfile?.imageBase64 || PlaceHolderImages.find(img => img.id === userProfile?.avatarId)?.imageUrl;
 
     const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -242,14 +243,15 @@ export default function SocialPage() {
         const postData: Partial<Post> = {
             authorId: user.uid,
             authorName: userProfile.displayName || "Anonymous User",
-            authorAvatarId: userProfile.avatarId || "avatar-4",
             content: newPostContent,
             likeIds: [],
             createdAt: serverTimestamp(),
         };
         
-        if (userProfile.avatarUrl) {
-            postData.authorAvatarUrl = userProfile.avatarUrl;
+        if (userProfile.imageBase64) {
+            postData.authorImageBase64 = userProfile.imageBase64;
+        } else {
+            postData.authorAvatarId = userProfile.avatarId || "avatar-4";
         }
 
         if (newPostLocation && newPostLocation.trim() && newPostLocation !== 'On Campus') {
@@ -282,7 +284,7 @@ export default function SocialPage() {
                                 {user && userProfile && (
                                 <Avatar>
                                     {userAvatarSrc && <AvatarImage src={userAvatarSrc} alt="Your avatar" />}
-                                    <AvatarFallback>{userProfile?.displayName.charAt(0) || 'U'}</AvatarFallback>
+                                    <AvatarFallback>{userProfile?.displayName?.charAt(0) || 'U'}</AvatarFallback>
                                 </Avatar>
                                 )}
                                 <div className="flex-grow">
@@ -374,3 +376,4 @@ export default function SocialPage() {
     );
 }
 
+    
