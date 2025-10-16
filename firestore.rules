@@ -1,110 +1,100 @@
 /**
- * @file Firebase Security Rules for Prototyping
- *
- * @description This ruleset prioritizes security by strictly controlling access based on user authentication and ownership.
- * Data validation is relaxed to enable rapid prototyping.
+ * @file firestore.rules
+ * @description Firestore Security Rules for the application.
  *
  * Core Philosophy:
- *   - Strict user-ownership model: Users can only read and write their own data.
- *   - Public read access for specific collections with owner-only writes.
- *   - No user listing: Listing all users is disallowed for privacy.
+ * This ruleset prioritizes user-generated content access control. Users own their posts and comments. Public profile information is accessible.
  *
  * Data Structure:
- *   - User profiles are stored under `/users/{userId}`.
- *   - Posts are stored under `/posts/{postId}`, and comments under `/comments/{commentId}`.
+ * - /posts/{postId}: Stores social media posts.
+ * - /comments/{commentId}: Stores comments on posts.
+ * - /users/{userId}: Stores public user profiles.
  *
  * Key Security Decisions:
- *   - User profiles are private and only accessible by the user themselves.
- *   - Public read access is granted to the `posts` and `comments` collections.
- *   - Writes to `posts` and `comments` are restricted to authenticated users and must include the correct `authorId`.
+ * - Posts can only be created, updated, or deleted by their authors.
+ * - Comments can only be created, updated, or deleted by their authors.
+ * - Public user profiles are readable by everyone, but only updatable by the user themselves.
+ * - Listing of users is disallowed.
  *
  * Denormalization for Authorization:
- *   - The `Post` and `Comment` entities require the `authorId` field for write authorization. This field is validated against the authenticated user's UID.
+ * - The `posts` and `comments` collections require that each document contains the `authorId` so the rules can enforce ownership.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Secure user profiles.
-     * @path /users/{userId}
-     * @allow (get) Authenticated user can read their own profile.
-     * @allow (create) Authenticated user can create their own profile.
-     * @allow (update) Authenticated user can update their own profile.
-     * @allow (delete) Authenticated user can delete their own profile.
-     * @deny (get) Authenticated user cannot read another user's profile.
-     * @deny (list) Listing all users is not allowed.
-     * @deny (create) Unauthenticated user cannot create a profile.
+     * @description Checks if the user is signed in.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the authenticated user's ID matches the provided userId.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the authenticated user is the owner of the existing document.
+     */
+    function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Rules for the /posts collection.
+     * @path /posts/{postId}
+     * @allow (create) User with auth.uid "user_abc" creates a new post with authorId "user_abc".
+     * @deny (create) User with auth.uid "user_xyz" tries to create a new post with authorId "user_abc".
      * @principle Enforces document ownership for writes.
      */
-    match /users/{userId} {
-      // Helper function to check if the user is signed in
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      // Helper function to check if the user is the owner of the document
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if false;
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isOwner(userId);
-      allow delete: if isSignedIn() && isOwner(userId);
-    }
-
-    /**
-     * @description Allow public read access to posts, but restrict writes to authenticated users.
-     * @path /posts/{postId}
-     * @allow (get) Any user can read any post.
-     * @allow (list) Any user can list posts.
-     * @allow (create) Authenticated user can create a post if authorId matches their UID.
-     * @allow (update) Authenticated user can update a post they own.
-     * @allow (delete) Authenticated user can delete a post they own.
-     * @deny (create) Authenticated user cannot create a post with mismatched authorId.
-     * @deny (update) Authenticated user cannot update a post they don't own.
-     * @deny (delete) Authenticated user cannot delete a post they don't own.
-     * @principle Public read with owner-only writes, enforces authorId on create.
-     */
     match /posts/{postId} {
-      // Helper function to check if the user is signed in
-      function isSignedIn() {
-        return request.auth != null;
-      }
+      // Anyone can read posts
+      allow get, list: if true;
 
-      allow get: if true;
-      allow list: if true;
+      // Only the post author can create, update, or delete
       allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-      allow update: if isSignedIn() && request.resource.data.authorId == request.auth.uid && resource.data.authorId == request.auth.uid;
-      allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
+      allow update: if isExistingOwner(resource.data.authorId);
+      allow delete: if isExistingOwner(resource.data.authorId);
     }
 
     /**
-     * @description Allow public read access to comments, but restrict writes to authenticated users.
+     * @description Rules for the /comments collection.
      * @path /comments/{commentId}
-     * @allow (get) Any user can read any comment.
-     * @allow (list) Any user can list comments.
-     * @allow (create) Authenticated user can create a comment if authorId matches their UID.
-     * @allow (update) Authenticated user can update a comment they own.
-     * @allow (delete) Authenticated user can delete a comment they own.
-     * @deny (create) Authenticated user cannot create a comment with mismatched authorId.
-     * @deny (update) Authenticated user cannot update a comment they don't own.
-     * @deny (delete) Authenticated user cannot delete a comment they don't own.
-     * @principle Public read with owner-only writes, enforces authorId on create.
+     * @allow (create) User with auth.uid "user_abc" creates a new comment with authorId "user_abc".
+     * @deny (create) User with auth.uid "user_xyz" tries to create a new comment with authorId "user_abc".
+     * @principle Enforces document ownership for writes.
      */
     match /comments/{commentId} {
-      // Helper function to check if the user is signed in
-      function isSignedIn() {
-        return request.auth != null;
-      }
+      // Anyone can read comments
+      allow get, list: if true;
 
-      allow get: if true;
-      allow list: if true;
+      // Only the comment author can create, update, or delete
       allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-      allow update: if isSignedIn() && request.resource.data.authorId == request.auth.uid && resource.data.authorId == request.auth.uid;
-      allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
+      allow update: if isExistingOwner(resource.data.authorId);
+      allow delete: if isExistingOwner(resource.data.authorId);
+    }
+
+    /**
+     * @description Rules for the /users collection.
+     * @path /users/{userId}
+     * @allow (get) Any user can retrieve a user profile.
+     * @allow (update) User with auth.uid "user_abc" updates their own profile (userId "user_abc").
+     * @deny (update) User with auth.uid "user_xyz" tries to update the profile of user "user_abc".
+     * @principle Enforces document ownership for updates.
+     */
+    match /users/{userId} {
+      // Anyone can read user profiles
+      allow get: if true;
+      allow list: if false;
+
+      // Only the user can update their own profile
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if false;
     }
   }
 }
