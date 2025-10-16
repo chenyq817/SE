@@ -232,21 +232,25 @@ export default function SocialPage() {
     const handlePost = () => {
         if ((!newPostContent.trim() && !newPostImage) || !user || !firestore || !userProfile) return;
 
-        const newPost: Omit<Post, 'id' | 'likeIds' | 'createdAt'> & { likeIds: string[], createdAt: any } = {
+        const postData: any = {
             authorId: user.uid,
             authorName: userProfile.displayName || "Anonymous User",
             authorAvatarId: userProfile.avatarId || "avatar-4",
             content: newPostContent,
-            location: newPostLocation,
             likeIds: [],
             createdAt: serverTimestamp(),
         };
 
-        if (newPostImage) {
-            newPost.imageBase64 = newPostImage;
+        if (newPostLocation && newPostLocation !== 'On Campus') {
+          postData.location = newPostLocation;
         }
 
-        addDocumentNonBlocking(collection(firestore, 'posts'), newPost);
+        if (newPostImage) {
+            postData.imageBase64 = newPostImage;
+        }
+        
+        addDocumentNonBlocking(collection(firestore, 'posts'), postData);
+
         setNewPostContent('');
         setNewPostImage(null);
         setNewPostLocation('On Campus');
@@ -356,3 +360,5 @@ export default function SocialPage() {
         </div>
     );
 }
+
+    
