@@ -44,9 +44,12 @@ export default function SocialPage() {
         setIsLoading(true);
         setSearchPerformed(true);
         const usersRef = collection(firestore, 'users');
-        // A more robust search would use a dedicated search service like Algolia,
-        // but for this example we will do a simple exact match query.
-        const q = query(usersRef, where('displayName', '==', searchQuery));
+        // Use a range query for prefix matching instead of an exact match.
+        const q = query(
+            usersRef, 
+            where('displayName', '>=', searchQuery),
+            where('displayName', '<=', searchQuery + '\uf8ff')
+        );
 
         try {
             const querySnapshot = await getDocs(q);
@@ -55,12 +58,14 @@ export default function SocialPage() {
                 // Exclude current user from search results
                 if (doc.id !== user?.uid) {
                     const data = doc.data();
-                    results.push({
-                        id: doc.id,
-                        displayName: data.displayName,
-                        avatarId: data.avatarId,
-                        imageBase64: data.imageBase64,
-                    });
+                    if (data.displayName.toLowerCase().startsWith(searchQuery.toLowerCase())) {
+                      results.push({
+                          id: doc.id,
+                          displayName: data.displayName,
+                          avatarId: data.avatarId,
+                          imageBase64: data.imageBase64,
+                      });
+                    }
                 }
             });
             setSearchResults(results);
@@ -160,5 +165,3 @@ export default function SocialPage() {
     </div>
   );
 }
-
-    
