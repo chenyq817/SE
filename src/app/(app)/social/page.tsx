@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo, useEffect } from "react";
@@ -14,13 +13,24 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { UserPlus, Search, Loader2, MessageSquare, UserX, Check, X } from "lucide-react";
-import { useFirestore, useUser, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking, useCollection, useDoc } from "@/firebase";
+import { useFirestore, useUser, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking, useCollection, useDoc, FirestorePermissionError, errorEmitter } from "@/firebase";
 import { collection, query, where, getDocs, doc, writeBatch, arrayUnion, arrayRemove, serverTimestamp, orderBy } from "firebase/firestore";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import type { WithId } from "@/firebase";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 type UserProfile = {
   displayName: string;
@@ -273,6 +283,7 @@ export default function SocialPage() {
     if (!searchQuery.trim() || !firestore) return;
     setIsSearching(true);
     setSearchAttempted(true);
+    setSearchResults([]);
 
     const usersRef = collection(firestore, "users");
     const q = query(usersRef, where("displayName", "==", searchQuery.trim()));
@@ -288,6 +299,11 @@ export default function SocialPage() {
       setSearchResults(users);
     } catch (error) {
       console.error("Error searching for users:", error);
+      const contextualError = new FirestorePermissionError({
+          operation: 'list',
+          path: `users`,
+      });
+      errorEmitter.emit('permission-error', contextualError);
       setSearchResults([]);
     } finally {
       setIsSearching(false);
@@ -373,6 +389,9 @@ export default function SocialPage() {
                     <div className="space-y-4">
                         {searchResults.map(foundUser => {
                            const avatarSrc = foundUser.imageBase64 || PlaceHolderImages.find(img => img.id === foundUser.avatarId)?.imageUrl;
+                           const isFriend = currentUserProfile?.friendIds?.includes(foundUser.id);
+                           // In a real app, you'd also check for pending requests
+                           const isSelf = foundUser.id === user?.uid;
                            return (
                                 <div key={foundUser.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-secondary/50">
                                     <div className="flex items-center gap-4">
@@ -382,10 +401,15 @@ export default function SocialPage() {
                                         </Avatar>
                                         <p className="font-semibold">{foundUser.displayName}</p>
                                     </div>
-                                    <Button variant="outline" size="sm" onClick={() => handleAddFriend(foundUser.id)}>
-                                        <UserPlus className="mr-2 h-4 w-4" />
-                                        Add Friend
-                                    </Button>
+                                    {!isSelf && !isFriend && (
+                                        <Button variant="outline" size="sm" onClick={() => handleAddFriend(foundUser.id)}>
+                                            <UserPlus className="mr-2 h-4 w-4" />
+                                            Add Friend
+                                        </Button>
+                                    )}
+                                     {isFriend && (
+                                        <Button variant="ghost" size="sm" disabled>Already Friends</Button>
+                                    )}
                                 </div>
                            )
                         })}
@@ -443,3 +467,4 @@ export default function SocialPage() {
   );
 }
 
+    
