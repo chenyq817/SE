@@ -38,7 +38,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn } from '@/lib/utils';
-import { useCollection, useFirestore, useUser, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
+import { useCollection, useFirestore, useUser, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking, useDoc } from '@/firebase';
 import { collection, query, orderBy, serverTimestamp, arrayUnion, arrayRemove, doc } from 'firebase/firestore';
 import type { WithId } from '@/firebase';
 
@@ -52,6 +52,11 @@ type Post = {
   imageBase64?: string; // Storing image as Base64 data URI
   likeIds: string[];
   createdAt: any; // Firestore Timestamp
+};
+
+type UserProfile = {
+  displayName: string;
+  avatarId: string;
 };
 
 
@@ -200,7 +205,13 @@ export default function SocialPage() {
 
     const { data: socialPosts, isLoading } = useCollection<Post>(postsQuery);
 
-    const userAvatar = PlaceHolderImages.find(img => img.id === 'avatar-1');
+    const userProfileRef = useMemoFirebase(() => {
+        if (!firestore || !user) return null;
+        return doc(firestore, 'users', user.uid);
+    }, [firestore, user]);
+    const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
+
+    const userAvatar = PlaceHolderImages.find(img => img.id === userProfile?.avatarId);
 
     const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -219,12 +230,12 @@ export default function SocialPage() {
     }
 
     const handlePost = () => {
-        if ((!newPostContent.trim() && !newPostImage) || !user || !firestore) return;
+        if ((!newPostContent.trim() && !newPostImage) || !user || !firestore || !userProfile) return;
 
         const newPost: Omit<Post, 'id' | 'likeIds' | 'createdAt'> & { likeIds: string[], createdAt: any } = {
             authorId: user.uid,
-            authorName: user.displayName || user.email?.split('@')[0] || "Anonymous User",
-            authorAvatarId: "avatar-1", // Placeholder
+            authorName: userProfile.displayName || "Anonymous User",
+            authorAvatarId: userProfile.avatarId || "avatar-4",
             content: newPostContent,
             location: newPostLocation,
             likeIds: [],
@@ -255,7 +266,7 @@ export default function SocialPage() {
                             <div className="flex w-full gap-4">
                                 {userAvatar && user && <Avatar>
                                     <AvatarImage src={userAvatar.imageUrl} alt="Your avatar" data-ai-hint={userAvatar.imageHint} />
-                                    <AvatarFallback>U</AvatarFallback>
+                                    <AvatarFallback>{userProfile?.displayName.charAt(0) || 'U'}</AvatarFallback>
                                 </Avatar>}
                                 <div className="flex-grow">
                                     <Textarea 

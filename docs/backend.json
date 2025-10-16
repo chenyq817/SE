@@ -51,6 +51,22 @@
         "createdAt"
       ]
     },
+    "UserProfile": {
+      "title": "User Profile",
+      "type": "object",
+      "description": "Represents a user's public profile information.",
+      "properties": {
+        "displayName": {
+          "type": "string",
+          "description": "The user's display name."
+        },
+        "avatarId": {
+          "type": "string",
+          "description": "The ID for the user's avatar image from the placeholder list."
+        }
+      },
+      "required": ["displayName", "avatarId"]
+    },
     "User": {
       "title": "User",
       "type": "object",
@@ -327,6 +343,12 @@
         "$ref": "#/entities/Comment"
       },
       "description": "Holds all comments associated with posts."
+    },
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserProfile"
+      },
+      "description": "Holds public profile information for each user."
     }
   }
 }

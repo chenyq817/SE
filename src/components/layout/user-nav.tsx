@@ -12,18 +12,32 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useAuth, useUser } from "@/firebase";
+import { useAuth, useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { LogOut, User as UserIcon } from "lucide-react";
+import { doc } from 'firebase/firestore';
+
+type UserProfile = {
+  displayName: string;
+  avatarId: string;
+};
 
 export function UserNav() {
     const { user } = useUser();
     const auth = useAuth();
+    const firestore = useFirestore();
     const router = useRouter();
+
+    const userProfileRef = useMemoFirebase(() => {
+      if (!firestore || !user) return null;
+      return doc(firestore, 'users', user.uid);
+    }, [firestore, user]);
+
+    const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
     
-    const userAvatar = PlaceHolderImages.find(img => img.id === 'avatar-1');
+    const userAvatar = PlaceHolderImages.find(img => img.id === userProfile?.avatarId);
 
     const handleLogout = async () => {
         await signOut(auth);
@@ -41,9 +55,9 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            {userAvatar && <AvatarImage src={userAvatar.imageUrl} alt="User avatar" />}
+            {userAvatar && <AvatarImage src={userAvatar.imageUrl} alt="User avatar" data-ai-hint={userAvatar.imageHint} />}
             <AvatarFallback>
-                <UserIcon className="h-5 w-5"/>
+                {userProfile?.displayName?.charAt(0) || <UserIcon className="h-5 w-5"/>}
             </AvatarFallback>
           </Avatar>
         </Button>
@@ -52,7 +66,7 @@ export function UserNav() {
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">
-              {user.displayName || user.email?.split('@')[0] || "Anonymous User"}
+              {userProfile?.displayName || user.email?.split('@')[0] || "Anonymous User"}
             </p>
             <p className="text-xs leading-none text-muted-foreground">
               {user.email}

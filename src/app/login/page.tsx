@@ -25,8 +25,9 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Bot, Loader2 } from 'lucide-react';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useUser, useFirestore, setDocumentNonBlocking } from '@/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { doc } from 'firebase/firestore';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
@@ -35,10 +36,13 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+const defaultAvatars = ['avatar-1', 'avatar-2', 'avatar-3', 'avatar-4'];
+
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const auth = useAuth();
+  const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('signin');
@@ -65,7 +69,18 @@ export default function LoginPage() {
         toast({ title: 'Sign in successful!' });
         router.push('/');
       } else {
-        await createUserWithEmailAndPassword(auth, values.email, values.password);
+        const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+        const newUser = userCredential.user;
+        
+        // Create user profile in Firestore
+        const userProfileRef = doc(firestore, 'users', newUser.uid);
+        const randomAvatarId = defaultAvatars[Math.floor(Math.random() * defaultAvatars.length)];
+        
+        await setDocumentNonBlocking(userProfileRef, {
+          displayName: values.email.split('@')[0],
+          avatarId: randomAvatarId,
+        }, {});
+
         toast({ title: 'Sign up successful! Please sign in.' });
         setActiveTab('signin'); // Switch to sign in tab after successful registration
         form.reset();
