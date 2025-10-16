@@ -68,28 +68,40 @@
           "description": "The ID for the user's default avatar image from the placeholder list."
         },
         "avatarUrl": {
-            "type": "string",
-            "description": "URL of the user's custom uploaded avatar."
+          "type": "string",
+          "description": "URL of the user's custom uploaded avatar."
         },
         "bio": {
-            "type": "string",
-            "description": "A short bio or signature for the user."
+          "type": "string",
+          "description": "A short bio or signature for the user."
         },
         "age": {
-            "type": "number",
-            "description": "The user's age."
+          "type": "number",
+          "description": "The user's age."
         },
         "gender": {
-            "type": "string",
-            "description": "The user's gender.",
-            "enum": ["Male", "Female", "Other", "Prefer not to say"]
+          "type": "string",
+          "description": "The user's gender.",
+          "enum": [
+            "Male",
+            "Female",
+            "Other",
+            "Prefer not to say"
+          ]
         },
         "address": {
-            "type": "string",
-            "description": "The user's address or location."
+          "type": "string",
+          "description": "The user's address or location."
+        },
+        "imageBase64": {
+          "type": "string",
+          "description": "Base64 encoded string of the user's avatar."
         }
       },
-      "required": ["displayName", "avatarId"]
+      "required": [
+        "displayName",
+        "avatarId"
+      ]
     },
     "User": {
       "title": "User",
@@ -376,5 +388,3 @@
     }
   }
 }
-
-    

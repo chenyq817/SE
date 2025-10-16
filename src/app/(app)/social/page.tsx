@@ -25,7 +25,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
   Dialog,
@@ -60,6 +59,10 @@ type UserProfile = {
   displayName: string;
   avatarId: string;
   avatarUrl?: string;
+  bio?: string;
+  age?: number;
+  gender?: string;
+  address?: string;
 };
 
 
@@ -236,7 +239,7 @@ export default function SocialPage() {
     const handlePost = () => {
         if ((!newPostContent.trim() && !newPostImage) || !user || !firestore || !userProfile) return;
 
-        const postData: any = {
+        const postData: Partial<Post> = {
             authorId: user.uid,
             authorName: userProfile.displayName || "Anonymous User",
             authorAvatarId: userProfile.avatarId || "avatar-4",
@@ -371,4 +374,3 @@ export default function SocialPage() {
     );
 }
 
-    
