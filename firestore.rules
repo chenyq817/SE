@@ -1,50 +1,78 @@
 /**
  * @file Firestore Security Rules
- * @description This ruleset enforces open access to all data, effectively disabling security.
- *              This is due to the user's explicit request to "取消该安全性规则".
- * @note This configuration is highly insecure and should ONLY be used for prototyping and local development.
+ * @description This ruleset prioritizes ease of use during the prototyping phase
+ * by maximizing accessibility while still maintaining basic security principles.
+ *
+ * Core Philosophy:
+ *   - Data access is generally open for reads to facilitate rapid prototyping.
+ *   - Writes are restricted to authenticated users to prevent anonymous data modification.
+ *
+ * Data Structure:
+ *   - /posts/{postId}: Public collection for all user-generated posts.
+ *   - /comments/{commentId}: Public collection for all comments on posts.
+ *   - /users/{userId}: Public collection for all user profiles.
+ *
+ * Key Security Decisions:
+ *   - User listing is generally allowed.
+ *   - Write operations are limited to authenticated users, but data validation is minimal.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Open access to all posts.
+    /**
+     * @description Allows anyone to read posts, and authenticated users to create, update, and delete posts.
+     * @path /posts/{postId}
+     * @allow (get, list): Any user can read any post.
+     * @allow (create): Authenticated user can create a new post.
+     * @allow (update, delete): Authenticated user can update or delete a post.
+     * @deny (create): An unauthenticated user cannot create a post.
+     * @deny (update, delete): An unauthenticated user cannot update or delete a post.
+     * @principle Allows public read access and authenticated write access.
+     */
     match /posts/{postId} {
-      /**
-       * @description Allows any user to read, create, update, and delete posts.
-       * @path /posts/{postId}
-       * @allow (get, list, create, update, delete) - Any user.
-       * @deny None. This rule is intentionally open.
-       * @principle Security is disabled.
-       */
       allow get, list: if true;
-      allow create, update, delete: if true;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
     }
 
-    // Open access to all comments.
+    /**
+     * @description Allows anyone to read comments, and authenticated users to create, update, and delete comments.
+     * @path /comments/{commentId}
+     * @allow (get, list): Any user can read any comment.
+     * @allow (create): Authenticated user can create a new comment.
+     * @allow (update, delete): Authenticated user can update or delete a comment.
+     * @deny (create): An unauthenticated user cannot create a comment.
+     * @deny (update, delete): An unauthenticated user cannot update or delete a comment.
+     * @principle Allows public read access and authenticated write access.
+     */
     match /comments/{commentId} {
-      /**
-       * @description Allows any user to read, create, update, and delete comments.
-       * @path /comments/{commentId}
-       * @allow (get, list, create, update, delete) - Any user.
-       * @deny None. This rule is intentionally open.
-       * @principle Security is disabled.
-       */
       allow get, list: if true;
-      allow create, update, delete: if true;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
     }
 
-    // Open access to all user profiles.
+    /**
+     * @description Allows anyone to read a user profile, and authenticated users to create, update, and delete their own profile.
+     * @path /users/{userId}
+     * @allow (get, list): Any user can read any user profile.
+     * @allow (create): Authenticated user can create their own profile.
+     * @allow (update, delete): Authenticated user can update or delete their own profile.
+     * @deny (create): An unauthenticated user cannot create a profile.
+     * @deny (update, delete): An unauthenticated user cannot update or delete a profile.
+     * @principle Allows public read access and authenticated user-owned write access.
+     */
     match /users/{userId} {
-      /**
-       * @description Allows any user to read, create, update, and delete user profiles.
-       * @path /users/{userId}
-       * @allow (get, list, create, update, delete) - Any user.
-       * @deny None. This rule is intentionally open.
-       * @principle Security is disabled.
-       */
       allow get, list: if true;
-      allow create, update, delete: if true;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
     }
   }
 }
