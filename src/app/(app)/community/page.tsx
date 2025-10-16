@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from "react";
 import { Header } from "@/components/layout/header";
 import {
   Card,
@@ -5,10 +8,24 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Waves, Columns, Send } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { Waves, Columns, Send, Sailboat, Inbox, Loader2 } from "lucide-react";
+import { useUser, useFirestore, addDocumentNonBlocking, useDoc } from "@/firebase";
+import { collection, query, where, getDocs, serverTimestamp, limit } from "firebase/firestore";
+import type { WithId } from "@/firebase";
+import { useToast } from "@/hooks/use-toast";
 
 const WallMessage = ({ children, className }: { children: React.ReactNode, className?: string }) => (
     <div className={`p-4 bg-yellow-200 dark:bg-yellow-700 dark:text-yellow-100 rounded-lg shadow-md transform -rotate-1 hover:rotate-0 hover:scale-105 transition-transform ${className}`}>
@@ -16,7 +33,74 @@ const WallMessage = ({ children, className }: { children: React.ReactNode, class
     </div>
 )
 
+type Bottle = {
+  content: string;
+  authorName: string;
+};
+
 export default function CommunityPage() {
+  const { user } = useUser();
+  const firestore = useFirestore();
+  const { toast } = useToast();
+
+  const [isThrowing, setIsThrowing] = useState(false);
+  const [isPicking, setIsPicking] = useState(false);
+  const [isLoadingBottle, setIsLoadingBottle] = useState(false);
+  const [bottleContent, setBottleContent] = useState("");
+  const [pickedBottle, setPickedBottle] = useState<WithId<Bottle> | null>(null);
+  
+  const userProfileRef = useDoc(firestore && user ? `users/${user.uid}` : null);
+  const displayName = (userProfileRef.data as any)?.displayName || "Anonymous";
+
+  const handleThrowBottle = async () => {
+    if (!bottleContent.trim() || !user || !firestore) return;
+
+    const bottleData = {
+      content: bottleContent,
+      authorId: user.uid,
+      authorName: displayName,
+      createdAt: serverTimestamp(),
+    };
+    
+    addDocumentNonBlocking(collection(firestore, 'bottles'), bottleData);
+    toast({ title: "Bottle sent!", description: "Your message is sailing on the digital sea." });
+
+    setBottleContent("");
+    setIsThrowing(false);
+  };
+
+  const handlePickBottle = async () => {
+    if (!user || !firestore) return;
+    setIsLoadingBottle(true);
+    setPickedBottle(null);
+    setIsPicking(true);
+
+    try {
+        const bottlesRef = collection(firestore, "bottles");
+        // Don't pick up your own bottle
+        const q = query(bottlesRef, where("authorId", "!=", user.uid), limit(50));
+        const querySnapshot = await getDocs(q);
+        
+        if (querySnapshot.empty) {
+            setPickedBottle({ id: 'none', content: "The sea is quiet. No new bottles found.", authorName: "The Ocean" });
+        } else {
+            const bottles: WithId<Bottle>[] = [];
+            querySnapshot.forEach((doc) => {
+                bottles.push({ id: doc.id, ...(doc.data() as Bottle) });
+            });
+            const randomIndex = Math.floor(Math.random() * bottles.length);
+            setPickedBottle(bottles[randomIndex]);
+        }
+    } catch (error) {
+        console.error("Error picking up bottle: ", error);
+        toast({ variant: 'destructive', title: "Error", description: "Could not retrieve a bottle." });
+        setPickedBottle({ id: 'error', content: "A storm disturbed the sea. Please try again later.", authorName: "The Ocean" });
+    } finally {
+        setIsLoadingBottle(false);
+    }
+  };
+
+
   return (
     <div className="flex flex-col h-full">
       <Header title="Community Fun" />
@@ -36,11 +120,15 @@ export default function CommunityPage() {
             <CardContent className="text-center space-y-4">
                 <p className="text-6xl">🌊</p>
                 <p className="text-muted-foreground">The tide is calm. What will you do?</p>
-                <div className="flex gap-4 justify-center">
-                    <Button size="lg">Throw a Bottle</Button>
-                    <Button size="lg" variant="outline">Pick One Up</Button>
-                </div>
             </CardContent>
+            <CardFooter className="flex gap-4 justify-center">
+                <Button size="lg" onClick={() => setIsThrowing(true)} disabled={!user}>
+                    <Sailboat className="mr-2"/> Throw a Bottle
+                </Button>
+                <Button size="lg" variant="outline" onClick={handlePickBottle} disabled={!user}>
+                    <Inbox className="mr-2"/> Pick One Up
+                </Button>
+            </CardFooter>
           </Card>
 
           <Card className="hover:shadow-xl transition-shadow duration-300">
@@ -62,14 +150,67 @@ export default function CommunityPage() {
                      <WallMessage className="rotate-1">Remember to take breaks and care for your mental health. You got this! ❤️</WallMessage>
                 </div>
                  <div className="flex gap-2">
-                    <Textarea placeholder="Write on the wall..." />
-                    <Button size="icon" aria-label="Post message"><Send/></Button>
+                    <Textarea placeholder="Write on the wall..." disabled={!user}/>
+                    <Button size="icon" aria-label="Post message" disabled={!user}><Send/></Button>
                  </div>
             </CardContent>
           </Card>
 
         </div>
       </main>
+
+      {/* Dialog for Throwing a Bottle */}
+      <Dialog open={isThrowing} onOpenChange={setIsThrowing}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Throw a Bottle</DialogTitle>
+            <DialogDescription>Write a message to cast into the sea. It will be found by a random stranger.</DialogDescription>
+          </DialogHeader>
+          <Textarea 
+            placeholder="What's on your mind?"
+            value={bottleContent}
+            onChange={(e) => setBottleContent(e.target.value)}
+            rows={6}
+          />
+          <DialogFooter>
+            <DialogClose asChild>
+                <Button variant="ghost">Cancel</Button>
+            </DialogClose>
+            <Button onClick={handleThrowBottle} disabled={!bottleContent.trim()}>
+              <Send className="mr-2 h-4 w-4" />
+              Send
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Dialog for Picking up a Bottle */}
+      <Dialog open={isPicking} onOpenChange={setIsPicking}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>A Bottle from the Sea</DialogTitle>
+             <DialogDescription>You've picked up a message from a stranger.</DialogDescription>
+          </DialogHeader>
+          <div className="p-4 bg-secondary/50 rounded-lg min-h-[150px] flex items-center justify-center">
+            {isLoadingBottle ? (
+                <Loader2 className="w-8 h-8 animate-spin text-primary"/>
+            ) : (
+                pickedBottle && (
+                    <div className="text-center">
+                        <p className="font-serif text-lg">"{pickedBottle.content}"</p>
+                        <p className="text-sm text-muted-foreground mt-4">- {pickedBottle.authorName}</p>
+                    </div>
+                )
+            )}
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+                <Button>Close</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }

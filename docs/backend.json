@@ -41,8 +41,8 @@
           }
         },
         "commentCount": {
-            "type": "number",
-            "description": "The number of comments on the post."
+          "type": "number",
+          "description": "The number of comments on the post."
         },
         "createdAt": {
           "type": "string",
@@ -367,6 +367,36 @@
         "createdAt",
         "updatedAt"
       ]
+    },
+     "Bottle": {
+      "title": "Bottle",
+      "type": "object",
+      "description": "Represents a message in a bottle.",
+      "properties": {
+        "content": {
+          "type": "string",
+          "description": "The text content of the message."
+        },
+        "authorId": {
+          "type": "string",
+          "description": "ID of the user who sent the message."
+        },
+        "authorName": {
+          "type": "string",
+          "description": "Name of the user who sent the message."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the message was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "content",
+        "authorId",
+        "authorName",
+        "createdAt"
+      ]
     }
   },
   "auth": {
@@ -393,8 +423,12 @@
         "$ref": "#/entities/UserProfile"
       },
       "description": "Holds public profile information for each user."
+    },
+    "/bottles/{bottleId}": {
+      "schema": {
+        "$ref": "#/entities/Bottle"
+      },
+      "description": "Holds all the messages in bottles."
     }
   }
 }
-
-    
