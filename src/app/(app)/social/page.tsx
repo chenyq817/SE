@@ -233,7 +233,6 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
     }
     
     return (
-        <Collapsible>
         <Card className="hover:shadow-lg transition-shadow duration-300">
             <CardHeader className="flex flex-row items-start gap-4">
                 <Avatar>
@@ -307,18 +306,11 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
                 >
                     <ThumbsUp className={cn("w-5 h-5", isLiked && "fill-current")} /> {post.likeIds.length}
                 </Button>
-                <CollapsibleTrigger asChild>
-                    <Button variant="ghost" className="flex items-center gap-2 text-muted-foreground">
-                        <MessageSquare className="w-5 h-5" /> {post.commentCount || 0}
-                    </Button>
-                </CollapsibleTrigger>
+                <Button variant="ghost" className="flex items-center gap-2 text-muted-foreground" disabled>
+                    <MessageSquare className="w-5 h-5" /> {post.commentCount || 0}
+                </Button>
             </CardFooter>
-            
-            <CollapsibleContent className="px-6 pb-4">
-                <CommentSection post={post} />
-            </CollapsibleContent>
         </Card>
-        </Collapsible>
     );
 }
 
@@ -508,3 +500,4 @@ export default function SocialPage() {
     
 
     
+
