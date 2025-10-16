@@ -26,6 +26,9 @@ const profileSchema = z.object({
   age: z.coerce.number().min(0).optional(),
   gender: z.string().optional(),
   address: z.string().optional(),
+  // Add avatar fields to the schema for unified form handling
+  avatarId: z.string().optional(),
+  imageBase64: z.string().optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -33,7 +36,7 @@ type ProfileFormValues = z.infer<typeof profileSchema>;
 type UserProfile = {
   displayName: string;
   avatarId: string;
-  avatarUrl?: string;
+  avatarUrl?: string; // Keep for backwards compatibility if needed, but prefer imageBase64
   imageBase64?: string;
   bio?: string;
   age?: number;
@@ -50,9 +53,6 @@ export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
   
-  // State to manage avatar changes before saving
-  const [newAvatar, setNewAvatar] = useState<{ id?: string; base64?: string | null }>({});
-
   const userProfileRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return doc(firestore, 'users', user.uid);
@@ -67,10 +67,13 @@ export default function ProfilePage() {
         bio: '',
         age: undefined,
         gender: '',
-        address: ''
+        address: '',
+        avatarId: '',
+        imageBase64: '',
     },
   });
 
+  // Effect to reset form with data fetched from Firestore
   useEffect(() => {
     if (userProfile) {
       form.reset({
@@ -79,20 +82,23 @@ export default function ProfilePage() {
         age: userProfile.age || undefined,
         gender: userProfile.gender || '',
         address: userProfile.address || '',
+        avatarId: userProfile.avatarId || '',
+        imageBase64: userProfile.imageBase64 || '',
       });
-      // Initialize avatar state
-      setNewAvatar({ id: userProfile.avatarId, base64: userProfile.imageBase64 || null });
     }
   }, [userProfile, form]);
   
+  // Update form state when a default avatar is selected
   const handleAvatarSelect = (avatarId: string) => {
-    setNewAvatar({ id: avatarId, base64: null });
+    form.setValue('avatarId', avatarId);
+    form.setValue('imageBase64', ''); // Clear custom image
   };
   
+  // Update form state when a new image is uploaded
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.size > 1048487) {
+      if (file.size > 1048487) { // 1MB limit
         toast({
           variant: 'destructive',
           title: 'Image is too large',
@@ -103,34 +109,30 @@ export default function ProfilePage() {
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64String = reader.result as string;
-        setNewAvatar({ base64: base64String, id: undefined });
+        form.setValue('imageBase64', base64String);
+        form.setValue('avatarId', ''); // Clear default avatar selection
       };
       reader.readAsDataURL(file);
     }
   };
 
+  // Unified submit logic
   const onSubmit = async (data: ProfileFormValues) => {
     if (!userProfileRef) return;
     setIsSaving(true);
     
-    const updatedData: Partial<UserProfile> = { ...data };
-
-    // Consolidate avatar information
-    if (newAvatar.base64) {
-      updatedData.imageBase64 = newAvatar.base64;
-      updatedData.avatarUrl = null; // Deprecated, ensure it's cleared
-      updatedData.avatarId = ''; // Clear default avatar id
-    } else if (newAvatar.id) {
-      updatedData.avatarId = newAvatar.id;
-      updatedData.imageBase64 = null;
-      updatedData.avatarUrl = null;
-    }
+    // Data from the form is now the single source of truth
+    const updatedData: Partial<UserProfile> = {
+        ...data,
+        avatarUrl: null, // Deprecate and clear avatarUrl
+    };
 
     try {
+      // Use the complete data object from the form
       updateDocumentNonBlocking(userProfileRef, updatedData);
       toast({ title: 'Profile updated successfully!' });
-    } catch (error) {
-      toast({ variant: 'destructive', title: 'Error updating profile', description: 'Please try again.' });
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Error updating profile', description: error.message || 'Please try again.' });
     } finally {
       setIsSaving(false);
     }
@@ -146,15 +148,11 @@ export default function ProfilePage() {
     );
   }
 
-  // Determine which avatar to display based on local state first, then remote data
-  let currentAvatarUrl;
-  if (newAvatar.base64) {
-    currentAvatarUrl = newAvatar.base64;
-  } else if (newAvatar.id) {
-    currentAvatarUrl = PlaceHolderImages.find(img => img.id === newAvatar.id)?.imageUrl;
-  } else {
-    currentAvatarUrl = userProfile?.imageBase64 || PlaceHolderImages.find(img => img.id === userProfile?.avatarId)?.imageUrl;
-  }
+  // Watch form values to determine the avatar to display
+  const watchedAvatarId = form.watch('avatarId');
+  const watchedImageBase64 = form.watch('imageBase64');
+  
+  const currentAvatarUrl = watchedImageBase64 || PlaceHolderImages.find(img => img.id === watchedAvatarId)?.imageUrl;
   
   return (
     <div className="flex flex-col h-full">
@@ -165,7 +163,7 @@ export default function ProfilePage() {
             <CardHeader>
                 <div className="flex items-center gap-6">
                     <Avatar className="h-24 w-24">
-                        {currentAvatarUrl && <AvatarImage src={currentAvatarUrl} alt={userProfile?.displayName} />}
+                        {currentAvatarUrl && <AvatarImage src={currentAvatarUrl} alt={form.watch('displayName')} />}
                         <AvatarFallback>
                             <UserIcon className="h-12 w-12"/>
                         </AvatarFallback>
@@ -182,7 +180,7 @@ export default function ProfilePage() {
                     <div className="flex flex-wrap gap-4 items-center">
                         {defaultAvatars.map(avatar => (
                             <button key={avatar.id} onClick={() => handleAvatarSelect(avatar.id)}>
-                                <Avatar className={`h-16 w-16 transition-transform hover:scale-110 ${newAvatar.id === avatar.id && !newAvatar.base64 ? 'ring-2 ring-primary ring-offset-2' : ''}`}>
+                                <Avatar className={`h-16 w-16 transition-transform hover:scale-110 ${watchedAvatarId === avatar.id ? 'ring-2 ring-primary ring-offset-2' : ''}`}>
                                     <AvatarImage src={avatar.imageUrl} alt={avatar.description} />
                                     <AvatarFallback>{avatar.id.slice(-1)}</AvatarFallback>
                                 </Avatar>
@@ -193,7 +191,7 @@ export default function ProfilePage() {
                             ref={imageInputRef}
                             onChange={handleImageUpload}
                             className="hidden"
-                            accept="image/*"
+                            accept="image/png, image/jpeg, image/gif"
                         />
                         <Button variant="outline" onClick={() => imageInputRef.current?.click()}>Upload Image</Button>
                     </div>
@@ -254,7 +252,7 @@ export default function ProfilePage() {
                    {form.formState.errors.bio && <p className="text-sm text-destructive">{form.formState.errors.bio.message}</p>}
                 </div>
                 <div className="flex justify-end">
-                  <Button type="submit" disabled={isSaving}>
+                  <Button type="submit" disabled={isSaving || !form.formState.isDirty}>
                     {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Save Changes
                   </Button>
@@ -267,5 +265,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
-    
