@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { UserPlus, Search, Loader2, MessageSquare, UserX, Check, X } from "lucide-react";
-import { useFirestore, useUser, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking, useCollection, useDoc, FirestorePermissionError, errorEmitter } from "@/firebase";
+import { useFirestore, useUser, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking, useCollection, useDoc } from "@/firebase";
 import { collection, query, where, getDocs, doc, writeBatch, arrayUnion, arrayRemove, serverTimestamp, orderBy } from "firebase/firestore";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
@@ -29,8 +29,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 type UserProfile = {
   displayName: string;
@@ -162,7 +162,7 @@ const PrivateMessageDialog = ({ friend, open, onOpenChange }: { friend: WithId<U
                 setConversationId(querySnapshot.docs[0].id);
             } else {
                 // Create conversation
-                const newConvRef = await addDoc(conversationsRef, {
+                const newConvRef = await addDocumentNonBlocking(conversationsRef, {
                     participantIds,
                     lastMessage: "",
                     updatedAt: serverTimestamp()
@@ -288,26 +288,15 @@ export default function SocialPage() {
     const usersRef = collection(firestore, "users");
     const q = query(usersRef, where("displayName", "==", searchQuery.trim()));
     
-    try {
-      const querySnapshot = await getDocs(q);
-      const users: WithId<UserProfile>[] = [];
-      querySnapshot.forEach((doc) => {
-        if (doc.id !== user?.uid) {
-            users.push({ id: doc.id, ...doc.data() } as WithId<UserProfile>);
-        }
-      });
-      setSearchResults(users);
-    } catch (error) {
-      console.error("Error searching for users:", error);
-      const contextualError = new FirestorePermissionError({
-          operation: 'list',
-          path: `users`,
-      });
-      errorEmitter.emit('permission-error', contextualError);
-      setSearchResults([]);
-    } finally {
-      setIsSearching(false);
-    }
+    const querySnapshot = await getDocs(q);
+    const users: WithId<UserProfile>[] = [];
+    querySnapshot.forEach((doc) => {
+      if (doc.id !== user?.uid) {
+          users.push({ id: doc.id, ...doc.data() } as WithId<UserProfile>);
+      }
+    });
+    setSearchResults(users);
+    setIsSearching(false);
   };
 
   const handleAddFriend = (targetUserId: string) => {
@@ -466,5 +455,3 @@ export default function SocialPage() {
     </div>
   );
 }
-
-    
