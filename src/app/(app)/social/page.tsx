@@ -58,6 +58,7 @@ export default function SocialPage() {
                 // Exclude current user from search results
                 if (doc.id !== user?.uid) {
                     const data = doc.data();
+                    // Perform case-insensitive client-side filtering
                     if (data.displayName.toLowerCase().startsWith(searchQuery.toLowerCase())) {
                       results.push({
                           id: doc.id,
@@ -163,5 +164,5 @@ export default function SocialPage() {
         </div>
       </main>
     </div>
-  );
+    );
 }
