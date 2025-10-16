@@ -42,7 +42,7 @@ import { Label } from "@/components/ui/label";
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn } from '@/lib/utils';
 import { useCollection, useFirestore, useUser, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking, useDoc } from '@/firebase';
-import { collection, query, orderBy, serverTimestamp, arrayUnion, arrayRemove, doc, writeBatch, increment, addDoc, updateDoc, where } from 'firebase/firestore';
+import { collection, query, orderBy, serverTimestamp, arrayUnion, arrayRemove, doc, writeBatch, increment, addDoc, updateDoc, where, getDocs, runTransaction } from 'firebase/firestore';
 import type { WithId } from '@/firebase';
 import { Separator } from '@/components/ui/separator';
 
@@ -62,7 +62,6 @@ type Post = {
 };
 
 type Comment = {
-    postId: string;
     authorId: string;
     authorName: string;
     authorAvatarId?: string;
@@ -135,18 +134,19 @@ function CommentSection({ post }: { post: WithId<Post>}) {
     
     const commentsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        return query(collection(firestore, 'comments'), where('postId', '==', post.id), orderBy('createdAt', 'asc'));
+        // Query the subcollection for comments
+        return query(collection(firestore, 'posts', post.id, 'comments'), orderBy('createdAt', 'asc'));
     }, [firestore, post.id]);
+
     const { data: comments, isLoading } = useCollection<Comment>(commentsQuery);
 
     const handleComment = async () => {
         if (!newCommentContent.trim() || !user || !firestore || !userProfile) return;
 
         const postRef = doc(firestore, 'posts', post.id);
-        const commentsColRef = collection(firestore, 'comments');
+        const commentsColRef = collection(firestore, 'posts', post.id, 'comments');
 
-        const commentData: Comment = {
-            postId: post.id,
+        const commentData: Omit<Comment, 'id'> = {
             authorId: user.uid,
             authorName: userProfile.displayName,
             content: newCommentContent,
@@ -159,18 +159,17 @@ function CommentSection({ post }: { post: WithId<Post>}) {
             commentData.authorAvatarId = userProfile.avatarId;
         }
 
-        // Use sequential, non-blocking writes instead of a transaction
-        // First, add the comment
-        addDoc(commentsColRef, commentData)
-          .then(() => {
-            // On success, update the post's comment count
-            updateDoc(postRef, { commentCount: increment(1) });
+        try {
+            await runTransaction(firestore, async (transaction) => {
+                // Add the new comment document to the subcollection
+                transaction.set(doc(commentsColRef), commentData);
+                // Atomically increment the comment count on the parent post
+                transaction.update(postRef, { commentCount: increment(1) });
+            });
             setNewCommentContent('');
-          })
-          .catch((e) => {
-            console.error("Error creating comment: ", e);
-            // Here you could show a toast to the user
-          });
+        } catch (e) {
+            console.error("Error creating comment in transaction: ", e);
+        }
     };
     
     const userAvatarSrc = userProfile?.imageBase64 || PlaceHolderImages.find(img => img.id === userProfile?.avatarId)?.imageUrl;
@@ -228,11 +227,31 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
         });
     };
 
-    const handleDelete = () => {
+    const handleDelete = async () => {
       if (!firestore) return;
       const postRef = doc(firestore, 'posts', post.id);
-      deleteDocumentNonBlocking(postRef);
-      // TODO: Also delete associated comments
+      const commentsRef = collection(firestore, 'posts', post.id, 'comments');
+  
+      try {
+        // Use a write batch to delete the post and its comments atomically
+        const batch = writeBatch(firestore);
+  
+        // 1. Get all comments to delete them
+        const commentsSnapshot = await getDocs(commentsRef);
+        commentsSnapshot.forEach(commentDoc => {
+          batch.delete(commentDoc.ref);
+        });
+  
+        // 2. Delete the post itself
+        batch.delete(postRef);
+  
+        // 3. Commit the batch
+        await batch.commit();
+      } catch (error) {
+        console.error("Error deleting post and comments:", error);
+        // You can use a toast to notify the user of the failure
+      }
+  
       setIsDeleteDialogOpen(false);
     }
     
@@ -531,3 +550,5 @@ export default function PostPage() {
         </div>
     );
 }
+
+    

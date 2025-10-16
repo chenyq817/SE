@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Post": {
@@ -169,10 +170,6 @@
       "type": "object",
       "description": "Represents a comment on a post.",
       "properties": {
-        "postId": {
-          "type": "string",
-          "description": "ID of the post this comment belongs to."
-        },
         "authorId": {
           "type": "string",
           "description": "ID of the user who created the comment."
@@ -200,7 +197,6 @@
         }
       },
       "required": [
-        "postId",
         "authorId",
         "authorName",
         "content",
@@ -442,11 +438,11 @@
       },
       "description": "Holds all the posts created by users in the social circle."
     },
-    "/comments/{commentId}": {
+    "/posts/{postId}/comments/{commentId}": {
       "schema": {
         "$ref": "#/entities/Comment"
       },
-      "description": "Holds all comments associated with posts."
+      "description": "Holds all comments associated with a specific post. This is a subcollection."
     },
     "/users/{userId}": {
       "schema": {
@@ -468,3 +464,5 @@
     }
   }
 }
+
+    
