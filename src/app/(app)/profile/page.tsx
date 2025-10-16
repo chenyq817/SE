@@ -120,39 +120,41 @@ export default function ProfilePage() {
     const updatedData: Partial<ProfileFormValues> = { ...data };
     delete updatedData.displayName;
     
-    try {
-      updateDocumentNonBlocking(userProfileRef, updatedData);
+    // Use the non-blocking update function with contextual error handling
+    updateDocumentNonBlocking(userProfileRef, updatedData);
 
-      // --- NEW LOGIC TO UPDATE POSTS ---
-      // Check if the avatar was actually changed
-      const avatarChanged = data.avatarId !== userProfile?.avatarId || data.imageBase64 !== userProfile?.imageBase64;
-      if (avatarChanged) {
-          const postsRef = collection(firestore, 'posts');
-          const q = query(postsRef, where('authorId', '==', user.uid));
-          const querySnapshot = await getDocs(q);
-
-          if (!querySnapshot.empty) {
-              const batch = writeBatch(firestore);
-              querySnapshot.forEach(postDoc => {
-                  const postRef = doc(firestore, 'posts', postDoc.id);
-                  batch.update(postRef, { 
-                      authorAvatarId: data.avatarId,
-                      authorImageBase64: data.imageBase64
-                  });
-              });
-              await batch.commit();
-          }
-      }
-      // --- END OF NEW LOGIC ---
-
-      toast({ title: 'Profile updated successfully!' });
-      form.reset(data); 
-    } catch (error: any) {
-      console.error("Error updating profile or posts: ", error);
-      toast({ variant: 'destructive', title: 'Error updating profile', description: error.message || 'Please try again.' });
-    } finally {
-      setIsSaving(false);
+    // --- LOGIC TO UPDATE POSTS ---
+    // Check if the avatar was actually changed
+    const avatarChanged = data.avatarId !== userProfile?.avatarId || data.imageBase64 !== userProfile?.imageBase64;
+    if (avatarChanged) {
+        const postsRef = collection(firestore, 'posts');
+        const q = query(postsRef, where('authorId', '==', user.uid));
+        
+        // This part can remain async as it's a subsequent operation
+        try {
+            const querySnapshot = await getDocs(q);
+            if (!querySnapshot.empty) {
+                const batch = writeBatch(firestore);
+                querySnapshot.forEach(postDoc => {
+                    const postRef = doc(firestore, 'posts', postDoc.id);
+                    batch.update(postRef, { 
+                        authorAvatarId: data.avatarId,
+                        authorImageBase64: data.imageBase64
+                    });
+                });
+                await batch.commit();
+            }
+        } catch (error) {
+             console.error("Error updating posts in batch: ", error);
+             // Optionally notify user that post avatars might not be updated
+             toast({ variant: 'destructive', title: 'Error updating posts', description: 'Your profile was saved, but we failed to update avatars on your old posts.' });
+        }
     }
+    // --- END OF LOGIC ---
+
+    toast({ title: 'Profile update initiated!' });
+    form.reset(data); // Optimistically reset the form
+    setIsSaving(false);
   };
   
   const isLoading = isUserLoading || isProfileLoading;
@@ -280,5 +282,4 @@ export default function ProfilePage() {
     </div>
   );
 }
-
 
