@@ -27,7 +27,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Bot, Loader2 } from 'lucide-react';
 import { useAuth, useUser, useFirestore, setDocumentNonBlocking } from '@/firebase';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc } from 'firebase/firestore';
 
 const signInSchema = z.object({
@@ -110,10 +110,16 @@ export default function LoginPage() {
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
         const newUser = userCredential.user;
+
+        // Update the Firebase Auth user's profile
+        await updateProfile(newUser, {
+          displayName: values.displayName
+        });
         
         const userProfileRef = doc(firestore, 'users', newUser.uid);
         const randomAvatarId = defaultAvatars[Math.floor(Math.random() * defaultAvatars.length)];
         
+        // Set the user's profile document in Firestore
         setDocumentNonBlocking(userProfileRef, {
           displayName: values.displayName,
           avatarId: randomAvatarId,
@@ -121,13 +127,12 @@ export default function LoginPage() {
           age: null,
           gender: 'Prefer not to say',
           address: '',
-          avatarUrl: null,
         }, { merge: true });
 
         toast({ title: 'Sign up successful! Please sign in.' });
         setActiveTab('signin'); 
         signUpForm.reset();
-        signInForm.reset();
+        signInForm.reset({ email: values.email, password: '' });
 
     } catch (error: any) {
       toast({
