@@ -1,100 +1,98 @@
 /**
- * @file firestore.rules
- * @description Firestore Security Rules for the application.
- *
- * Core Philosophy:
- * This ruleset prioritizes user-generated content access control. Users own their posts and comments. Public profile information is accessible.
+ * @file Firestore Security Rules
+ * @description This ruleset enforces a flexible security model that allows public read access to posts and comments, but restricts write access to authenticated users and owners. User profiles are also publicly readable.
  *
  * Data Structure:
- * - /posts/{postId}: Stores social media posts.
- * - /comments/{commentId}: Stores comments on posts.
- * - /users/{userId}: Stores public user profiles.
+ * - /posts/{postId}: Stores social media posts. Publicly readable, owner-only writes. The documents MUST contain the `authorId` field.
+ * - /comments/{commentId}: Stores comments on posts. Publicly readable, owner-only writes. The documents MUST contain the `authorId` field.
+ * - /users/{userId}: Stores public user profile information. Publicly readable, self-creation only.
  *
  * Key Security Decisions:
- * - Posts can only be created, updated, or deleted by their authors.
- * - Comments can only be created, updated, or deleted by their authors.
- * - Public user profiles are readable by everyone, but only updatable by the user themselves.
- * - Listing of users is disallowed.
+ * - Posts and Comments: Public read access is granted to allow for an open social experience. Write access (create, update, delete) is strictly controlled by the `authorId` field in the document, preventing unauthorized modifications.
+ * - User Profiles: Public read access to user profiles.  Only the authenticated user can create their own profile. Updates and Deletes are not allowed.
+ * - Write Rules: All write operations are protected by authentication checks (`isSignedIn()`) and ownership checks (`isOwner()`). This ensures that only authenticated users can create content and only the owner can modify/delete it.
  *
  * Denormalization for Authorization:
- * - The `posts` and `comments` collections require that each document contains the `authorId` so the rules can enforce ownership.
+ * - Posts and Comments: The `authorId` field is used to determine ownership. This information is denormalized directly onto the document to avoid expensive `get()` calls in the security rules.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Checks if the user is signed in.
+     * @description Allows public read access to posts, but restricts write access to the post's author.
+     * @path /posts/{postId}
+     * @allow (get, list): Any user can read posts.
+     * @allow (create): Only the authenticated user can create a post, and the authorId must match the user's UID.
+     * @allow (update, delete): Only the author of the post can update or delete it, and the document must exist.
+     * @deny (create): An unauthenticated user attempts to create a post.
+     * @deny (update, delete): A user attempts to update or delete a post they don't own.
+     * @principle Allows public read access while enforcing document ownership for writes.
+     */
+    match /posts/{postId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
+      allow update, delete: if isSignedIn() && isExistingOwner(resource.data.authorId);
+    }
+
+    /**
+     * @description Allows public read access to comments, but restricts write access to the comment's author.
+     * @path /comments/{commentId}
+     * @allow (get, list): Any user can read comments.
+     * @allow (create): Only the authenticated user can create a comment, and the authorId must match the user's UID.
+     * @allow (update, delete): Only the author of the comment can update or delete it, and the document must exist.
+     * @deny (create): An unauthenticated user attempts to create a comment.
+     * @deny (update, delete): A user attempts to update or delete a comment they don't own.
+     * @principle Allows public read access while enforcing document ownership for writes.
+     */
+    match /comments/{commentId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
+      allow update, delete: if isSignedIn() && isExistingOwner(resource.data.authorId);
+    }
+
+    /**
+     * @description Allows public read access to user profiles, but restricts creation to the user themselves. Updates and deletes are disallowed.
+     * @path /users/{userId}
+     * @allow (get, list): Any user can read user profiles.
+     * @allow (create): Only the authenticated user can create their own profile, and the userId must match the user's UID.
+     * @deny (create): An unauthenticated user attempts to create a profile.
+     * @deny (create): An authenticated user attempts to create a profile for another user.
+     * @deny (update, delete): Updates and deletes of user profiles are disallowed.
+     * @principle Restricts profile creation to the authenticated user, preventing impersonation.
+     */
+    match /users/{userId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update, delete: if false;
+    }
+
+    // ---- Helper Functions ----
+
+    /**
+     * @description Checks if the user is signed in (authenticated).
+     * @return True if the user is signed in, false otherwise.
      */
     function isSignedIn() {
       return request.auth != null;
     }
 
     /**
-     * @description Checks if the authenticated user's ID matches the provided userId.
+     * @description Checks if the user is the owner of the resource (document).
+     * @param userId The user ID to compare against the authenticated user's UID.
+     * @return True if the user is the owner, false otherwise.
      */
     function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+      return request.auth.uid == userId;
     }
 
     /**
-     * @description Checks if the authenticated user is the owner of the existing document.
+     * @description Checks if the user is the owner of the resource (document) and if the document exists.
+     * @param userId The user ID to compare against the authenticated user's UID.
+     * @return True if the user is the owner and the document exists, false otherwise.
      */
     function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-    }
-
-    /**
-     * @description Rules for the /posts collection.
-     * @path /posts/{postId}
-     * @allow (create) User with auth.uid "user_abc" creates a new post with authorId "user_abc".
-     * @deny (create) User with auth.uid "user_xyz" tries to create a new post with authorId "user_abc".
-     * @principle Enforces document ownership for writes.
-     */
-    match /posts/{postId} {
-      // Anyone can read posts
-      allow get, list: if true;
-
-      // Only the post author can create, update, or delete
-      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-      allow update: if isExistingOwner(resource.data.authorId);
-      allow delete: if isExistingOwner(resource.data.authorId);
-    }
-
-    /**
-     * @description Rules for the /comments collection.
-     * @path /comments/{commentId}
-     * @allow (create) User with auth.uid "user_abc" creates a new comment with authorId "user_abc".
-     * @deny (create) User with auth.uid "user_xyz" tries to create a new comment with authorId "user_abc".
-     * @principle Enforces document ownership for writes.
-     */
-    match /comments/{commentId} {
-      // Anyone can read comments
-      allow get, list: if true;
-
-      // Only the comment author can create, update, or delete
-      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-      allow update: if isExistingOwner(resource.data.authorId);
-      allow delete: if isExistingOwner(resource.data.authorId);
-    }
-
-    /**
-     * @description Rules for the /users collection.
-     * @path /users/{userId}
-     * @allow (get) Any user can retrieve a user profile.
-     * @allow (update) User with auth.uid "user_abc" updates their own profile (userId "user_abc").
-     * @deny (update) User with auth.uid "user_xyz" tries to update the profile of user "user_abc".
-     * @principle Enforces document ownership for updates.
-     */
-    match /users/{userId} {
-      // Anyone can read user profiles
-      allow get: if true;
-      allow list: if false;
-
-      // Only the user can update their own profile
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if false;
+      return isOwner(userId) && resource != null;
     }
   }
 }
