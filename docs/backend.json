@@ -397,6 +397,36 @@
         "authorName",
         "createdAt"
       ]
+    },
+    "WallMessage": {
+      "title": "Wall Message",
+      "type": "object",
+      "description": "Represents a public message on the community wall.",
+      "properties": {
+        "content": {
+          "type": "string",
+          "description": "The text content of the message."
+        },
+        "authorId": {
+          "type": "string",
+          "description": "ID of the user who posted the message."
+        },
+        "authorName": {
+          "type": "string",
+          "description": "Name of the user who posted the message."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the message was posted.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "content",
+        "authorId",
+        "authorName",
+        "createdAt"
+      ]
     }
   },
   "auth": {
@@ -429,6 +459,14 @@
         "$ref": "#/entities/Bottle"
       },
       "description": "Holds all the messages in bottles."
+    },
+    "/wallMessages/{messageId}": {
+      "schema": {
+        "$ref": "#/entities/WallMessage"
+      },
+      "description": "Holds all public messages on the community wall."
     }
   }
 }
+
+    

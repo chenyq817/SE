@@ -9,26 +9,26 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Waves, Columns, Send, Sailboat, Inbox, Loader2 } from "lucide-react";
-import { useUser, useFirestore, addDocumentNonBlocking, useDoc, useMemoFirebase } from "@/firebase";
-import { collection, query, where, getDocs, serverTimestamp, limit, doc } from "firebase/firestore";
+import { Columns, Send } from "lucide-react";
+import { useUser, useFirestore, addDocumentNonBlocking, useCollection, useMemoFirebase, useDoc } from "@/firebase";
+import { collection, query, serverTimestamp, orderBy, doc } from "firebase/firestore";
 import type { WithId } from "@/firebase";
-import { useToast } from "@/hooks/use-toast";
 
-const WallMessage = ({ children, className }: { children: React.ReactNode, className?: string }) => (
+type UserProfile = {
+  displayName: string;
+};
+
+type WallMessage = {
+  content: string;
+  authorId: string;
+  authorName: string;
+  createdAt: any;
+};
+
+const WallMessageCard = ({ children, className }: { children: React.ReactNode, className?: string }) => (
     <div className={`p-4 bg-yellow-200 dark:bg-yellow-700 dark:text-yellow-100 rounded-lg shadow-md transform -rotate-1 hover:rotate-0 hover:scale-105 transition-transform ${className}`}>
         <p className="font-serif">{children}</p>
     </div>
@@ -36,13 +36,42 @@ const WallMessage = ({ children, className }: { children: React.ReactNode, class
 
 export default function CommunityPage() {
   const { user } = useUser();
+  const firestore = useFirestore();
+  const [newWallMessage, setNewWallMessage] = useState("");
+
+  const userProfileRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, "users", user.uid);
+  }, [firestore, user]);
+  const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
+
+  const wallMessagesQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, "wallMessages"), orderBy("createdAt", "desc"));
+  }, [firestore]);
+
+  const { data: wallMessages, isLoading: wallMessagesLoading } = useCollection<WallMessage>(wallMessagesQuery);
   
+  const handlePostWallMessage = () => {
+    if (!newWallMessage.trim() || !user || !firestore || !userProfile) return;
+
+    const messageData: WallMessage = {
+      content: newWallMessage,
+      authorId: user.uid,
+      authorName: userProfile.displayName,
+      createdAt: serverTimestamp(),
+    };
+
+    addDocumentNonBlocking(collection(firestore, "wallMessages"), messageData);
+    setNewWallMessage("");
+  };
+
   return (
     <div className="flex flex-col h-full">
       <Header title="Community Fun" />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="grid gap-8 lg:grid-cols-1">
-            
+          
           {/* HUST Bottle feature temporarily disabled
           <Card className="hover:shadow-xl transition-shadow duration-300">
             <CardHeader>
@@ -81,15 +110,33 @@ export default function CommunityPage() {
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="p-4 bg-secondary/50 rounded-lg h-72 overflow-y-auto grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <WallMessage>Good luck on finals everyone! ✨</WallMessage>
-                    <WallMessage>Lost a blue water bottle near the gym. Has anyone seen it?</WallMessage>
-                    <WallMessage className="rotate-2">CS study group tonight, 7pm, Library room 301. Join us! 💻</WallMessage>
-                    <WallMessage>The autumn leaves on campus are gorgeous right now. 🍂</WallMessage>
-                     <WallMessage className="rotate-1">Remember to take breaks and care for your mental health. You got this! ❤️</WallMessage>
+                    {wallMessagesLoading && <p className="text-muted-foreground">Loading messages...</p>}
+                    {wallMessages && wallMessages.map((msg, index) => (
+                      <WallMessageCard key={msg.id} className={index % 3 === 0 ? 'rotate-1' : index % 3 === 1 ? '-rotate-2' : ''}>
+                        {msg.content}
+                      </WallMessageCard>
+                    ))}
+                    {!wallMessagesLoading && wallMessages?.length === 0 && (
+                      <div className="col-span-full text-center text-muted-foreground self-center">
+                          The wall is empty. Be the first to write something!
+                      </div>
+                    )}
                 </div>
                  <div className="flex gap-2">
-                    <Textarea placeholder="Write on the wall..." disabled={!user}/>
-                    <Button size="icon" aria-label="Post message" disabled={!user}><Send/></Button>
+                    <Textarea 
+                      placeholder="Write on the wall..." 
+                      disabled={!user}
+                      value={newWallMessage}
+                      onChange={(e) => setNewWallMessage(e.target.value)}
+                    />
+                    <Button 
+                      size="icon" 
+                      aria-label="Post message" 
+                      disabled={!user || !newWallMessage.trim()}
+                      onClick={handlePostWallMessage}
+                    >
+                      <Send/>
+                    </Button>
                  </div>
             </CardContent>
           </Card>
@@ -102,3 +149,5 @@ export default function CommunityPage() {
     </div>
   );
 }
+
+    
