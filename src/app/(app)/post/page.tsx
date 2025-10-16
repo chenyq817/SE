@@ -42,7 +42,7 @@ import { Label } from "@/components/ui/label";
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn } from '@/lib/utils';
 import { useCollection, useFirestore, useUser, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking, useDoc } from '@/firebase';
-import { collection, query, orderBy, serverTimestamp, arrayUnion, arrayRemove, doc, writeBatch, increment, addDoc, updateDoc } from 'firebase/firestore';
+import { collection, query, orderBy, serverTimestamp, arrayUnion, arrayRemove, doc, writeBatch, increment, addDoc, updateDoc, where } from 'firebase/firestore';
 import type { WithId } from '@/firebase';
 import { Separator } from '@/components/ui/separator';
 
@@ -133,12 +133,11 @@ function CommentSection({ post }: { post: WithId<Post>}) {
     }, [firestore, user]);
     const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
     
-    // This part is temporarily disabled
-    // const commentsQuery = useMemoFirebase(() => {
-    //     if (!firestore) return null;
-    //     return query(collection(firestore, 'comments'), where('postId', '==', post.id), orderBy('createdAt', 'asc'));
-    // }, [firestore, post.id]);
-    // const { data: comments, isLoading } = useCollection<Comment>(commentsQuery);
+    const commentsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, 'comments'), where('postId', '==', post.id), orderBy('createdAt', 'asc'));
+    }, [firestore, post.id]);
+    const { data: comments, isLoading } = useCollection<Comment>(commentsQuery);
 
     const handleComment = async () => {
         if (!newCommentContent.trim() || !user || !firestore || !userProfile) return;
@@ -179,12 +178,10 @@ function CommentSection({ post }: { post: WithId<Post>}) {
     return (
         <div className="pt-4 space-y-4">
             <Separator />
-            {/* Temporarily disabled comment display
             <div className="space-y-4">
                 {isLoading && <p className="text-sm text-muted-foreground">Loading comments...</p>}
                 {comments?.map(comment => <CommentCard key={comment.id} comment={comment} />)}
             </div>
-            */}
 
             {user && userProfile && (
                 <div className="flex items-start gap-3 pt-4">
@@ -213,6 +210,7 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
     const firestore = useFirestore();
     const { user } = useUser();
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [showComments, setShowComments] = useState(false);
 
     // Prioritize new imageBase64 field for author avatar
     const authorAvatarSrc = post.authorImageBase64 || PlaceHolderImages.find(img => img.id === post.authorAvatarId)?.imageUrl;
@@ -299,6 +297,7 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
                         />
                     </div>
                 )}
+                 {showComments && <CommentSection post={post} />}
             </CardContent>
             <CardFooter className="flex justify-start gap-4 border-t pt-4">
                 <Button 
@@ -312,7 +311,11 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
                 >
                     <ThumbsUp className={cn("w-5 h-5", isLiked && "fill-current")} /> {post.likeIds.length}
                 </Button>
-                <Button variant="ghost" className="flex items-center gap-2 text-muted-foreground" disabled>
+                <Button 
+                    variant="ghost" 
+                    className="flex items-center gap-2 text-muted-foreground"
+                    onClick={() => setShowComments(!showComments)}
+                >
                     <MessageSquare className="w-5 h-5" /> {post.commentCount || 0}
                 </Button>
             </CardFooter>
@@ -528,5 +531,3 @@ export default function PostPage() {
         </div>
     );
 }
-
-    
