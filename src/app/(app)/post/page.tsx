@@ -62,7 +62,8 @@ type Post = {
 };
 
 type Comment = {
-    authorId: string;
+    postId: string;
+    authorId: string | null;
     authorName: string;
     authorAvatarId?: string;
     content: string;
@@ -139,18 +140,32 @@ function CommentSection({ post }: { post: WithId<Post>}) {
     const { data: comments, isLoading } = useCollection<Comment>(commentsQuery);
 
     const handleComment = async () => {
-        if (!newCommentContent.trim() || !user || !firestore || !userProfile) return;
+        if (!newCommentContent.trim() || !firestore) return;
 
         const postRef = doc(firestore, 'posts', post.id);
         const commentsColRef = collection(firestore, 'posts', post.id, 'comments');
+        
+        let commentData: Omit<Comment, 'id'>;
 
-        const commentData: Omit<Comment, 'id'> = {
-            authorId: user.uid,
-            authorName: userProfile.displayName,
-            content: newCommentContent,
-            createdAt: serverTimestamp(),
-            authorAvatarId: userProfile.avatarId,
-        };
+        if (user && userProfile) {
+            commentData = {
+                postId: post.id,
+                authorId: user.uid,
+                authorName: userProfile.displayName,
+                content: newCommentContent,
+                createdAt: serverTimestamp(),
+                authorAvatarId: userProfile.avatarId,
+            };
+        } else {
+            commentData = {
+                postId: post.id,
+                authorId: null,
+                authorName: 'Anonymous',
+                content: newCommentContent,
+                createdAt: serverTimestamp(),
+                authorAvatarId: 'avatar-4',
+            };
+        }
 
         addDocumentNonBlocking(commentsColRef, commentData);
         updateDoc(postRef, { commentCount: increment(1) });
@@ -168,25 +183,23 @@ function CommentSection({ post }: { post: WithId<Post>}) {
                 {comments?.map(comment => <CommentCard key={comment.id} comment={comment} />)}
             </div>
 
-            {user && userProfile && (
-                <div className="flex items-start gap-3 pt-4">
-                    <Avatar className="h-9 w-9">
-                        {userAvatarSrc && <AvatarImage src={userAvatarSrc} alt={userProfile.displayName} />}
-                        <AvatarFallback>{userProfile.displayName.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-grow flex items-center gap-2">
-                        <Textarea 
-                            placeholder="Write a comment..." 
-                            className="min-h-0 h-10"
-                            value={newCommentContent}
-                            onChange={(e) => setNewCommentContent(e.target.value)}
-                        />
-                        <Button size="icon" onClick={handleComment} disabled={!newCommentContent.trim()}>
-                            <Send className="w-4 h-4" />
-                        </Button>
-                    </div>
+            <div className="flex items-start gap-3 pt-4">
+                <Avatar className="h-9 w-9">
+                    {userAvatarSrc && <AvatarImage src={userAvatarSrc} alt={userProfile?.displayName || 'Anonymous'} />}
+                    <AvatarFallback>{userProfile?.displayName?.charAt(0) || 'A'}</AvatarFallback>
+                </Avatar>
+                <div className="flex-grow flex items-center gap-2">
+                    <Textarea 
+                        placeholder="Write a comment..." 
+                        className="min-h-0 h-10"
+                        value={newCommentContent}
+                        onChange={(e) => setNewCommentContent(e.target.value)}
+                    />
+                    <Button size="icon" onClick={handleComment} disabled={!newCommentContent.trim()}>
+                        <Send className="w-4 h-4" />
+                    </Button>
                 </div>
-            )}
+            </div>
         </div>
     )
 }
@@ -530,8 +543,5 @@ export default function PostPage() {
         </div>
     );
 }
-
-
-
 
     
