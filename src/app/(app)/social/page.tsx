@@ -13,10 +13,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, UserPlus, Loader2 } from 'lucide-react';
-import { useFirestore, useUser, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { useUser } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { searchUsers } from '@/ai/flows/search-users';
 
 type UserSearchResult = {
     id: string;
@@ -27,14 +27,13 @@ type UserSearchResult = {
 
 export default function SocialPage() {
     const { user } = useUser();
-    const firestore = useFirestore();
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [searchPerformed, setSearchPerformed] = useState(false);
 
     const handleSearch = async () => {
-        if (!firestore || !searchQuery.trim()) {
+        if (!searchQuery.trim()) {
             setSearchResults([]);
             setSearchPerformed(true);
             return;
@@ -42,41 +41,14 @@ export default function SocialPage() {
 
         setIsLoading(true);
         setSearchPerformed(true);
-        const usersRef = collection(firestore, 'users');
         
-        const q = query(
-            usersRef, 
-            where('displayName', '>=', searchQuery),
-            where('displayName', '<=', searchQuery + '\uf8ff')
-        );
-
         try {
-            const querySnapshot = await getDocs(q);
-            const results: UserSearchResult[] = [];
-            querySnapshot.forEach((doc) => {
-                if (doc.id !== user?.uid) {
-                    const data = doc.data();
-                    if (data.displayName.toLowerCase().startsWith(searchQuery.toLowerCase())) {
-                      results.push({
-                          id: doc.id,
-                          displayName: data.displayName,
-                          avatarId: data.avatarId,
-                          imageBase64: data.imageBase64,
-                      });
-                    }
-                }
-            });
-            setSearchResults(results);
-        } catch (error: any) {
-            if (error.code === 'permission-denied') {
-                const contextualError = new FirestorePermissionError({
-                    operation: 'list',
-                    path: 'users',
-                });
-                errorEmitter.emit('permission-error', contextualError);
-            } else {
-                console.error("An unexpected error occurred during user search:", error);
-            }
+            const result = await searchUsers(searchQuery);
+            // Exclude current user from search results
+            const filteredResults = result.users.filter(foundUser => foundUser.id !== user?.uid);
+            setSearchResults(filteredResults);
+        } catch (error) {
+            console.error("An unexpected error occurred during user search:", error);
             setSearchResults([]);
         } finally {
             setIsLoading(false);
