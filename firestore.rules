@@ -2,101 +2,113 @@
  * @fileoverview Firestore Security Rules for the campus social circle application.
  *
  * Core Philosophy:
- * This ruleset prioritizes ease of use by allowing all users to read and create content in most collections.
- * Write access is generally restricted to the owner of the content, with public read access where appropriate.
+ * This ruleset prioritizes a balance between open access for common resources (posts, wall messages) and strict ownership for user-specific data.
  *
  * Data Structure:
- * - /posts/{postId}:  Posts created by users. Publicly readable, owner-only write access.
- * - /comments/{commentId}: Comments on posts. Publicly readable, any signed in user can create, owner-only delete.
- * - /users/{userId}: User profile information. Owner-only access.
- * - /bottles/{bottleId}: Messages in bottles. Publicly readable, owner-only write access.
- * - /wallMessages/{messageId}: Public messages on the community wall. Publicly readable, owner-only write access.
+ * - /posts/{postId}: Public posts, readable by anyone, but only editable by the author.
+ * - /posts/{postId}/comments/{commentId}: Comments on posts, creatable by anyone, but without update/delete restrictions (prototype mode).
+ * - /users/{userId}: User profiles, readable/writeable only by the user themselves.
+ * - /bottles/{bottleId}: Publicly accessible messages in bottles (prototype mode with no write restrictions).
+ * - /wallMessages/{messageId}: Public wall messages, readable by anyone, but only editable by the author.
  *
  * Key Security Decisions:
- * - User listing is implicitly denied by the absence of a `list` rule on the `/users` collection.
- * - Schemas are not strictly enforced in this prototyping phase. Only authorization-critical fields are validated.
+ * - Public read access for posts, bottles, and wall messages to encourage community engagement.
+ * - Strict user-ownership for user profiles to protect personal information.
+ * - No listing of users is allowed.
+ * - In this prototyping phase, write validation focuses on authorization rather than strict schema enforcement.
  *
  * Denormalization for Authorization:
- * The 'Post' and 'Comment' entities have `authorId` field, which allows for simple `isOwner()` checks without additional reads.
+ * - Posts and WallMessages include an `authorId` field to enable simple ownership checks for editing.
+ *
+ * Structural Segregation:
+ * - User profiles are stored directly under `/users/{userId}` to enforce clear ownership.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Allows anyone to read posts, and only the author to create, update, or delete their own posts.
+     * @description Allows anyone to read posts, but only the author to create, update, or delete them.
      * @path /posts/{postId}
-     * @allow (get, list): Any user can read posts.
-     * @allow (create): Any signed-in user can create a post, with authorId matching their UID.
-     * @allow (update, delete): Only the user who created the post can update or delete it.
-     * @deny (create): A user attempts to create a post where the authorId doesn't match their UID.
-     * @principle Public read access with owner-only writes, enforces ownership on writes.
+     * @allow (get, list): Any user can read a post.
+     * @allow (create): Any authenticated user can create a post. The `authorId` field must match their UID.
+     * @allow (update, delete): Only the author can modify or remove their post.
+     * @deny (create): An unauthenticated user cannot create a post.
+     * @deny (update, delete): A user cannot modify or remove a post they did not create.
+     * @principle Public Read with Owner-Only Writes.
      */
     match /posts/{postId} {
-      allow get, list: if true;
+      allow get: if true;
+      allow list: if true;
       allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-      allow update, delete: if isExistingOwner(resource.data.authorId);
+      allow update: if isSignedIn() && isExistingOwner(resource.data.authorId);
+      allow delete: if isSignedIn() && isExistingOwner(resource.data.authorId);
     }
 
     /**
-     * @description Allows any user to read comments, create comments if signed in, and delete their own comments.
-     * @path /comments/{commentId}
-     * @allow (get, list): Any user can read comments.
-     * @allow (create): Any signed-in user can create a comment.
-     * @allow (delete): Only the user who created the comment can delete it.
-     * @deny (create): A user attempts to create a comment while not signed in.
-     * @deny (delete): A user attempts to delete a comment they did not create.
-     * @principle Public read and create access, owner-only delete, enforces ownership on delete.
+     * @description Allows any authenticated user to create comments on posts.
+     * @path /posts/{postId}/comments/{commentId}
+     * @allow (get, list): Any user can read a comment.
+     * @allow (create): Any authenticated user can create a comment.
+     * @deny (create): An unauthenticated user cannot create a comment.
+     * @deny (update, delete): No delete/update for now, open for iteration.
+     * @principle Open writes for comments on public posts.
      */
-    match /comments/{commentId} {
-      allow get, list: if true;
+    match /posts/{postId}/comments/{commentId} {
+      allow get: if true;
+      allow list: if true;
       allow create: if isSignedIn();
       allow update: if false;
-      allow delete: if isExistingOwner(resource.data.authorId);
+      allow delete: if false;
     }
 
     /**
-     * @description Allows a user to read, update, and delete their own profile.
+     * @description Allows a user to read and write their own profile data.
      * @path /users/{userId}
-     * @allow (get, update, delete): Only the user with the matching userId can access their own profile.
-     * @allow (create): Any signed-in user can create their own profile if the userId matches their UID.
-     * @deny (get, update, delete): A user attempts to access another user's profile.
-     * @deny (create): A user attempts to create a profile with a userId that doesn't match their UID.
-     * @principle Enforces user-ownership, restricts access to a user's own data tree.
+     * @allow (get, create, update, delete): Only the user with the matching {userId} can access this document.
+     * @deny (get, create, update, delete): A user cannot access another user's profile.
+     * @principle Enforces document ownership for user profiles.
      */
     match /users/{userId} {
-      allow get, update, delete: if isExistingOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId);
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
     }
 
     /**
-     * @description Allows anyone to read bottles, and only the author to create, update, or delete their own bottles.
+     * @description Allows anyone to read messages in bottles. Write permissions are open for now.
      * @path /bottles/{bottleId}
-     * @allow (get, list): Any user can read bottles.
-     * @allow (create): Any signed-in user can create a bottle, with authorId matching their UID.
-     * @allow (update, delete): Only the user who created the bottle can update or delete it.
-     * @deny (create): A user attempts to create a bottle where the authorId doesn't match their UID.
-     * @principle Public read access with owner-only writes, enforces ownership on writes.
+     * @allow (get, list): Any user can read a message in a bottle.
+     * @allow (create): Any authenticated user can create a bottle.
+     * @deny (create): An unauthenticated user cannot create a bottle.
+     * @principle Open access for messages in bottles.
      */
     match /bottles/{bottleId} {
-      allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-      allow update, delete: if isExistingOwner(resource.data.authorId);
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn();
+      allow update: if false;
+      allow delete: if false;
     }
 
     /**
-     * @description Allows anyone to read wall messages, and only the author to create, update, or delete their own wall messages.
+     * @description Allows anyone to read wall messages, but only the author to create, update, or delete them.
      * @path /wallMessages/{messageId}
-     * @allow (get, list): Any user can read wall messages.
-     * @allow (create): Any signed-in user can create a wall message, with authorId matching their UID.
-     * @allow (update, delete): Only the user who created the wall message can update or delete it.
-     * @deny (create): A user attempts to create a wall message where the authorId doesn't match their UID.
-     * @principle Public read access with owner-only writes, enforces ownership on writes.
+     * @allow (get, list): Any user can read a wall message.
+     * @allow (create): Any authenticated user can create a wall message if the authorId matches.
+     * @allow (update, delete): Only the author can modify or remove their wall message.
+     * @deny (create): An unauthenticated user cannot create a wall message.
+     * @deny (update, delete): A user cannot modify or remove a wall message they did not create.
+     * @principle Public Read with Owner-Only Writes.
      */
     match /wallMessages/{messageId} {
-      allow get, list: if true;
+      allow get: if true;
+      allow list: if true;
       allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-      allow update, delete: if isExistingOwner(resource.data.authorId);
+      allow update: if isSignedIn() && isExistingOwner(resource.data.authorId);
+      allow delete: if isSignedIn() && isExistingOwner(resource.data.authorId);
     }
 
     // --- Helper Functions ---
@@ -118,13 +130,13 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
 
-    /**
-     * @description Checks if the user is the owner of the existing resource.
-     * @param {string} userId The user ID to check against.
-     * @return {bool} True if the user is the owner and the resource exists, false otherwise.
-     */
+     /**
+      * @description Checks if the user is the owner of the existing resource.
+      * @param {string} userId The user ID to check against.
+      * @return {bool} True if the user is the owner and the resource exists, false otherwise.
+      */
     function isExistingOwner(userId) {
-      return isSignedIn() && isOwner(userId) && resource != null;
+      return isOwner(userId) && resource != null;
     }
   }
 }
