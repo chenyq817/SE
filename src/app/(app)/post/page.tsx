@@ -42,7 +42,7 @@ import { Label } from "@/components/ui/label";
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn } from '@/lib/utils';
 import { useCollection, useFirestore, useUser, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking, useDoc } from '@/firebase';
-import { collection, query, orderBy, serverTimestamp, arrayUnion, arrayRemove, doc, writeBatch, increment, addDoc, updateDoc, where, getDocs, runTransaction } from 'firebase/firestore';
+import { collection, query, orderBy, serverTimestamp, arrayUnion, arrayRemove, doc, writeBatch, increment, getDocs, runTransaction } from 'firebase/firestore';
 import type { WithId } from '@/firebase';
 import { Separator } from '@/components/ui/separator';
 
@@ -316,25 +316,26 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
                     </div>
                 )}
             </CardContent>
-            <CardFooter className="flex justify-start gap-4 border-t pt-4">
-                <Button 
-                    variant="ghost" 
-                    className={cn(
-                        "flex items-center gap-2",
-                        isLiked ? "text-primary" : "text-muted-foreground"
-                    )} 
-                    onClick={handleLike}
-                    disabled={!user}
-                >
-                    <ThumbsUp className={cn("w-5 h-5", isLiked && "fill-current")} /> {post.likeIds.length}
-                </Button>
-                <Button 
-                    variant="ghost" 
-                    className="flex items-center gap-2 text-muted-foreground"
-                    disabled={true}
-                >
-                    <MessageSquare className="w-5 h-5" /> {post.commentCount || 0}
-                </Button>
+            <CardFooter className="flex flex-col items-start gap-4 border-t pt-4">
+                <div className="flex justify-start gap-4">
+                  <Button 
+                      variant="ghost" 
+                      className={cn(
+                          "flex items-center gap-2",
+                          isLiked ? "text-primary" : "text-muted-foreground"
+                      )} 
+                      onClick={handleLike}
+                      disabled={!user}
+                  >
+                      <ThumbsUp className={cn("w-5 h-5", isLiked && "fill-current")} /> {post.likeIds.length}
+                  </Button>
+                  <Button 
+                      variant="ghost" 
+                      className="flex items-center gap-2 text-muted-foreground"
+                  >
+                      <MessageSquare className="w-5 h-5" /> {post.commentCount || 0}
+                  </Button>
+                </div>
             </CardFooter>
         </Card>
     );
@@ -548,4 +549,5 @@ export default function PostPage() {
         </div>
     );
 }
+
 
