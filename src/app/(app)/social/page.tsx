@@ -81,7 +81,7 @@ export default function SocialPage() {
     const [friends, setFriends] = useState<WithId<UserProfile>[]>([]);
 
     useEffect(() => {
-        if (currentUserProfile?.friendRequestsReceived && firestore) {
+        if (currentUserProfile?.friendRequestsReceived && currentUserProfile.friendRequestsReceived.length > 0 && firestore) {
             const q = query(collection(firestore, 'users'), where('__name__', 'in', currentUserProfile.friendRequestsReceived));
             getDocs(q).then(snapshot => {
                 const profiles = snapshot.docs.map(d => ({ ...d.data() as UserProfile, id: d.id }));
@@ -91,7 +91,7 @@ export default function SocialPage() {
             setFriendRequests([]);
         }
 
-        if (currentUserProfile?.friendIds && firestore) {
+        if (currentUserProfile?.friendIds && currentUserProfile.friendIds.length > 0 && firestore) {
             const q = query(collection(firestore, 'users'), where('__name__', 'in', currentUserProfile.friendIds));
             getDocs(q).then(snapshot => {
                 const profiles = snapshot.docs.map(d => ({ ...d.data() as UserProfile, id: d.id }));
