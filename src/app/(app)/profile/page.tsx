@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -14,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore, useDoc, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { doc, writeBatch, collection, query, where, getDocs } from 'firebase/firestore';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, User as UserIcon } from 'lucide-react';
@@ -113,21 +114,41 @@ export default function ProfilePage() {
   };
 
   const onSubmit = async (data: ProfileFormValues) => {
-    if (!userProfileRef) return;
+    if (!userProfileRef || !firestore || !user) return;
     setIsSaving(true);
     
-    // Create a copy of the data to be sent to Firestore
     const updatedData: Partial<ProfileFormValues> = { ...data };
-
-    // IMPORTANT: Remove the displayName from the object that will be sent for update,
-    // as it should not be editable by the user on this page.
     delete updatedData.displayName;
     
     try {
       updateDocumentNonBlocking(userProfileRef, updatedData);
+
+      // --- NEW LOGIC TO UPDATE POSTS ---
+      // Check if the avatar was actually changed
+      const avatarChanged = data.avatarId !== userProfile?.avatarId || data.imageBase64 !== userProfile?.imageBase64;
+      if (avatarChanged) {
+          const postsRef = collection(firestore, 'posts');
+          const q = query(postsRef, where('authorId', '==', user.uid));
+          const querySnapshot = await getDocs(q);
+
+          if (!querySnapshot.empty) {
+              const batch = writeBatch(firestore);
+              querySnapshot.forEach(postDoc => {
+                  const postRef = doc(firestore, 'posts', postDoc.id);
+                  batch.update(postRef, { 
+                      authorAvatarId: data.avatarId,
+                      authorImageBase64: data.imageBase64
+                  });
+              });
+              await batch.commit();
+          }
+      }
+      // --- END OF NEW LOGIC ---
+
       toast({ title: 'Profile updated successfully!' });
-      form.reset(data); // Resets the form's dirty state
+      form.reset(data); 
     } catch (error: any) {
+      console.error("Error updating profile or posts: ", error);
       toast({ variant: 'destructive', title: 'Error updating profile', description: error.message || 'Please try again.' });
     } finally {
       setIsSaving(false);
@@ -259,3 +280,4 @@ export default function ProfilePage() {
     </div>
   );
 }
+
