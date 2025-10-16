@@ -42,7 +42,7 @@ import { Label } from "@/components/ui/label";
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn } from '@/lib/utils';
 import { useCollection, useFirestore, useUser, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking, useDoc } from '@/firebase';
-import { collection, query, orderBy, serverTimestamp, arrayUnion, arrayRemove, doc, writeBatch, increment, getDocs, runTransaction } from 'firebase/firestore';
+import { collection, query, orderBy, serverTimestamp, arrayUnion, arrayRemove, doc, writeBatch, increment, getDocs, updateDoc } from 'firebase/firestore';
 import type { WithId } from '@/firebase';
 import { Separator } from '@/components/ui/separator';
 
@@ -65,7 +65,6 @@ type Comment = {
     authorId: string;
     authorName: string;
     authorAvatarId?: string;
-    authorImageBase64?: string;
     content: string;
     createdAt: any;
 };
@@ -102,7 +101,7 @@ const formatTimestamp = (timestamp: any) => {
 
 
 function CommentCard({ comment }: { comment: WithId<Comment>}) {
-    const authorAvatarSrc = comment.authorImageBase64 || PlaceHolderImages.find(img => img.id === comment.authorAvatarId)?.imageUrl;
+    const authorAvatarSrc = PlaceHolderImages.find(img => img.id === comment.authorAvatarId)?.imageUrl;
 
     return (
         <div className="flex items-start gap-3">
@@ -134,7 +133,6 @@ function CommentSection({ post }: { post: WithId<Post>}) {
     
     const commentsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        // Query the subcollection for comments
         return query(collection(firestore, 'posts', post.id, 'comments'), orderBy('createdAt', 'asc'));
     }, [firestore, post.id]);
 
@@ -151,25 +149,13 @@ function CommentSection({ post }: { post: WithId<Post>}) {
             authorName: userProfile.displayName,
             content: newCommentContent,
             createdAt: serverTimestamp(),
+            authorAvatarId: userProfile.avatarId,
         };
 
-        if (userProfile.imageBase64) {
-            commentData.authorImageBase64 = userProfile.imageBase64;
-        } else if (userProfile.avatarId) {
-            commentData.authorAvatarId = userProfile.avatarId;
-        }
-
-        try {
-            await runTransaction(firestore, async (transaction) => {
-                // Add the new comment document to the subcollection
-                transaction.set(doc(commentsColRef), commentData);
-                // Atomically increment the comment count on the parent post
-                transaction.update(postRef, { commentCount: increment(1) });
-            });
-            setNewCommentContent('');
-        } catch (e) {
-            console.error("Error creating comment in transaction: ", e);
-        }
+        addDocumentNonBlocking(commentsColRef, commentData);
+        updateDoc(postRef, { commentCount: increment(1) });
+        
+        setNewCommentContent('');
     };
     
     const userAvatarSrc = userProfile?.imageBase64 || PlaceHolderImages.find(img => img.id === userProfile?.avatarId)?.imageUrl;
@@ -211,7 +197,6 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isCommentSectionOpen, setIsCommentSectionOpen] = useState(false);
     
-    // Prioritize new imageBase64 field for author avatar
     const authorAvatarSrc = post.authorImageBase64 || PlaceHolderImages.find(img => img.id === post.authorAvatarId)?.imageUrl;
     
     const isLiked = user ? post.likeIds.includes(user.uid) : false;
@@ -233,23 +218,18 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
       const commentsRef = collection(firestore, 'posts', post.id, 'comments');
   
       try {
-        // Use a write batch to delete the post and its comments atomically
         const batch = writeBatch(firestore);
   
-        // 1. Get all comments to delete them
         const commentsSnapshot = await getDocs(commentsRef);
         commentsSnapshot.forEach(commentDoc => {
           batch.delete(commentDoc.ref);
         });
   
-        // 2. Delete the post itself
         batch.delete(postRef);
   
-        // 3. Commit the batch
         await batch.commit();
       } catch (error) {
         console.error("Error deleting post and comments:", error);
-        // You can use a toast to notify the user of the failure
       }
   
       setIsDeleteDialogOpen(false);
@@ -332,7 +312,7 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
               <Button 
                   variant="ghost" 
                   className="flex items-center gap-2 text-muted-foreground"
-                  onClick={() => setIsCommentSectionOpen(!isCommentSectionOpen)}
+                   onClick={() => setIsCommentSectionOpen(prev => !prev)}
               >
                   <MessageSquare className="w-5 h-5" /> {post.commentCount || 0}
               </Button>
@@ -550,6 +530,7 @@ export default function PostPage() {
         </div>
     );
 }
+
 
 
 

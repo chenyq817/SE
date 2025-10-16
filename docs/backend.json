@@ -170,6 +170,10 @@
       "type": "object",
       "description": "Represents a comment on a post.",
       "properties": {
+        "postId": {
+          "type": "string",
+          "description": "ID of the post to which the comment belongs."
+        },
         "authorId": {
           "type": "string",
           "description": "ID of the user who created the comment."
@@ -182,10 +186,6 @@
           "type": "string",
           "description": "Avatar ID of the user who created the comment."
         },
-        "authorImageBase64": {
-          "type": "string",
-          "description": "Base64 encoded string of the user's avatar."
-        },
         "content": {
           "type": "string",
           "description": "The text content of the comment."
@@ -197,6 +197,7 @@
         }
       },
       "required": [
+        "postId",
         "authorId",
         "authorName",
         "content",
