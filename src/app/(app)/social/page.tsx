@@ -26,6 +26,7 @@ type UserProfile = {
   friendIds?: string[];
   friendRequestsSent?: string[];
   friendRequestsReceived?: string[];
+  displayName_lowercase?: string;
 };
 
 const UserProfileCard = ({ profile, onAction, actionType }: { profile: WithId<UserProfile>, onAction: (targetUserId: string) => void, actionType: 'add' | 'sent' | 'friend' | 'accept' | 'decline' | 'loading' }) => {
@@ -107,8 +108,8 @@ export default function SocialPage() {
         setIsSearching(true);
         try {
             const usersRef = collection(firestore, "users");
-            // Basic case-sensitive search. Firestore is limited here. For real apps, a search service is better.
-            const q = query(usersRef, where("displayName", ">=", searchTerm), where("displayName", "<=", searchTerm + '\uf8ff'));
+            const lowercasedSearchTerm = searchTerm.toLowerCase();
+            const q = query(usersRef, where("displayName_lowercase", ">=", lowercasedSearchTerm), where("displayName_lowercase", "<=", lowercasedSearchTerm + '\uf8ff'));
             const querySnapshot = await getDocs(q);
             const results = querySnapshot.docs
                 .map(doc => ({ ...doc.data() as UserProfile, id: doc.id }))
@@ -264,7 +265,7 @@ export default function SocialPage() {
                         <CardHeader>
                             <CardTitle>My Friends</CardTitle>
                             <CardDescription>Manage your connections and start conversations.</CardDescription>
-                        </CardHeader>
+                        </Header>
                         <CardContent className="space-y-2 h-[41.5rem] overflow-y-auto">
                             {friends.length > 0 ? friends.map(profile => (
                                 <div key={profile.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-secondary">

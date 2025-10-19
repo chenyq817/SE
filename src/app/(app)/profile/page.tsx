@@ -24,6 +24,7 @@ import { updateProfile } from 'firebase/auth';
 
 const profileSchema = z.object({
   displayName: z.string().min(3, { message: 'Display name must be at least 3 characters.' }),
+  displayName_lowercase: z.string().optional(),
   bio: z.string().max(160, { message: 'Bio must be 160 characters or less.' }).optional(),
   age: z.coerce.number().min(0).optional(),
   gender: z.string().optional(),
@@ -36,6 +37,7 @@ type ProfileFormValues = z.infer<typeof profileSchema>;
 
 type UserProfile = {
   displayName: string;
+  displayName_lowercase?: string;
   avatarId: string;
   avatarUrl?: string; 
   imageBase64?: string;
@@ -65,6 +67,7 @@ export default function ProfilePage() {
     resolver: zodResolver(profileSchema),
     defaultValues: {
         displayName: '',
+        displayName_lowercase: '',
         bio: '',
         age: undefined,
         gender: '',
@@ -78,6 +81,7 @@ export default function ProfilePage() {
     if (userProfile) {
       form.reset({
         displayName: userProfile.displayName || '',
+        displayName_lowercase: userProfile.displayName_lowercase || '',
         bio: userProfile.bio || '',
         age: userProfile.age || undefined,
         gender: userProfile.gender || '',
@@ -118,7 +122,10 @@ export default function ProfilePage() {
     if (!userProfileRef || !firestore || !user) return;
     setIsSaving(true);
 
-    const updatedData: Partial<ProfileFormValues> = { ...data };
+    const updatedData: Partial<ProfileFormValues> = { 
+        ...data,
+        displayName_lowercase: data.displayName.toLowerCase(),
+    };
     
     if (updatedData.imageBase64 === '') {
       delete updatedData.imageBase64;
@@ -320,5 +327,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
-    

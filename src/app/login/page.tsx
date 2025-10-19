@@ -122,6 +122,7 @@ export default function LoginPage() {
         // Set the user's profile document in Firestore
         setDocumentNonBlocking(userProfileRef, {
           displayName: values.displayName,
+          displayName_lowercase: values.displayName.toLowerCase(),
           avatarId: randomAvatarId,
           bio: '',
           age: null,
