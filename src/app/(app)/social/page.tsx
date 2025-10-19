@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -14,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Search, UserPlus, Check, X, Loader2 } from 'lucide-react';
-import { useUser, useFirestore, useDoc, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
+import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { collection, query, where, getDocs, writeBatch, arrayUnion, arrayRemove, doc } from 'firebase/firestore';
 import type { WithId } from '@/firebase';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -275,7 +274,7 @@ export default function SocialPage() {
                         <CardHeader>
                             <CardTitle>My Friends</CardTitle>
                             <CardDescription>Manage your connections and start conversations.</CardDescription>
-                        </Header>
+                        </CardHeader>
                         <CardContent className="space-y-2 h-[41.5rem] overflow-y-auto">
                             {friends.length > 0 ? friends.map(profile => (
                                 <div key={profile.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-secondary">
