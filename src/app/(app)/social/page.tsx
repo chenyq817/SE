@@ -61,7 +61,7 @@ const UserProfileCard = ({ profile, onAction, actionType }: { profile: WithId<Us
             {renderButton()}
         </div>
     )
-}
+};
 
 export default function SocialPage() {
     const { user } = useUser();
@@ -238,7 +238,7 @@ export default function SocialPage() {
                                    <div key={profile.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-secondary">
                                         <div className="flex items-center gap-3">
                                             <Avatar>
-                                                <AvatarImage src={PlaceHolderImages.find(p => p.id === profile.avatarId)?.imageUrl} />
+                                                <AvatarImage src={profile.imageBase64 || PlaceHolderImages.find(p => p.id === profile.avatarId)?.imageUrl} />
                                                 <AvatarFallback>{profile.displayName.charAt(0)}</AvatarFallback>
                                             </Avatar>
                                             <p className="font-medium">{profile.displayName}</p>
@@ -271,7 +271,7 @@ export default function SocialPage() {
                                 <div key={profile.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-secondary">
                                     <div className="flex items-center gap-3">
                                         <Avatar>
-                                            <AvatarImage src={PlaceHolderImages.find(p => p.id === profile.avatarId)?.imageUrl} />
+                                            <AvatarImage src={profile.imageBase64 || PlaceHolderImages.find(p => p.id === profile.avatarId)?.imageUrl} />
                                             <AvatarFallback>{profile.displayName.charAt(0)}</AvatarFallback>
                                         </Avatar>
                                         <p className="font-medium">{profile.displayName}</p>
