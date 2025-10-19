@@ -220,10 +220,10 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
     const handleLike = () => {
         if (!firestore || !user) return;
         const postRef = doc(firestore, 'posts', post.id);
-        
-        updateDoc(postRef, {
+        const data = {
             likeIds: isLiked ? arrayRemove(user.uid) : arrayUnion(user.uid)
-        }).catch(() => {});
+        };
+        updateDocumentNonBlocking(postRef, data);
     };
 
     const handleDelete = () => {
@@ -553,3 +553,4 @@ export default function PostPage() {
         </div>
     );
 }
+
