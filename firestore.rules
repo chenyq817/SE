@@ -23,6 +23,7 @@
  *   unauthenticated read access (`get`, `list`), but write access is restricted
  *   to the owner of the resource.
  * - Listing of user documents (`/users`) is disallowed to protect user privacy.
+ * - To support liking posts, anyone who is signed in can update the `likeIds` array of a post.
  * - No data validation rules are enforced in this prototyping phase, except for
  *   authorization-critical fields such as `authorId` on creation.
  *
@@ -57,23 +58,23 @@ service cloud.firestore {
     }
 
     /**
-     * @description Allows public reading of posts, but restricts modifications to the author.
+     * @description Allows public reading of posts, and any signed in user can update the likeIds. Restricts modifications to the author.
      * @path /posts/{postId}
      * @allow (get) Any user can read a post.
      * @allow (list) Any user can list posts.
      * @allow (create) User 'rQZNN1VeweMz0Lf2k0JT4Z7kFCx2' can create a post if they are the author.
      * @deny (create) User 'attackerUID' cannot create a post with 'authorId' set to a different user.
-     * @allow (update) User 'rQZNN1VeweMz0Lf2k0JT4Z7kFCx2' can update their own post.
+     * @allow (update) User 'rQZNN1VeweMz0Lf2k0JT4Z7kFCx2' can update their own post or any signed in user can update likeIds
      * @deny (update) User 'attackerUID' cannot update a post they don't own.
      * @allow (delete) User 'rQZNN1VeweMz0Lf2k0JT4Z7kFCx2' can delete their own post.
      * @deny (delete) User 'attackerUID' cannot delete a post they don't own.
-     * @principle Allows public read access while enforcing owner-only writes.
+     * @principle Allows public read access, signed in user can update likeIds, while enforcing owner-only writes.
      */
     match /posts/{postId} {
       allow get: if true;
       allow list: if true;
       allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-      allow update: if isExistingOwner(resource.data.authorId);
+      allow update: if isExistingOwner(resource.data.authorId) || (isSignedIn() && resource != null && request.resource.data.keys().hasAll(['likeIds']));
       allow delete: if isExistingOwner(resource.data.authorId);
     }
 
