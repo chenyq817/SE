@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -13,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Search, UserPlus, Check, X, Loader2 } from 'lucide-react';
-import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { collection, query, where, getDocs, writeBatch, arrayUnion, arrayRemove, doc } from 'firebase/firestore';
 import type { WithId } from '@/firebase';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -103,6 +104,11 @@ export default function SocialPage() {
                 setter(profiles);
             } catch (error) {
                 console.error("Error fetching related profiles:", error);
+                 const permissionError = new FirestorePermissionError({
+                    path: 'users',
+                    operation: 'list',
+                });
+                errorEmitter.emit('permission-error', permissionError);
                 setter([]);
             }
         };
@@ -134,11 +140,16 @@ export default function SocialPage() {
             setSearchResults(results);
         } catch (error) {
             console.error("Error searching users: ", error);
+            const permissionError = new FirestorePermissionError({
+                path: 'users',
+                operation: 'list',
+            });
+            errorEmitter.emit('permission-error', permissionError);
         }
         setIsSearching(false);
     };
 
-    const handleSendFriendRequest = async (targetUserId: string) => {
+    const handleSendFriendRequest = (targetUserId: string) => {
         if (!firestore || !user) return;
         setActionLoading(targetUserId);
 
@@ -149,12 +160,21 @@ export default function SocialPage() {
         batch.update(currentUserRef, { friendRequestsSent: arrayUnion(targetUserId) });
         batch.update(targetUserRef, { friendRequestsReceived: arrayUnion(user.uid) });
 
-        await batch.commit();
-        if (refetchCurrentUserProfile) refetchCurrentUserProfile();
-        setActionLoading(null);
+        batch.commit().then(() => {
+            if (refetchCurrentUserProfile) refetchCurrentUserProfile();
+            setActionLoading(null);
+        }).catch(error => {
+            console.error("Error sending friend request:", error);
+            const permissionError = new FirestorePermissionError({
+                path: targetUserRef.path,
+                operation: 'update',
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            setActionLoading(null);
+        });
     };
 
-    const handleAcceptFriendRequest = async (requesterId: string) => {
+    const handleAcceptFriendRequest = (requesterId: string) => {
         if (!firestore || !user) return;
         setActionLoading(requesterId);
 
@@ -166,13 +186,22 @@ export default function SocialPage() {
         batch.update(currentUserRef, { friendIds: arrayUnion(requesterId), friendRequestsReceived: arrayRemove(requesterId) });
         batch.update(requesterUserRef, { friendIds: arrayUnion(user.uid), friendRequestsSent: arrayRemove(user.uid) });
         
-        await batch.commit();
-
-        if (refetchCurrentUserProfile) refetchCurrentUserProfile();
-        setActionLoading(null);
+        batch.commit().then(() => {
+            if (refetchCurrentUserProfile) refetchCurrentUserProfile();
+            setFriendRequests(prev => prev.filter(p => p.id !== requesterId));
+            setActionLoading(null);
+        }).catch(error => {
+             console.error("Error accepting friend request:", error);
+             const permissionError = new FirestorePermissionError({
+                path: currentUserRef.path,
+                operation: 'update',
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            setActionLoading(null);
+        });
     }
     
-    const handleDeclineFriendRequest = async (requesterId: string) => {
+    const handleDeclineFriendRequest = (requesterId: string) => {
         if (!firestore || !user) return;
         setActionLoading(requesterId);
 
@@ -183,10 +212,19 @@ export default function SocialPage() {
         batch.update(currentUserRef, { friendRequestsReceived: arrayRemove(requesterId) });
         batch.update(requesterUserRef, { friendRequestsSent: arrayRemove(user.uid) });
         
-        await batch.commit();
-
-        if (refetchCurrentUserProfile) refetchCurrentUserProfile();
-        setActionLoading(null);
+        batch.commit().then(() => {
+            if (refetchCurrentUserProfile) refetchCurrentUserProfile();
+            setFriendRequests(prev => prev.filter(p => p.id !== requesterId));
+            setActionLoading(null);
+        }).catch(error => {
+            console.error("Error declining friend request:", error);
+            const permissionError = new FirestorePermissionError({
+                path: currentUserRef.path,
+                operation: 'update',
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            setActionLoading(null);
+        });
     }
 
     const getActionType = (targetUserId: string): 'add' | 'sent' | 'friend' | 'loading' => {
@@ -297,3 +335,4 @@ export default function SocialPage() {
         </div>
     );
 }
+    
