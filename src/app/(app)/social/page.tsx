@@ -76,28 +76,46 @@ export default function SocialPage() {
         return doc(firestore, 'users', user.uid);
     }, [firestore, user]);
 
-    const { data: currentUserProfile } = useDoc<UserProfile>(userProfileRef);
+    const { data: currentUserProfile, refetch: refetchCurrentUserProfile } = useDoc<UserProfile>(userProfileRef);
 
     const [friendRequests, setFriendRequests] = useState<WithId<UserProfile>[]>([]);
     const [friends, setFriends] = useState<WithId<UserProfile>[]>([]);
 
     useEffect(() => {
-        if (currentUserProfile?.friendRequestsReceived && currentUserProfile.friendRequestsReceived.length > 0 && firestore) {
-            const q = query(collection(firestore, 'users'), where('__name__', 'in', currentUserProfile.friendRequestsReceived));
-            getDocs(q).then(snapshot => {
-                const profiles = snapshot.docs.map(d => ({ ...d.data() as UserProfile, id: d.id }));
-                setFriendRequests(profiles);
-            });
+        const fetchRelatedProfiles = async (ids: string[], setter: React.Dispatch<React.SetStateAction<WithId<UserProfile>[]>>) => {
+            if (!firestore || !ids || ids.length === 0) {
+                setter([]);
+                return;
+            }
+            // Firestore 'in' queries are limited to 30 elements
+            const chunks = [];
+            for (let i = 0; i < ids.length; i += 30) {
+                chunks.push(ids.slice(i, i + 30));
+            }
+            
+            try {
+                const profilePromises = chunks.map(chunk => 
+                    getDocs(query(collection(firestore, 'users'), where('__name__', 'in', chunk)))
+                );
+                const snapshotResults = await Promise.all(profilePromises);
+                const profiles = snapshotResults.flatMap(snapshot => 
+                    snapshot.docs.map(d => ({ ...d.data() as UserProfile, id: d.id }))
+                );
+                setter(profiles);
+            } catch (error) {
+                console.error("Error fetching related profiles:", error);
+                setter([]);
+            }
+        };
+
+        if (currentUserProfile?.friendRequestsReceived) {
+            fetchRelatedProfiles(currentUserProfile.friendRequestsReceived, setFriendRequests);
         } else {
             setFriendRequests([]);
         }
 
-        if (currentUserProfile?.friendIds && currentUserProfile.friendIds.length > 0 && firestore) {
-            const q = query(collection(firestore, 'users'), where('__name__', 'in', currentUserProfile.friendIds));
-            getDocs(q).then(snapshot => {
-                const profiles = snapshot.docs.map(d => ({ ...d.data() as UserProfile, id: d.id }));
-                setFriends(profiles);
-            });
+        if (currentUserProfile?.friendIds) {
+            fetchRelatedProfiles(currentUserProfile.friendIds, setFriends);
         } else {
             setFriends([]);
         }
@@ -113,7 +131,7 @@ export default function SocialPage() {
             const querySnapshot = await getDocs(q);
             const results = querySnapshot.docs
                 .map(doc => ({ ...doc.data() as UserProfile, id: doc.id }))
-                .filter(p => p.id !== user.uid); // Exclude self from search results
+                .filter(p => p.id !== user.uid); 
             setSearchResults(results);
         } catch (error) {
             console.error("Error searching users: ", error);
@@ -133,10 +151,7 @@ export default function SocialPage() {
         batch.update(targetUserRef, { friendRequestsReceived: arrayUnion(user.uid) });
 
         await batch.commit();
-        
-        // Optimistically update UI
-        updateDocumentNonBlocking(currentUserRef, {});
-        
+        if (refetchCurrentUserProfile) refetchCurrentUserProfile();
         setActionLoading(null);
     };
 
@@ -149,17 +164,12 @@ export default function SocialPage() {
 
         const batch = writeBatch(firestore);
 
-        // Add to friends lists
-        batch.update(currentUserRef, { friendIds: arrayUnion(requesterId) });
-        batch.update(requesterUserRef, { friendIds: arrayUnion(user.uid) });
-        
-        // Remove requests
-        batch.update(currentUserRef, { friendRequestsReceived: arrayRemove(requesterId) });
-        batch.update(requesterUserRef, { friendRequestsSent: arrayRemove(user.uid) });
+        batch.update(currentUserRef, { friendIds: arrayUnion(requesterId), friendRequestsReceived: arrayRemove(requesterId) });
+        batch.update(requesterUserRef, { friendIds: arrayUnion(user.uid), friendRequestsSent: arrayRemove(user.uid) });
         
         await batch.commit();
 
-        updateDocumentNonBlocking(currentUserRef, {});
+        if (refetchCurrentUserProfile) refetchCurrentUserProfile();
         setActionLoading(null);
     }
     
@@ -176,7 +186,7 @@ export default function SocialPage() {
         
         await batch.commit();
 
-        updateDocumentNonBlocking(currentUserRef, {});
+        if (refetchCurrentUserProfile) refetchCurrentUserProfile();
         setActionLoading(null);
     }
 
