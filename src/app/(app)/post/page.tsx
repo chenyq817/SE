@@ -218,10 +218,10 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
     const canDelete = isAdmin || isAuthor;
 
     const handleLike = () => {
-        if (!firestore || !user) return;
+        if (!firestore || !user || isLiked) return;
         const postRef = doc(firestore, 'posts', post.id);
         const data = {
-            likeIds: isLiked ? arrayRemove(user.uid) : arrayUnion(user.uid)
+            likeIds: arrayUnion(user.uid)
         };
         updateDocumentNonBlocking(postRef, data);
     };
@@ -321,7 +321,7 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
                       isLiked ? "text-primary" : "text-muted-foreground"
                   )} 
                   onClick={handleLike}
-                  disabled={!user}
+                  disabled={!user || isLiked}
               >
                   <ThumbsUp className={cn("w-5 h-5", isLiked && "fill-current")} /> {post.likeIds.length}
               </Button>
@@ -553,4 +553,3 @@ export default function PostPage() {
         </div>
     );
 }
-
