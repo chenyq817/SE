@@ -218,15 +218,12 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
     const canDelete = isAdmin || isAuthor;
 
     const handleLike = () => {
-        if (!firestore) return;
+        if (!firestore || !user) return;
         const postRef = doc(firestore, 'posts', post.id);
         
-        if (user) {
-            updateDocumentNonBlocking(postRef, {
-                likeIds: isLiked ? arrayRemove(user.uid) : arrayUnion(user.uid)
-            });
-        }
-        // Anonymous users can't like, so we do nothing if user is null.
+        updateDoc(postRef, {
+            likeIds: isLiked ? arrayRemove(user.uid) : arrayUnion(user.uid)
+        }).catch(() => {});
     };
 
     const handleDelete = () => {
@@ -382,7 +379,7 @@ export default function PostPage() {
     const handleLocationSave = () => {
         setNewPostLocation(tempLocation);
         setIsLocationDialogOpen(false);
-    }
+    };
     
     const handleEmojiSelect = (emoji: string) => {
         setNewPostContent(prev => prev + emoji);
@@ -459,95 +456,100 @@ export default function PostPage() {
                                         onClick={() => {
                                             setNewPostImage(null);
                                             if(imageInputRef.current) {
-                                                imageInputRef.current.value = '';
+                                                imageInputRef.current.value = ''
                                             }
                                         }}
                                     >
-                                        <X className="h-4 w-4"/>
+                                        <X className="h-4 w-4" />
                                     </Button>
                                 </div>
                             )}
-                            <div className="w-full flex justify-between items-center pl-16">
-                                <div className="flex gap-2">
-                                    <input
-                                        type="file"
-                                        ref={imageInputRef}
-                                        onChange={handleImageChange}
-                                        className="hidden"
-                                        accept="image/*"
-                                    />
-                                    <Button variant="ghost" size="icon" className="text-muted-foreground" disabled={!user} onClick={() => imageInputRef.current?.click()}>
-                                        <ImagePlus className="w-5 h-5"/>
-                                    </Button>
-                                    <Dialog open={isLocationDialogOpen} onOpenChange={setIsLocationDialogOpen}>
-                                        <DialogTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="text-muted-foreground" disabled={!user}>
-                                                <MapPin className="w-5 h-5"/>
-                                            </Button>
-                                        </DialogTrigger>
-                                        <DialogContent className="sm:max-w-[425px]">
-                                            <DialogHeader>
-                                            <DialogTitle>Edit location</DialogTitle>
-                                            <DialogDescription>
-                                                Update your current location. This will be shown on your post.
-                                            </DialogDescription>
-                                            </DialogHeader>
-                                            <div className="grid gap-4 py-4">
-                                            <div className="grid grid-cols-4 items-center gap-4">
-                                                <Label htmlFor="location" className="text-right">
-                                                Location
-                                                </Label>
-                                                <Input
-                                                id="location"
-                                                value={tempLocation}
-                                                onChange={(e) => setTempLocation(e.target.value)}
-                                                className="col-span-3"
-                                                />
-                                            </div>
-                                            </div>
-                                            <DialogFooter>
-                                                <Button type="submit" onClick={handleLocationSave}>Save changes</Button>
-                                            </DialogFooter>
-                                        </DialogContent>
-                                    </Dialog>
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="text-muted-foreground" disabled={!user}>
-                                                <Smile className="w-5 h-5"/>
-                                            </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-auto border-none bg-transparent shadow-none">
-                                            <div className="grid grid-cols-6 gap-2 p-2 rounded-lg bg-background border shadow-lg">
-                                                {emojis.map(emoji => (
-                                                    <Button 
-                                                        key={emoji}
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => handleEmojiSelect(emoji)}
-                                                        className="text-2xl"
-                                                    >
-                                                        {emoji}
-                                                    </Button>
-                                                ))}
-                                            </div>
-                                        </PopoverContent>
-                                    </Popover>
-                                </div>
-                                <Button onClick={handlePost} disabled={(!newPostContent.trim() && !newPostImage) || !user}>Post</Button>
-                            </div>
                         </CardHeader>
+                        <CardFooter className="flex justify-between items-center p-4 border-t">
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                                <Dialog open={isLocationDialogOpen} onOpenChange={setIsLocationDialogOpen}>
+                                    <DialogTrigger asChild>
+                                        <Button variant="ghost" size="sm" className="gap-2" disabled={!user}>
+                                            <MapPin className="w-4 h-4"/>
+                                            <span className="text-sm truncate max-w-[120px]">{newPostLocation}</span>
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                        <DialogHeader>
+                                            <DialogTitle>Set Location</DialogTitle>
+                                            <DialogDescription>Where are you posting from?</DialogDescription>
+                                        </DialogHeader>
+                                        <Input 
+                                            value={tempLocation} 
+                                            onChange={(e) => setTempLocation(e.target.value)}
+                                            placeholder="e.g. Main Library"
+                                        />
+                                        <DialogFooter>
+                                            <Button onClick={handleLocationSave}>Save</Button>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
+                                <Button variant="ghost" size="icon" onClick={() => imageInputRef.current?.click()} disabled={!user}>
+                                    <ImagePlus className="w-5 h-5"/>
+                                </Button>
+                                 <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button variant="ghost" size="icon" disabled={!user}>
+                                            <Smile className="w-5 h-5"/>
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto border-none bg-transparent shadow-none">
+                                        <div className="grid grid-cols-6 gap-2 p-2 rounded-lg bg-background border shadow-lg">
+                                            {emojis.map(emoji => (
+                                                <Button 
+                                                    key={emoji}
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => handleEmojiSelect(emoji)}
+                                                    className="text-2xl"
+                                                >
+                                                    {emoji}
+                                                </Button>
+                                            ))}
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
+                                <input
+                                    type="file"
+                                    ref={imageInputRef}
+                                    onChange={handleImageChange}
+                                    className="hidden"
+                                    accept="image/png, image/jpeg, image/gif"
+                                />
+                            </div>
+                            <Button 
+                                onClick={handlePost} 
+                                disabled={(!newPostContent.trim() && !newPostImage) || !user}
+                            >
+                                Post
+                            </Button>
+                        </CardFooter>
                     </Card>
 
-                    <div className="space-y-6">
-                        {isLoading && <p className="text-center text-muted-foreground">Loading posts...</p>}
-                        {socialPosts?.map((post) => (
-                            <SocialPostCard key={post.id} post={post} />
-                        ))}
-                    </div>
+                    {isLoading ? (
+                        <div className="space-y-4">
+                            <Card><CardHeader><div className="h-20 w-full bg-muted animate-pulse rounded-md"></div></CardHeader></Card>
+                            <Card><CardHeader><div className="h-20 w-full bg-muted animate-pulse rounded-md"></div></CardHeader></Card>
+                        </div>
+                    ) : socialPosts && socialPosts.length > 0 ? (
+                         <div className="space-y-4">
+                            {socialPosts.map(post => (
+                                <SocialPostCard key={post.id} post={post} />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-16">
+                            <p className="text-muted-foreground">No posts yet.</p>
+                            <p className="text-sm text-muted-foreground">Be the first to share something!</p>
+                        </div>
+                    )}
                 </div>
             </main>
         </div>
     );
 }
-
-    
