@@ -21,14 +21,16 @@ import {
   Shield,
   Bot,
   MessageSquare,
+  FileText
 } from "lucide-react";
 import { useUser } from "@/firebase";
 
 const menuItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/news", label: "News", icon: Newspaper },
-  { href: "/post", label: "Posts", icon: MessageSquare },
+  { href: "/post", label: "Posts", icon: FileText },
   { href: "/social", label: "Social", icon: Users },
+  { href: "/chat", label: "Chats", icon: MessageSquare },
   { href: "/schedules", label: "Schedules", icon: Calendar },
   { href: "/activities", label: "Activities", icon: Flame },
   { href: "/community", label: "Community", icon: Anchor },
@@ -42,7 +44,7 @@ export function AppSidebar() {
   const isAdmin = user?.email === 'admin@111.com';
 
   const isActive = (href: string) => {
-    // For chat, we check if the path starts with /chat/
+    // For chat, we check if the path starts with /chat
     if (href === '/chat') {
       return pathname.startsWith('/chat');
     }
