@@ -91,8 +91,7 @@ export default function SocialPage() {
         setIsSearching(true);
         try {
             const usersRef = collection(firestore, "users");
-            const lowercasedSearchTerm = searchTerm.toLowerCase();
-            const q = query(usersRef, where("displayName_lowercase", ">=", lowercasedSearchTerm), where("displayName_lowercase", "<=", lowercasedSearchTerm + '\uf8ff'));
+            const q = query(usersRef, where("displayName", ">=", searchTerm), where("displayName", "<=", searchTerm + '\uf8ff'));
             const querySnapshot = await getDocs(q);
             const results = querySnapshot.docs
                 .map(doc => ({ ...doc.data() as UserProfile, id: doc.id }))
@@ -265,5 +264,3 @@ export default function SocialPage() {
         </div>
     );
 }
-
-    
