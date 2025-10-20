@@ -69,6 +69,10 @@
           "type": "string",
           "description": "The user's display name."
         },
+        "displayName_lowercase": {
+          "type": "string",
+          "description": "The user's display name in lowercase for searching."
+        },
         "avatarId": {
           "type": "string",
           "description": "The ID for the user's default avatar image from the placeholder list."
@@ -127,63 +131,8 @@
       },
       "required": [
         "displayName",
+        "displayName_lowercase",
         "avatarId"
-      ]
-    },
-    "User": {
-      "title": "User",
-      "type": "object",
-      "description": "Represents a user of the application.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the user entity."
-        },
-        "userName": {
-          "type": "string",
-          "description": "User's username."
-        },
-        "email": {
-          "type": "string",
-          "description": "User's email address.",
-          "format": "email"
-        },
-        "role": {
-          "type": "string",
-          "description": "User's role within the application (e.g., student, admin)."
-        },
-        "interestTags": {
-          "type": "array",
-          "description": "User's interests represented as tags.",
-          "items": {
-            "type": "string"
-          }
-        },
-        "scheduleIds": {
-          "type": "array",
-          "description": "References to Schedules created by the User. (Relationship: User 1:N Schedule)",
-          "items": {
-            "type": "string"
-          }
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the user account was created.",
-          "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the user account was last updated.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "userName",
-        "email",
-        "role",
-        "createdAt",
-        "updatedAt"
       ]
     },
     "Comment": {
@@ -225,197 +174,6 @@
         "createdAt"
       ]
     },
-    "Schedule": {
-      "title": "Schedule",
-      "type": "object",
-      "description": "Represents a user's schedule for study/activities.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the schedule entity."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to User who owns the schedule. (Relationship: User 1:N Schedule)"
-        },
-        "activityName": {
-          "type": "string",
-          "description": "Name of the activity."
-        },
-        "startTime": {
-          "type": "string",
-          "description": "Start time of the activity.",
-          "format": "date-time"
-        },
-        "endTime": {
-          "type": "string",
-          "description": "End time of the activity.",
-          "format": "date-time"
-        },
-        "location": {
-          "type": "string",
-          "description": "Location of the activity."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the schedule was created.",
-          "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the schedule was last updated.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "userId",
-        "activityName",
-        "startTime",
-        "endTime",
-        "location",
-        "createdAt",
-        "updatedAt"
-      ]
-    },
-    "Activity": {
-      "title": "Activity",
-      "type": "object",
-      "description": "Represents an online/offline activity or event.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the activity entity."
-        },
-        "organizerId": {
-          "type": "string",
-          "description": "Reference to User who organized the activity. (Relationship: User 1:N Activity)"
-        },
-        "name": {
-          "type": "string",
-          "description": "Name of the activity."
-        },
-        "description": {
-          "type": "string",
-          "description": "Description of the activity."
-        },
-        "startTime": {
-          "type": "string",
-          "description": "Start time of the activity.",
-          "format": "date-time"
-        },
-        "endTime": {
-          "type": "string",
-          "description": "End time of the activity.",
-          "format": "date-time"
-        },
-        "location": {
-          "type": "string",
-          "description": "Location of the activity."
-        },
-        "participantIds": {
-          "type": "array",
-          "description": "References to Users participating in the Activity. (Relationship: User N:N Activity)",
-          "items": {
-            "type": "string"
-          }
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the activity was created.",
-          "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the activity was last updated.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "organizerId",
-        "name",
-        "description",
-        "startTime",
-        "endTime",
-        "location",
-        "createdAt",
-        "updatedAt"
-      ]
-    },
-    "InterestGroup": {
-      "title": "InterestGroup",
-      "type": "object",
-      "description": "Represents a group of users with shared interests.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the interest group entity."
-        },
-        "name": {
-          "type": "string",
-          "description": "Name of the interest group."
-        },
-        "description": {
-          "type": "string",
-          "description": "Description of the interest group."
-        },
-        "memberIds": {
-          "type": "array",
-          "description": "References to Users who are members of the group. (Relationship: User N:N InterestGroup)",
-          "items": {
-            "type": "string"
-          }
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the group was created.",
-          "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the group was last updated.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "name",
-        "description",
-        "createdAt",
-        "updatedAt"
-      ]
-    },
-    "Bottle": {
-      "title": "Bottle",
-      "type": "object",
-      "description": "Represents a message in a bottle.",
-      "properties": {
-        "content": {
-          "type": "string",
-          "description": "The text content of the message."
-        },
-        "authorId": {
-          "type": "string",
-          "description": "ID of the user who sent the message."
-        },
-        "authorName": {
-          "type": "string",
-          "description": "Name of the user who sent the message."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the message was created.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "content",
-        "authorId",
-        "authorName",
-        "createdAt"
-      ]
-    },
     "WallMessage": {
       "title": "Wall Message",
       "type": "object",
@@ -445,6 +203,68 @@
         "authorName",
         "createdAt"
       ]
+    },
+    "Chat": {
+      "title": "Chat",
+      "type": "object",
+      "description": "Represents a private chat session between two or more users.",
+      "properties": {
+        "participantIds": {
+          "type": "array",
+          "description": "Array of user IDs participating in the chat.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "participantInfo": {
+          "type": "object",
+          "description": "Map of participant info, keyed by userId.",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "displayName": {"type": "string"},
+              "avatarId": {"type": "string"},
+              "imageBase64": {"type": "string"}
+            }
+          }
+        },
+        "lastMessage": {
+          "type": "string",
+          "description": "The content of the last message sent in the chat."
+        },
+        "lastMessageTimestamp": {
+          "type": "string",
+          "description": "Timestamp of the last message.",
+          "format": "date-time"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the chat was created.",
+          "format": "date-time"
+        }
+      },
+      "required": ["participantIds", "participantInfo", "createdAt"]
+    },
+    "ChatMessage": {
+      "title": "Chat Message",
+      "type": "object",
+      "description": "Represents a single message within a chat.",
+      "properties": {
+        "senderId": {
+          "type": "string",
+          "description": "ID of the user who sent the message."
+        },
+        "content": {
+          "type": "string",
+          "description": "The text content of the message."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the message was sent.",
+          "format": "date-time"
+        }
+      },
+      "required": ["senderId", "content", "createdAt"]
     }
   },
   "auth": {
@@ -472,17 +292,21 @@
       },
       "description": "Holds public profile information for each user."
     },
-    "/bottles/{bottleId}": {
-      "schema": {
-        "$ref": "#/entities/Bottle"
-      },
-      "description": "Holds all the messages in bottles."
-    },
     "/wallMessages/{messageId}": {
       "schema": {
         "$ref": "#/entities/WallMessage"
       },
       "description": "Holds all public messages on the community wall."
+    },
+    "/chats/{chatId}": {
+      "schema": { "$ref": "#/entities/Chat" },
+      "description": "Holds all private chat sessions."
+    },
+    "/chats/{chatId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/ChatMessage" },
+      "description": "Holds all messages for a specific chat session."
     }
   }
 }
+
+    

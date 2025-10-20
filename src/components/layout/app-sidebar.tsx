@@ -21,6 +21,7 @@ import {
   Shield,
   Bot,
   MessageSquare,
+  MessagesSquare,
 } from "lucide-react";
 import { useUser } from "@/firebase";
 
@@ -29,6 +30,7 @@ const menuItems = [
   { href: "/news", label: "News", icon: Newspaper },
   { href: "/post", label: "Posts", icon: MessageSquare },
   { href: "/social", label: "Social", icon: Users },
+  { href: "/chat", label: "Chats", icon: MessagesSquare },
   { href: "/schedules", label: "Schedules", icon: Calendar },
   { href: "/activities", label: "Activities", icon: Flame },
   { href: "/community", label: "Community", icon: Anchor },
@@ -40,6 +42,10 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { user } = useUser();
   const isAdmin = user?.email === 'admin@111.com';
+
+  const isActive = (href: string) => {
+    return href === '/' ? pathname === href : pathname.startsWith(href);
+  };
 
   return (
     <Sidebar>
@@ -57,7 +63,7 @@ export function AppSidebar() {
             <SidebarMenuItem key={item.href}>
               <SidebarMenuButton
                 href={item.href}
-                isActive={pathname === item.href}
+                isActive={isActive(item.href)}
                 tooltip={item.label}
               >
                 <item.icon />
@@ -72,7 +78,7 @@ export function AppSidebar() {
             <SidebarMenuItem>
               <SidebarMenuButton
                 href={adminMenuItem.href}
-                isActive={pathname === adminMenuItem.href}
+                isActive={isActive(adminMenuItem.href)}
                 tooltip={adminMenuItem.label}
               >
                   <adminMenuItem.icon />

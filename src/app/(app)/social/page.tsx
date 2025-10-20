@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Header } from "@/components/layout/header";
 import {
   Card,
@@ -13,11 +14,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Search, UserPlus, Check, X, Loader2 } from 'lucide-react';
+import { Search, UserPlus, Check, X, Loader2, MessageSquare } from 'lucide-react';
 import { useUser, useFirestore, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { collection, query, where, getDocs, writeBatch, arrayUnion, arrayRemove, doc } from 'firebase/firestore';
 import type { WithId } from '@/firebase';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 type UserProfile = {
   displayName: string;
@@ -29,43 +31,10 @@ type UserProfile = {
   displayName_lowercase?: string;
 };
 
-const UserProfileCard = ({ profile, onAction, actionType }: { profile: WithId<UserProfile>, onAction: (targetUserId: string) => void, actionType: 'add' | 'sent' | 'friend' | 'accept' | 'decline' | 'loading' }) => {
-    const avatarSrc = profile.imageBase64 || PlaceHolderImages.find(p => p.id === profile.avatarId)?.imageUrl;
-
-    const renderButton = () => {
-        switch(actionType) {
-            case 'add':
-                return <Button size="sm" onClick={() => onAction(profile.id)}><UserPlus className="mr-2 h-4 w-4" /> Add Friend</Button>;
-            case 'sent':
-                return <Button size="sm" variant="outline" disabled>Request Sent</Button>;
-            case 'friend':
-                 return <Button size="sm" variant="ghost" disabled>Friend</Button>;
-            case 'accept':
-                 return <Button size="sm" variant="default" onClick={() => onAction(profile.id)}><Check className="mr-2 h-4 w-4"/>Accept</Button>;
-            case 'decline':
-                 return <Button size="sm" variant="destructive" onClick={() => onAction(profile.id)}><X className="mr-2 h-4 w-4"/>Decline</Button>;
-             case 'loading':
-                return <Button size="sm" disabled><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Working...</Button>
-        }
-    }
-
-    return (
-        <div className="flex items-center justify-between p-2 rounded-lg hover:bg-secondary">
-            <div className="flex items-center gap-3">
-                <Avatar>
-                    <AvatarImage src={avatarSrc} />
-                    <AvatarFallback>{profile.displayName.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <p className="font-medium">{profile.displayName}</p>
-            </div>
-            {renderButton()}
-        </div>
-    )
-};
-
 export default function SocialPage() {
     const { user } = useUser();
     const firestore = useFirestore();
+    const router = useRouter();
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState<WithId<UserProfile>[]>([]);
     const [isSearching, setIsSearching] = useState(false);
@@ -81,46 +50,37 @@ export default function SocialPage() {
     const [friendRequests, setFriendRequests] = useState<WithId<UserProfile>[]>([]);
     const [friends, setFriends] = useState<WithId<UserProfile>[]>([]);
 
-    useEffect(() => {
-        const fetchRelatedProfiles = async (ids: string[], setter: React.Dispatch<React.SetStateAction<WithId<UserProfile>[]>>) => {
-            if (!firestore || !ids || ids.length === 0) {
-                setter([]);
-                return;
-            }
-            // Firestore 'in' queries are limited to 30 elements
-            const chunks = [];
-            for (let i = 0; i < ids.length; i += 30) {
-                chunks.push(ids.slice(i, i + 30));
-            }
-            
-            try {
-                const profilePromises = chunks.map(chunk => 
-                    getDocs(query(collection(firestore, 'users'), where('__name__', 'in', chunk)))
-                );
-                const snapshotResults = await Promise.all(profilePromises);
-                const profiles = snapshotResults.flatMap(snapshot => 
-                    snapshot.docs.map(d => ({ ...d.data() as UserProfile, id: d.id }))
-                );
-                setter(profiles);
-            } catch (error) {
-                console.error("Error fetching related profiles:", error);
-                 const permissionError = new FirestorePermissionError({
-                    path: 'users',
-                    operation: 'list',
+    const fetchProfilesByIds = async (ids: string[]): Promise<WithId<UserProfile>[]> => {
+        if (!firestore || ids.length === 0) return [];
+        const profiles: WithId<UserProfile>[] = [];
+        const chunks = [];
+        for (let i = 0; i < ids.length; i += 30) {
+            chunks.push(ids.slice(i, i + 30));
+        }
+        try {
+            for (const chunk of chunks) {
+                const q = query(collection(firestore, 'users'), where('__name__', 'in', chunk));
+                const snapshot = await getDocs(q);
+                snapshot.forEach(doc => {
+                    profiles.push({ id: doc.id, ...doc.data() as UserProfile });
                 });
-                errorEmitter.emit('permission-error', permissionError);
-                setter([]);
             }
-        };
+        } catch (error) {
+            console.error("Error fetching profiles by IDs:", error);
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: 'users', operation: 'list' }));
+        }
+        return profiles;
+    };
 
+    useEffect(() => {
         if (currentUserProfile?.friendRequestsReceived) {
-            fetchRelatedProfiles(currentUserProfile.friendRequestsReceived, setFriendRequests);
+            fetchProfilesByIds(currentUserProfile.friendRequestsReceived).then(setFriendRequests);
         } else {
             setFriendRequests([]);
         }
 
         if (currentUserProfile?.friendIds) {
-            fetchRelatedProfiles(currentUserProfile.friendIds, setFriends);
+            fetchProfilesByIds(currentUserProfile.friendIds).then(setFriends);
         } else {
             setFriends([]);
         }
@@ -136,112 +96,142 @@ export default function SocialPage() {
             const querySnapshot = await getDocs(q);
             const results = querySnapshot.docs
                 .map(doc => ({ ...doc.data() as UserProfile, id: doc.id }))
-                .filter(p => p.id !== user.uid); 
+                .filter(p => p.id !== user.uid);
             setSearchResults(results);
         } catch (error) {
             console.error("Error searching users: ", error);
-            const permissionError = new FirestorePermissionError({
-                path: 'users',
-                operation: 'list',
-            });
-            errorEmitter.emit('permission-error', permissionError);
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: 'users', operation: 'list' }));
+        } finally {
+            setIsSearching(false);
         }
-        setIsSearching(false);
     };
-
-    const handleSendFriendRequest = (targetUserId: string) => {
+    
+    const handleFriendAction = async (targetUserId: string, action: 'send' | 'accept' | 'decline') => {
         if (!firestore || !user) return;
         setActionLoading(targetUserId);
 
         const currentUserRef = doc(firestore, 'users', user.uid);
         const targetUserRef = doc(firestore, 'users', targetUserId);
-        
         const batch = writeBatch(firestore);
-        batch.update(currentUserRef, { friendRequestsSent: arrayUnion(targetUserId) });
-        batch.update(targetUserRef, { friendRequestsReceived: arrayUnion(user.uid) });
 
-        batch.commit().then(() => {
+        try {
+            switch (action) {
+                case 'send':
+                    batch.update(currentUserRef, { friendRequestsSent: arrayUnion(targetUserId) });
+                    batch.update(targetUserRef, { friendRequestsReceived: arrayUnion(user.uid) });
+                    break;
+                case 'accept':
+                    batch.update(currentUserRef, { friendIds: arrayUnion(targetUserId), friendRequestsReceived: arrayRemove(targetUserId) });
+                    batch.update(targetUserRef, { friendIds: arrayUnion(user.uid), friendRequestsSent: arrayRemove(user.uid) });
+                    break;
+                case 'decline':
+                    batch.update(currentUserRef, { friendRequestsReceived: arrayRemove(targetUserId) });
+                    batch.update(targetUserRef, { friendRequestsSent: arrayRemove(user.uid) });
+                    break;
+            }
+            await batch.commit();
             if (refetchCurrentUserProfile) refetchCurrentUserProfile();
+        } catch (error) {
+            console.error(`Error during friend action '${action}':`, error);
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `users/${targetUserId}`, operation: 'update' }));
+        } finally {
             setActionLoading(null);
-        }).catch(error => {
-            console.error("Error sending friend request:", error);
-            const permissionError = new FirestorePermissionError({
-                path: targetUserRef.path,
-                operation: 'update',
-            });
-            errorEmitter.emit('permission-error', permissionError);
-            setActionLoading(null);
-        });
+        }
     };
 
-    const handleAcceptFriendRequest = (requesterId: string) => {
-        if (!firestore || !user) return;
-        setActionLoading(requesterId);
-
-        const currentUserRef = doc(firestore, 'users', user.uid);
-        const requesterUserRef = doc(firestore, 'users', requesterId);
-
-        const batch = writeBatch(firestore);
-
-        batch.update(currentUserRef, { friendIds: arrayUnion(requesterId), friendRequestsReceived: arrayRemove(requesterId) });
-        batch.update(requesterUserRef, { friendIds: arrayUnion(user.uid), friendRequestsSent: arrayRemove(user.uid) });
-        
-        batch.commit().then(() => {
-            if (refetchCurrentUserProfile) refetchCurrentUserProfile();
-            setFriendRequests(prev => prev.filter(p => p.id !== requesterId));
-            setActionLoading(null);
-        }).catch(error => {
-             console.error("Error accepting friend request:", error);
-             const permissionError = new FirestorePermissionError({
-                path: currentUserRef.path,
-                operation: 'update',
-            });
-            errorEmitter.emit('permission-error', permissionError);
-            setActionLoading(null);
-        });
-    }
-    
-    const handleDeclineFriendRequest = (requesterId: string) => {
-        if (!firestore || !user) return;
-        setActionLoading(requesterId);
-
-        const currentUserRef = doc(firestore, 'users', user.uid);
-        const requesterUserRef = doc(firestore, 'users', requesterId);
-        
-        const batch = writeBatch(firestore);
-        batch.update(currentUserRef, { friendRequestsReceived: arrayRemove(requesterId) });
-        batch.update(requesterUserRef, { friendRequestsSent: arrayRemove(user.uid) });
-        
-        batch.commit().then(() => {
-            if (refetchCurrentUserProfile) refetchCurrentUserProfile();
-            setFriendRequests(prev => prev.filter(p => p.id !== requesterId));
-            setActionLoading(null);
-        }).catch(error => {
-            console.error("Error declining friend request:", error);
-            const permissionError = new FirestorePermissionError({
-                path: currentUserRef.path,
-                operation: 'update',
-            });
-            errorEmitter.emit('permission-error', permissionError);
-            setActionLoading(null);
-        });
+    const handleMessageFriend = (friendId: string) => {
+        if(!user) return;
+        // Ensure consistent chat ID by sorting user IDs
+        const chatId = [user.uid, friendId].sort().join('-');
+        router.push(`/chat/${chatId}`);
     }
 
-    const getActionType = (targetUserId: string): 'add' | 'sent' | 'friend' | 'loading' => {
-        if(actionLoading === targetUserId) return 'loading';
-        if (currentUserProfile?.friendIds?.includes(targetUserId)) return 'friend';
-        if (currentUserProfile?.friendRequestsSent?.includes(targetUserId)) return 'sent';
-        return 'add';
-    }
+    const UserCard = ({ profile, type }: { profile: WithId<UserProfile>; type: 'search' | 'request' | 'friend' }) => {
+        const avatarSrc = profile.imageBase64 || PlaceHolderImages.find(p => p.id === profile.avatarId)?.imageUrl;
+        const isLoading = actionLoading === profile.id;
+
+        const getActionType = () => {
+            if (currentUserProfile?.friendIds?.includes(profile.id)) return 'friend';
+            if (currentUserProfile?.friendRequestsSent?.includes(profile.id)) return 'sent';
+            return 'add';
+        };
+
+        return (
+            <div className="flex items-center justify-between p-2 rounded-lg hover:bg-secondary">
+                <div className="flex items-center gap-3">
+                    <Avatar>
+                        <AvatarImage src={avatarSrc} alt={profile.displayName} />
+                        <AvatarFallback>{profile.displayName.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <p className="font-medium">{profile.displayName}</p>
+                </div>
+                <div className="flex gap-2">
+                    {isLoading ? <Button size="sm" disabled><Loader2 className="h-4 w-4 animate-spin" /></Button> :
+                     type === 'search' && (
+                         <>
+                            {getActionType() === 'add' && <Button size="sm" onClick={() => handleFriendAction(profile.id, 'send')}><UserPlus className="mr-2 h-4 w-4" /> Add</Button>}
+                            {getActionType() === 'sent' && <Button size="sm" variant="outline" disabled>Sent</Button>}
+                            {getActionType() === 'friend' && <Button size="sm" variant="ghost" disabled>Friend</Button>}
+                         </>
+                     )}
+                     {type === 'request' && !isLoading && (
+                         <>
+                            <Button size="icon" onClick={() => handleFriendAction(profile.id, 'accept')}><Check className="w-4 h-4" /></Button>
+                            <Button size="icon" variant="outline" onClick={() => handleFriendAction(profile.id, 'decline')}><X className="w-4 h-4" /></Button>
+                         </>
+                     )}
+                     {type === 'friend' && !isLoading && (
+                        <Button size="sm" variant="outline" onClick={() => handleMessageFriend(profile.id)}>
+                            <MessageSquare className="mr-2 h-4 w-4" /> Message
+                        </Button>
+                     )}
+                </div>
+            </div>
+        );
+    };
 
     return (
         <div className="flex flex-col h-full">
             <Header title="Social Hub" />
-            <main className="flex-1 p-4 md:p-6 lg:p-8 space-y-8">
-                <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
-                    
-                    <div className="space-y-8">
+            <main className="flex-1 p-4 md:p-6 lg:p-8">
+                <Tabs defaultValue="friends" className="max-w-4xl mx-auto">
+                    <TabsList className="grid w-full grid-cols-3">
+                        <TabsTrigger value="friends">My Friends</TabsTrigger>
+                        <TabsTrigger value="requests">Requests ({friendRequests.length})</TabsTrigger>
+                        <TabsTrigger value="search">Find People</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="friends">
+                        <Card>
+                             <CardHeader>
+                                <CardTitle>My Friends</CardTitle>
+                                <CardDescription>Manage your connections and start conversations.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-2 h-[60vh] overflow-y-auto">
+                                {friends.length > 0 ? friends.map(profile => (
+                                    <UserCard key={profile.id} profile={profile} type="friend" />
+                                )) : (
+                                    <p className="text-muted-foreground text-center pt-8">Your friends list is empty. Find some friends!</p>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                    <TabsContent value="requests">
                          <Card>
+                            <CardHeader>
+                                <CardTitle>Friend Requests</CardTitle>
+                                <CardDescription>Accept or decline requests from other users.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-2 h-[60vh] overflow-y-auto">
+                               {friendRequests.length > 0 ? friendRequests.map(profile => (
+                                   <UserCard key={profile.id} profile={profile} type="request" />
+                               )) : (
+                                 <p className="text-muted-foreground text-center pt-8">No pending friend requests.</p>
+                               )}
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                    <TabsContent value="search">
+                        <Card>
                             <CardHeader>
                                 <CardTitle>Find New Friends</CardTitle>
                                 <CardDescription>Search for other users on campus by their display name.</CardDescription>
@@ -258,15 +248,10 @@ export default function SocialPage() {
                                         {isSearching ? <Loader2 className="h-4 w-4 animate-spin"/> : <Search className="h-4 w-4" />}
                                     </Button>
                                 </div>
-                                <div className="mt-4 space-y-2 h-64 overflow-y-auto">
+                                <div className="mt-4 space-y-2 h-[50vh] overflow-y-auto">
                                     {isSearching && <p className="text-muted-foreground text-center">Searching...</p>}
                                     {!isSearching && searchResults.length > 0 && searchResults.map(profile => (
-                                        <UserProfileCard 
-                                            key={profile.id}
-                                            profile={profile}
-                                            onAction={handleSendFriendRequest}
-                                            actionType={getActionType(profile.id)}
-                                        />
+                                        <UserCard key={profile.id} profile={profile} type="search" />
                                     ))}
                                     {!isSearching && searchResults.length === 0 && searchTerm && (
                                         <p className="text-muted-foreground text-center pt-4">No users found.</p>
@@ -274,65 +259,11 @@ export default function SocialPage() {
                                 </div>
                             </CardContent>
                         </Card>
-
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Friend Requests</CardTitle>
-                                <CardDescription>Accept or decline requests from other users.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-2 h-48 overflow-y-auto">
-                               {friendRequests.length > 0 ? friendRequests.map(profile => (
-                                   <div key={profile.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-secondary">
-                                        <div className="flex items-center gap-3">
-                                            <Avatar>
-                                                <AvatarImage src={profile.imageBase64 || PlaceHolderImages.find(p => p.id === profile.avatarId)?.imageUrl} />
-                                                <AvatarFallback>{profile.displayName.charAt(0)}</AvatarFallback>
-                                            </Avatar>
-                                            <p className="font-medium">{profile.displayName}</p>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            {actionLoading === profile.id ? (
-                                                <Button size="sm" disabled><Loader2 className="h-4 w-4 animate-spin" /> </Button>
-                                            ) : (
-                                                <>
-                                                 <Button size="sm" onClick={() => handleAcceptFriendRequest(profile.id)}><Check className="w-4 h-4"/></Button>
-                                                 <Button size="sm" variant="outline" onClick={() => handleDeclineFriendRequest(profile.id)}><X className="w-4 h-4"/></Button>
-                                                </>
-                                            )}
-                                        </div>
-                                    </div>
-                               )) : (
-                                 <p className="text-muted-foreground text-center py-8">No pending friend requests.</p>
-                               )}
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>My Friends</CardTitle>
-                            <CardDescription>Manage your connections and start conversations.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-2 h-[41.5rem] overflow-y-auto">
-                            {friends.length > 0 ? friends.map(profile => (
-                                <div key={profile.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-secondary">
-                                    <div className="flex items-center gap-3">
-                                        <Avatar>
-                                            <AvatarImage src={profile.imageBase64 || PlaceHolderImages.find(p => p.id === profile.avatarId)?.imageUrl} />
-                                            <AvatarFallback>{profile.displayName.charAt(0)}</AvatarFallback>
-                                        </Avatar>
-                                        <p className="font-medium">{profile.displayName}</p>
-                                    </div>
-                                    {/* Placeholder for future actions like 'Message' or 'Remove' */}
-                                </div>
-                            )) : (
-                                <p className="text-muted-foreground text-center py-8">Your friends list is empty. Find some friends!</p>
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
+                    </TabsContent>
+                </Tabs>
             </main>
         </div>
     );
 }
+
     
