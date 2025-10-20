@@ -256,7 +256,11 @@
         },
         "content": {
           "type": "string",
-          "description": "The text content of the message."
+          "description": "The text content of the message. Optional if an image is sent."
+        },
+        "imageBase64": {
+          "type": "string",
+          "description": "Base64 encoded string of an image sent in the message."
         },
         "createdAt": {
           "type": "string",
@@ -264,7 +268,7 @@
           "format": "date-time"
         }
       },
-      "required": ["senderId", "content", "createdAt"]
+      "required": ["senderId", "createdAt"]
     }
   },
   "auth": {
@@ -308,5 +312,3 @@
     }
   }
 }
-
-    

@@ -10,13 +10,16 @@ import { Header } from '@/components/layout/header';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Send, ArrowLeft, Loader2 } from 'lucide-react';
+import { Send, ArrowLeft, Loader2, ImagePlus, Smile, X } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from '@/lib/utils';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import Image from 'next/image';
 
 type ChatMessage = {
     senderId: string;
-    content: string;
+    content?: string;
+    imageBase64?: string;
     createdAt: any;
 };
 
@@ -39,6 +42,8 @@ type Chat = {
     }
 };
 
+const emojis = ['😀', '😂', '😍', '🤔', '👍', '❤️', '🔥', '🎉', '😊', '🙏', '💯', '🙌'];
+
 export default function ChatPage() {
     const { user, isUserLoading } = useUser();
     const firestore = useFirestore();
@@ -47,8 +52,10 @@ export default function ChatPage() {
     const chatId = params.chatId as string;
 
     const [newMessage, setNewMessage] = useState('');
+    const [newImage, setNewImage] = useState<string | null>(null);
     const [otherUser, setOtherUser] = useState<WithId<UserProfile> | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const imageInputRef = useRef<HTMLInputElement>(null);
 
     const chatRef = useMemoFirebase(() => {
         if (!firestore || !chatId) return null;
@@ -131,24 +138,50 @@ export default function ChatPage() {
     }, [chatId, user, firestore, router, isUserLoading, isChatLoading, chatRef]);
 
     const handleSendMessage = async () => {
-        if (!newMessage.trim() || !user || !chatRef) return;
+        if ((!newMessage.trim() && !newImage) || !user || !chatRef) return;
         
-        const messageData = {
+        const messageData: Partial<ChatMessage> = {
             senderId: user.uid,
-            content: newMessage,
             createdAt: serverTimestamp(),
         };
+
+        if (newMessage.trim()) {
+            messageData.content = newMessage;
+        }
+        if (newImage) {
+            messageData.imageBase64 = newImage;
+        }
 
         const messagesColRef = collection(chatRef, 'messages');
         addDocumentNonBlocking(messagesColRef, messageData);
 
+        const lastMessageContent = newImage ? `[Image] ${newMessage}` : newMessage;
         const chatUpdateData = {
-            lastMessage: newMessage,
+            lastMessage: lastMessageContent,
             lastMessageTimestamp: serverTimestamp(),
         };
         await setDoc(chatRef, chatUpdateData, { merge: true });
 
         setNewMessage('');
+        setNewImage(null);
+        if (imageInputRef.current) {
+            imageInputRef.current.value = '';
+        }
+    };
+
+    const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setNewImage(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleEmojiSelect = (emoji: string) => {
+        setNewMessage(prev => prev + emoji);
     };
     
     if (isUserLoading || isChatLoading || !otherUser) {
@@ -178,10 +211,15 @@ export default function ChatPage() {
                     return (
                         <div key={msg.id} className={cn("flex", isSender ? "justify-end" : "justify-start")}>
                             <div className={cn(
-                                "max-w-xs lg:max-w-md rounded-lg px-4 py-2",
+                                "max-w-xs lg:max-w-md rounded-lg px-3 py-2",
                                 isSender ? "bg-primary text-primary-foreground" : "bg-secondary"
                             )}>
-                                <p>{msg.content}</p>
+                                {msg.imageBase64 && (
+                                    <div className="relative aspect-square w-48 mb-2">
+                                        <Image src={msg.imageBase64} alt="Chat image" fill className="rounded-md object-cover" />
+                                    </div>
+                                )}
+                                {msg.content && <p>{msg.content}</p>}
                             </div>
                         </div>
                     );
@@ -190,6 +228,22 @@ export default function ChatPage() {
             </main>
 
             <footer className="p-4 border-t bg-background">
+                {newImage && (
+                    <div className="relative w-20 h-20 mb-2">
+                        <Image src={newImage} alt="Preview" fill className="rounded-md object-cover" />
+                        <Button
+                            variant="destructive"
+                            size="icon"
+                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                            onClick={() => {
+                                setNewImage(null);
+                                if (imageInputRef.current) imageInputRef.current.value = '';
+                            }}
+                        >
+                            <X className="h-4 w-4" />
+                        </Button>
+                    </div>
+                )}
                 <div className="flex items-center gap-2">
                     <Input 
                         placeholder="Type a message..." 
@@ -197,7 +251,33 @@ export default function ChatPage() {
                         onChange={(e) => setNewMessage(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                     />
-                    <Button onClick={handleSendMessage} disabled={!newMessage.trim()}>
+                    <input type="file" ref={imageInputRef} onChange={handleImageChange} className="hidden" accept="image/*" />
+                    <Button variant="ghost" size="icon" onClick={() => imageInputRef.current?.click()}>
+                        <ImagePlus className="w-5 h-5 text-muted-foreground" />
+                    </Button>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                                <Smile className="w-5 h-5 text-muted-foreground" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0 border-0">
+                            <div className="grid grid-cols-6 gap-2 p-2 rounded-lg bg-background border shadow-lg">
+                                {emojis.map(emoji => (
+                                    <Button 
+                                        key={emoji}
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleEmojiSelect(emoji)}
+                                        className="text-2xl"
+                                    >
+                                        {emoji}
+                                    </Button>
+                                ))}
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+                    <Button onClick={handleSendMessage} disabled={!newMessage.trim() && !newImage}>
                         <Send className="w-5 h-5" />
                     </Button>
                 </div>
