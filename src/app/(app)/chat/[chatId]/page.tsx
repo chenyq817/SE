@@ -26,14 +26,16 @@ type UserProfile = {
     imageBase64?: string;
 };
 
+type ChatParticipantInfo = {
+    displayName: string;
+    avatarId?: string;
+    imageBase64?: string;
+};
+
 type Chat = {
     participantIds: string[];
     participantInfo: {
-        [key: string]: {
-            displayName: string;
-            avatarId?: string;
-            imageBase64?: string;
-        }
+        [key: string]: ChatParticipantInfo;
     }
 };
 
@@ -81,7 +83,6 @@ export default function ChatPage() {
 
             const chatDoc = await getDoc(chatRef!);
             if (!chatDoc.exists()) {
-                // Chat doesn't exist, create it
                 const currentUserProfileDoc = await getDoc(doc(firestore, 'users', user.uid));
                 const otherUserProfileDoc = await getDoc(doc(firestore, 'users', otherUserId));
 
@@ -92,20 +93,28 @@ export default function ChatPage() {
                 }
                 const currentUserProfile = currentUserProfileDoc.data() as UserProfile;
                 const otherUserProfile = otherUserProfileDoc.data() as UserProfile;
+                
+                const currentUserInfo: ChatParticipantInfo = {
+                    displayName: currentUserProfile.displayName,
+                    avatarId: currentUserProfile.avatarId,
+                };
+                if (currentUserProfile.imageBase64) {
+                    currentUserInfo.imageBase64 = currentUserProfile.imageBase64;
+                }
+                
+                const otherUserInfo: ChatParticipantInfo = {
+                    displayName: otherUserProfile.displayName,
+                    avatarId: otherUserProfile.avatarId,
+                };
+                if (otherUserProfile.imageBase64) {
+                    otherUserInfo.imageBase64 = otherUserProfile.imageBase64;
+                }
 
                 const newChatData: Chat = {
                     participantIds: participantIds,
                     participantInfo: {
-                        [user.uid]: {
-                            displayName: currentUserProfile.displayName,
-                            avatarId: currentUserProfile.avatarId,
-                            imageBase64: currentUserProfile.imageBase64,
-                        },
-                        [otherUserId]: {
-                            displayName: otherUserProfile.displayName,
-                            avatarId: otherUserProfile.avatarId,
-                            imageBase64: otherUserProfile.imageBase64,
-                        }
+                        [user.uid]: currentUserInfo,
+                        [otherUserId]: otherUserInfo
                     }
                 };
                 await setDoc(chatRef!, newChatData);
@@ -133,7 +142,6 @@ export default function ChatPage() {
         const messagesColRef = collection(chatRef, 'messages');
         addDocumentNonBlocking(messagesColRef, messageData);
 
-        // also update the last message on the chat document
         const chatUpdateData = {
             lastMessage: newMessage,
             lastMessageTimestamp: serverTimestamp(),
@@ -197,5 +205,3 @@ export default function ChatPage() {
         </div>
     );
 }
-
-    
