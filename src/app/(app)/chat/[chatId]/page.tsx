@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -10,7 +10,6 @@ import { doc, collection, query, orderBy, serverTimestamp, where, getDocs, write
 import { Header } from '@/components/layout/header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-<<<<<<< HEAD
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ArrowLeft, Loader2, Send, Smile, ImagePlus, X } from 'lucide-react';
@@ -18,17 +17,6 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn } from '@/lib/utils';
 import type { WithId } from '@/firebase';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-=======
-import { Send, ArrowLeft, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
-
-type ChatMessage = {
-    senderId: string;
-    content: string;
-    createdAt: any;
-};
->>>>>>> parent of 0c1c661 (在私聊功能添加发送图片和emoji的功能)
 
 type UserProfile = {
     displayName: string;
@@ -55,6 +43,8 @@ type Chat = {
     };
 };
 
+const emojis = ['😀', '😂', '😍', '🤔', '👍', '❤️', '🔥', '🎉', '😊', '🙏', '💯', '🙌'];
+
 export default function ChatPage() {
     const { user, isUserLoading } = useUser();
     const firestore = useFirestore();
@@ -62,14 +52,9 @@ export default function ChatPage() {
     const params = useParams();
     const chatId = params.chatId as string;
 
-<<<<<<< HEAD
     const [newMessageContent, setNewMessageContent] = useState('');
     const [newImage, setNewImage] = useState<string | null>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
-=======
-    const [newMessage, setNewMessage] = useState('');
-    const [otherUser, setOtherUser] = useState<WithId<UserProfile> | null>(null);
->>>>>>> parent of 0c1c661 (在私聊功能添加发送图片和emoji的功能)
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const chatRef = useMemoFirebase(() => {
@@ -146,6 +131,44 @@ export default function ChatPage() {
             const ids = chatId.split('-');
             const otherId = ids.find(id => id !== user?.uid);
             if (otherId) {
+                // Since otherParticipantId depends on `chat`, we pass `otherId` to setupChat
+                const setupChat = async () => {
+                    if (!user || !firestore) return;
+                    try {
+                        const currentUserProfileSnap = await getDoc(doc(firestore, 'users', user.uid));
+                        const otherUserProfileSnap = await getDoc(doc(firestore, 'users', otherId));
+
+                        const currentUserProfile = currentUserProfileSnap.data() as UserProfile;
+                        const otherUserProfile = otherUserProfileSnap.data() as UserProfile;
+
+                        if (currentUserProfile && otherUserProfile) {
+                            const newChatData: any = {
+                                participantIds: [user.uid, otherId],
+                                participantInfo: {
+                                    [user.uid]: {
+                                        displayName: currentUserProfile.displayName,
+                                        avatarId: currentUserProfile.avatarId,
+                                    },
+                                    [otherId]: {
+                                        displayName: otherUserProfile.displayName,
+                                        avatarId: otherUserProfile.avatarId,
+                                    },
+                                },
+                            };
+                            
+                            if (currentUserProfile.imageBase64) {
+                                newChatData.participantInfo[user.uid].imageBase64 = currentUserProfile.imageBase64;
+                            }
+                            if (otherUserProfile.imageBase64) {
+                                newChatData.participantInfo[otherId].imageBase64 = otherUserProfile.imageBase64;
+                            }
+
+                            setDocumentNonBlocking(doc(firestore, 'chats', chatId), newChatData, { merge: true });
+                        }
+                    } catch (error) {
+                        console.error("Error setting up new chat:", error);
+                    }
+                };
                 setupChat();
             }
         }
@@ -158,21 +181,12 @@ export default function ChatPage() {
     const handleSendMessage = () => {
         if ((!newMessageContent.trim() && !newImage) || !user || !firestore || !chatId) return;
 
-<<<<<<< HEAD
         const messageData: Partial<ChatMessage> = {
             chatId: chatId,
-=======
-    const handleSendMessage = async () => {
-        if (!newMessage.trim() || !user || !chatRef) return;
-        
-        const messageData = {
->>>>>>> parent of 0c1c661 (在私聊功能添加发送图片和emoji的功能)
             senderId: user.uid,
-            content: newMessage,
             createdAt: serverTimestamp(),
         };
 
-<<<<<<< HEAD
         if (newMessageContent.trim()) {
             messageData.content = newMessageContent;
         }
@@ -183,24 +197,20 @@ export default function ChatPage() {
         addDocumentNonBlocking(collection(firestore, 'chats', chatId, 'messages'), messageData);
 
         const lastMessageData: any = {
-            content: newMessageContent.trim() || undefined,
-            imageBase64: newImage || undefined,
             senderId: user.uid,
             timestamp: serverTimestamp(),
-=======
-        const messagesColRef = collection(chatRef, 'messages');
-        addDocumentNonBlocking(messagesColRef, messageData);
-
-        const chatUpdateData = {
-            lastMessage: newMessage,
-            lastMessageTimestamp: serverTimestamp(),
->>>>>>> parent of 0c1c661 (在私聊功能添加发送图片和emoji的功能)
         };
         
-        // Remove undefined fields before updating
-        Object.keys(lastMessageData).forEach(key => lastMessageData[key] === undefined && delete lastMessageData[key]);
+        if (newMessageContent.trim()) {
+            lastMessageData.content = newMessageContent.trim();
+        } else if (newImage) {
+            lastMessageData.content = '[Image]';
+        }
 
-<<<<<<< HEAD
+        if(newImage){
+            lastMessageData.imageBase64 = newImage;
+        }
+        
         setDocumentNonBlocking(doc(firestore, 'chats', chatId), { lastMessage: lastMessageData }, { merge: true });
 
         setNewMessageContent('');
@@ -223,9 +233,6 @@ export default function ChatPage() {
 
     const handleEmojiSelect = (emoji: string) => {
         setNewMessageContent(prev => prev + emoji);
-=======
-        setNewMessage('');
->>>>>>> parent of 0c1c661 (在私聊功能添加发送图片和emoji的功能)
     };
 
     const isLoading = isUserLoading || isChatLoading;
@@ -245,7 +252,7 @@ export default function ChatPage() {
                 <Header title="Chat Not Found" />
                 <main className="flex-1 flex items-center justify-center">
                     <div className="text-center">
-                        <p className="text-lg text-muted-foreground">The chat you are looking for does not exist.</p>
+                        <p className="text-lg text-muted-foreground">The chat you are looking for does not exist or is being created.</p>
                         <Button asChild variant="link" className="mt-4">
                             <Link href="/social">Go to Social Hub</Link>
                         </Button>
@@ -283,7 +290,6 @@ export default function ChatPage() {
                     const senderInfo = chat?.participantInfo[message.senderId];
                     const senderAvatarSrc = senderInfo?.imageBase64 || PlaceHolderImages.find(p => p.id === senderInfo?.avatarId)?.imageUrl;
                     return (
-<<<<<<< HEAD
                         <div key={message.id} className={cn("flex items-end gap-3", isSender ? "justify-end" : "justify-start")}>
                             {!isSender && (
                                  <Avatar className="h-8 w-8">
@@ -301,14 +307,6 @@ export default function ChatPage() {
                                     </div>
                                 )}
                                 {message.content && <p className="whitespace-pre-wrap">{message.content}</p>}
-=======
-                        <div key={msg.id} className={cn("flex", isSender ? "justify-end" : "justify-start")}>
-                            <div className={cn(
-                                "max-w-xs lg:max-w-md rounded-lg px-4 py-2",
-                                isSender ? "bg-primary text-primary-foreground" : "bg-secondary"
-                            )}>
-                                <p>{msg.content}</p>
->>>>>>> parent of 0c1c661 (在私聊功能添加发送图片和emoji的功能)
                             </div>
                         </div>
                     );
@@ -316,7 +314,6 @@ export default function ChatPage() {
                 <div ref={messagesEndRef} />
             </main>
 
-<<<<<<< HEAD
             <footer className="p-4 bg-background border-t">
                 <div className="max-w-4xl mx-auto">
                     {newImage && (
@@ -385,23 +382,8 @@ export default function ChatPage() {
                             <Send />
                         </Button>
                     </div>
-=======
-            <footer className="p-4 border-t bg-background">
-                <div className="flex items-center gap-2">
-                    <Input 
-                        placeholder="Type a message..." 
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                    />
-                    <Button onClick={handleSendMessage} disabled={!newMessage.trim()}>
-                        <Send className="w-5 h-5" />
-                    </Button>
->>>>>>> parent of 0c1c661 (在私聊功能添加发送图片和emoji的功能)
                 </div>
             </footer>
         </div>
     );
 }
-
-    
