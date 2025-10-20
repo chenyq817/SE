@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase, addDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase';
-import { doc, collection, query, orderBy, serverTimestamp, where, getDocs, writeBatch } from 'firebase/firestore';
+import { doc, collection, query, orderBy, serverTimestamp, where, getDocs, writeBatch, getDoc } from 'firebase/firestore';
 import { Header } from '@/components/layout/header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -387,3 +387,5 @@ export default function ChatPage() {
         </div>
     );
 }
+
+    
