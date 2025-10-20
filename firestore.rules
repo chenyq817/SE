@@ -5,21 +5,18 @@
  * and provides public read access for community-generated content. All write operations require authentication.
  *
  * @data_structure
- * - `/users/{userId}`: Stores public user profile information. Access is restricted to the owner (self-creation allowed).
+ * - `/users/{userId}`: Stores public user profile information. Access is restricted to the owner (self-creation allowed) or through verified friend actions.
  * - `/posts/{postId}`: Stores social posts. Read access is public, but write access is restricted to the owner.
  * - `/posts/{postId}/comments/{commentId}`: Stores comments for each post. Write access is restricted to the comment creator.
- * - `/chats/{chatId}`: Stores metadata for a private chat session between users.
- * - `/chats/{chatId}/messages/{messageId}`: Stores the actual messages for a chat session.
+ * - `/chats/{chatId}`: Stores chat sessions. Access is restricted to participants.
+ * - `/chats/{chatId}/messages/{messageId}`: Stores chat messages. Access is restricted to chat participants.
  * - `/wallMessages/{messageId}`: Stores public wall messages.
  *
  * @key_security_decisions
- * - User listing is generally disallowed for scalability, but enabled here for the "find friends" feature.
+ * - User listing is allowed for authenticated users, but write access is highly restricted.
  * - Public read access is granted for posts and wall messages.
- * - All write operations require authentication.
+ * - All write operations require authentication and are scoped to the user's role (owner, participant).
  *
- * @denormalization_for_authorization N/A
- *
- * @structural_segregation N/A
  */
 rules_version = '2';
 service cloud.firestore {
@@ -43,81 +40,132 @@ service cloud.firestore {
     }
 
     /**
-     * @description Checks if the authenticated user is the owner of an existing document.
-     * @param {string} userId The user ID to compare against the authenticated user's ID.
-     * @return {bool} True if the user IDs match and the resource exists, false otherwise.
+     * @description Checks if the document being accessed already exists.
+     * @return {bool} True if the document exists, false otherwise.
+     */
+    function isExistingDoc() {
+      return resource != null;
+    }
+
+    /**
+     * @description Checks if the user is the owner of an existing document.
+     * @param {string} userId The user ID to check against the authenticated user.
+     * @return {bool} True if the user is the owner of an existing document.
      */
     function isExistingOwner(userId) {
-      return isOwner(userId) && exists(/databases/$(database)/documents/users/$(userId));
+      return isOwner(userId) && isExistingDoc();
     }
     
     /**
-     * @description Checks if an update to a user document is a valid friend request operation.
-     * This function ensures that the only change being made is the addition of the current user's UID
-     * to the target user's 'friendRequestsReceived' list.
-     * @param {string} targetUserId The UID of the user whose document is being updated.
-     * @return {bool} True if the update is a valid friend request, false otherwise.
+     * @description Validates the data for a user profile update.
+     * @param {map} data The data being submitted in the request.
+     * @return {bool} True if the data types are correct.
      */
-    function isValidFriendRequest(targetUserId) {
+    function hasValidProfileData(data) {
+       return data.displayName is string &&
+              data.displayName_lowercase is string &&
+              data.avatarId is string;
+    }
+
+    /**
+     * @description Validates the sending of a friend request.
+     * Checks that a user is adding themselves to the target's `friendRequestsReceived` list,
+     * and only that field is changed.
+     * @return {bool} True if the update is a valid friend request.
+     */
+    function canSendFriendRequest() {
+      let incomingData = request.resource.data;
+      let existingData = resource.data;
+      let affectedKeys = incomingData.diff(existingData).affectedKeys();
+
+      return isSignedIn() &&
+             affectedKeys.hasOnly(['friendRequestsReceived']) &&
+             incomingData.friendRequestsReceived == existingData.friendRequestsReceived.append(request.auth.uid);
+    }
+    
+    /**
+     * @description Validates the acceptance of a friend request.
+     * This rule is checked on the document of the user who *sent* the request.
+     * It ensures the user accepting the request is being added to the sender's `friendIds` list
+     * and removed from their `friendRequestsSent` list.
+     * @return {bool} True if the update is a valid friend request acceptance.
+     */
+    function canAcceptFriendRequest() {
         let incomingData = request.resource.data;
         let existingData = resource.data;
-        let diff = incomingData.diff(existingData);
+        let affectedKeys = incomingData.diff(existingData).affectedKeys();
 
         return isSignedIn() &&
-               isOwner(targetUserId) == false && // Cannot send a request to yourself
-               diff.affectedKeys().hasOnly(['friendRequestsReceived']) && // Only this field can change
-               incomingData.friendRequestsReceived is list &&
-               incomingData.friendRequestsReceived.size() == existingData.friendRequestsReceived.size() + 1 && // List grows by exactly 1
-               incomingData.friendRequestsReceived.hasAll(existingData.friendRequestsReceived) && // All old items must still be there
-               incomingData.friendRequestsReceived.hasAny([request.auth.uid]); // The new item must be the sender's UID
+               affectedKeys.hasOnly(['friendIds', 'friendRequestsSent']) &&
+               incomingData.friendIds == existingData.friendIds.append(request.auth.uid) &&
+               incomingData.friendRequestsSent == existingData.friendRequestsSent.removeAll([request.auth.uid]);
+    }
+
+    /**
+     * @description Validates declining a friend request or removing a friend.
+     * This rule is checked on the document of the other user involved.
+     * It allows the current user to trigger their removal from the other user's relevant list.
+     * Case 1 (Decline): Current user removes themself from other user's 'friendRequestsSent' list.
+     * Case 2 (Remove): Current user removes themself from other user's 'friendIds' list.
+     * @return {bool} True if the update is a valid decline or removal.
+     */
+    function canDeclineOrRemoveFriend() {
+        let incomingData = request.resource.data;
+        let existingData = resource.data;
+        let affectedKeys = incomingData.diff(existingData).affectedKeys();
+
+        let isDeclining = affectedKeys.hasOnly(['friendRequestsSent']) &&
+                          incomingData.friendRequestsSent == existingData.friendRequestsSent.removeAll([request.auth.uid]);
+        
+        let isRemoving = affectedKeys.hasOnly(['friendIds']) &&
+                         incomingData.friendIds == existingData.friendIds.removeAll([request.auth.uid]);
+
+        return isSignedIn() && (isDeclining || isRemoving);
     }
 
 
     match /users/{userId} {
       allow get: if isSignedIn();
-      allow list: if isSignedIn(); // Necessary for the "find friends" feature
-      allow create: if isSignedIn() && isOwner(userId);
-      allow delete: if isOwner(userId);
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isOwner(userId) && hasValidProfileData(request.resource.data);
+      allow delete: if false; // Deleting users should be handled server-side.
 
-      // Allow updates if the user is the owner (editing their own profile)
-      // OR if the update is a valid friend request operation targeting this user.
-      allow update: if isOwner(userId) || isValidFriendRequest(userId);
+      // A user can update a document if:
+      // 1. They are the owner (updating their own profile).
+      // 2. They are sending a friend request to this user.
+      // 3. They are accepting a friend request from this user.
+      // 4. They are declining a request from or removing this user as a friend.
+      allow update: if isExistingOwner(userId)
+                    || canSendFriendRequest()
+                    || canAcceptFriendRequest()
+                    || canDeclineOrRemoveFriend();
     }
 
     match /posts/{postId} {
       allow read: if true;
-      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-      allow update, delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
-
+      allow create: if isSignedIn() && isOwner(request.resource.data.authorId);
+      allow update, delete: if isSignedIn() && isOwner(resource.data.authorId);
+      
       match /comments/{commentId} {
         allow read: if true;
-        allow create: if isSignedIn(); // Allow any signed-in user to comment
-        allow update, delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
-      }
-    }
-    
-    match /chats/{chatId} {
-      // Allow read/write only if the user is a participant in the chat.
-      allow read, write: if isSignedIn() && request.auth.uid in resource.data.participantIds;
-      // Allow creation if the user is one of the participants.
-      allow create: if isSignedIn() && request.auth.uid in request.resource.data.participantIds;
-      
-      match /messages/{messageId} {
-        // Allow read only if the user is a participant of the parent chat.
-        allow read: if isSignedIn() && get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds.hasAny([request.auth.uid]);
-        // Allow create only if the sender is the current user and they are a participant.
-        allow create: if isSignedIn() && 
-                      request.resource.data.senderId == request.auth.uid &&
-                      get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds.hasAny([request.auth.uid]);
-        // Disallow updates and deletes for individual messages to maintain chat integrity.
-        allow update, delete: if false;
+        allow create: if isSignedIn() && isOwner(request.resource.data.authorId);
+        allow update, delete: if isSignedIn() && isOwner(resource.data.authorId);
       }
     }
 
     match /wallMessages/{messageId} {
       allow read: if true;
-      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-      allow update, delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
+      allow create: if isSignedIn() && isOwner(request.resource.data.authorId);
+      allow update, delete: if isSignedIn() && isOwner(resource.data.authorId);
+    }
+    
+    match /chats/{chatId} {
+      allow read, create: if isSignedIn() && request.auth.uid in request.resource.data.participantIds;
+      allow update: if isSignedIn() && request.auth.uid in resource.data.participantIds;
+
+      match /messages/{messageId} {
+        allow read, create: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds;
+      }
     }
   }
 }
