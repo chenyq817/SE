@@ -52,18 +52,25 @@ export default function SocialPage() {
 
     const fetchProfilesByIds = async (ids: string[]): Promise<WithId<UserProfile>[]> => {
         if (!firestore || ids.length === 0) return [];
-        try {
-            const profilePromises = ids.map(id => getDoc(doc(firestore, 'users', id)));
-            const profileSnapshots = await Promise.all(profilePromises);
-            const profiles = profileSnapshots
-                .filter(docSnap => docSnap.exists())
-                .map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as WithId<UserProfile>));
-            return profiles;
-        } catch (error) {
-            console.error("Error fetching profiles by IDs:", error);
-            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: 'users', operation: 'get' }));
-            return [];
-        }
+        
+        const profilePromises = ids.map(id => getDoc(doc(firestore, 'users', id)));
+        
+        return Promise.all(profilePromises)
+            .then(profileSnapshots => {
+                return profileSnapshots
+                    .filter(docSnap => docSnap.exists())
+                    .map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as WithId<UserProfile>));
+            })
+            .catch(error => {
+                console.error("Error fetching profiles by IDs:", error);
+                // Create and emit a contextual error for better debugging
+                const permissionError = new FirestorePermissionError({
+                    path: `users/[${ids.join(',')}]`, // Indicate which user docs were being fetched
+                    operation: 'get',
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                return []; // Return empty array on error
+            });
     };
 
 
