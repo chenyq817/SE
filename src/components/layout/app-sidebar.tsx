@@ -20,8 +20,8 @@ import {
   Anchor,
   Shield,
   Bot,
-  MessageSquare,
-  FileText
+  FileText,
+  MessageSquare
 } from "lucide-react";
 import { useUser } from "@/firebase";
 
@@ -44,11 +44,10 @@ export function AppSidebar() {
   const isAdmin = user?.email === 'admin@111.com';
 
   const isActive = (href: string) => {
-    // For chat, we check if the path starts with /chat
-    if (href === '/chat') {
-      return pathname.startsWith('/chat');
+    if (href === '/') {
+        return pathname === href;
     }
-    return href === '/' ? pathname === href : pathname.startsWith(href);
+    return pathname.startsWith(href);
   };
 
   return (
@@ -98,3 +97,5 @@ export function AppSidebar() {
     </Sidebar>
   );
 }
+
+    

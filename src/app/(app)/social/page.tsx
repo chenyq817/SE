@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Search, UserPlus, Check, X, Loader2, MessageSquare } from 'lucide-react';
 import { useUser, useFirestore, useDoc, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { collection, query, where, getDocs, writeBatch, arrayUnion, arrayRemove, doc } from 'firebase/firestore';
+import { collection, query, where, getDocs, writeBatch, arrayUnion, arrayRemove, doc, getDoc } from 'firebase/firestore';
 import type { WithId } from '@/firebase';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -52,25 +52,20 @@ export default function SocialPage() {
 
     const fetchProfilesByIds = async (ids: string[]): Promise<WithId<UserProfile>[]> => {
         if (!firestore || ids.length === 0) return [];
-        const profiles: WithId<UserProfile>[] = [];
-        const chunks = [];
-        for (let i = 0; i < ids.length; i += 30) {
-            chunks.push(ids.slice(i, i + 30));
-        }
         try {
-            for (const chunk of chunks) {
-                const q = query(collection(firestore, 'users'), where('__name__', 'in', chunk));
-                const snapshot = await getDocs(q);
-                snapshot.forEach(doc => {
-                    profiles.push({ id: doc.id, ...doc.data() as UserProfile });
-                });
-            }
+            const profilePromises = ids.map(id => getDoc(doc(firestore, 'users', id)));
+            const profileSnapshots = await Promise.all(profilePromises);
+            const profiles = profileSnapshots
+                .filter(docSnap => docSnap.exists())
+                .map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as WithId<UserProfile>));
+            return profiles;
         } catch (error) {
             console.error("Error fetching profiles by IDs:", error);
-            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: 'users', operation: 'list' }));
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: 'users', operation: 'get' }));
+            return [];
         }
-        return profiles;
     };
+
 
     useEffect(() => {
         if (currentUserProfile?.friendRequestsReceived) {
@@ -84,7 +79,7 @@ export default function SocialPage() {
         } else {
             setFriends([]);
         }
-    }, [currentUserProfile, firestore]);
+    }, [currentUserProfile]);
 
     const handleSearch = async () => {
         if (!searchTerm.trim() || !firestore || !user) return;
@@ -105,15 +100,16 @@ export default function SocialPage() {
         }
     };
     
-    const handleFriendAction = async (targetUserId: string, action: 'send' | 'accept' | 'decline') => {
+    const handleFriendAction = async (targetUserId: string, action: 'send' | 'accept' | 'decline' | 'remove') => {
         if (!firestore || !user) return;
         setActionLoading(targetUserId);
 
         const currentUserRef = doc(firestore, 'users', user.uid);
         const targetUserRef = doc(firestore, 'users', targetUserId);
-        const batch = writeBatch(firestore);
-
+        
         try {
+            const batch = writeBatch(firestore);
+
             switch (action) {
                 case 'send':
                     batch.update(currentUserRef, { friendRequestsSent: arrayUnion(targetUserId) });
@@ -127,6 +123,10 @@ export default function SocialPage() {
                     batch.update(currentUserRef, { friendRequestsReceived: arrayRemove(targetUserId) });
                     batch.update(targetUserRef, { friendRequestsSent: arrayRemove(user.uid) });
                     break;
+                case 'remove':
+                     batch.update(currentUserRef, { friendIds: arrayRemove(targetUserId) });
+                     batch.update(targetUserRef, { friendIds: arrayRemove(user.uid) });
+                    break;
             }
             await batch.commit();
             if (refetchCurrentUserProfile) refetchCurrentUserProfile();
@@ -137,13 +137,12 @@ export default function SocialPage() {
             setActionLoading(null);
         }
     };
-
-    const handleMessageFriend = (friendId: string) => {
+    
+    const handleMessage = (friendId: string) => {
         if(!user) return;
-        // Ensure consistent chat ID by sorting user IDs
         const chatId = [user.uid, friendId].sort().join('-');
         router.push(`/chat/${chatId}`);
-    }
+    };
 
     const UserCard = ({ profile, type }: { profile: WithId<UserProfile>; type: 'search' | 'request' | 'friend' }) => {
         const avatarSrc = profile.imageBase64 || PlaceHolderImages.find(p => p.id === profile.avatarId)?.imageUrl;
@@ -180,9 +179,15 @@ export default function SocialPage() {
                          </>
                      )}
                      {type === 'friend' && !isLoading && (
-                        <Button size="sm" variant="outline" onClick={() => handleMessageFriend(profile.id)}>
-                            <MessageSquare className="mr-2 h-4 w-4" /> Message
-                        </Button>
+                        <div className="flex gap-2">
+                            <Button size="sm" onClick={() => handleMessage(profile.id)}>
+                                <MessageSquare className="mr-2 h-4 w-4" />
+                                Message
+                            </Button>
+                            <Button size="sm" variant="destructive" onClick={() => handleFriendAction(profile.id, 'remove')}>
+                                Remove
+                            </Button>
+                        </div>
                      )}
                 </div>
             </div>

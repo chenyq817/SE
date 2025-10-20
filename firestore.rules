@@ -1,205 +1,151 @@
-/**
- * @file Firestore Security Rules for the application.
- *
- * @core_philosophy This ruleset prioritizes user data protection and access control. It enforces strict ownership for user-related data,
- * and provides public read access for community-generated content. All write operations require authentication.
- *
- * @data_structure
- * - `/users/{userId}`: Stores public user profile information. Access is restricted to the owner (self-creation allowed).
- * - `/posts/{postId}`: Stores social posts. Read access is public, but write access is restricted to the owner.
- * - `/posts/{postId}/comments/{commentId}`: Stores comments for each post. Write access is restricted to the comment creator.
- * - `/chats/{chatId}`: Stores chat session metadata. Access is restricted to participants.
- * - `/chats/{chatId}/messages/{messageId}`: Stores individual chat messages.
- * - `/wallMessages/{messageId}`: Stores public wall messages.
- *
- * @key_security_decisions
- * - User listing is disallowed.
- * - Public read access is granted for posts and wall messages.
- * - All write operations require authentication.
- *
- * @denormalization_for_authorization N/A
- *
- * @structural_segregation N/A
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Checks if the current user is signed in.
-     * @return {bool} True if the user is signed in, false otherwise.
+     * @description Controls access to user profile documents.
+     * @path /users/{userId}
+     * @allow (create) - Authenticated user can create their own profile if the userId matches their auth.uid.
+     * @allow (get, list) - Any user can read any profile.
+     * @allow (update, delete) - Only the user who owns the profile can update or delete it.
+     * @deny (create) - If the user is not authenticated.
+     * @deny (update, delete) - If the user attempts to modify someone else's profile.
+     * @principle Enforces document ownership for writes and public read access.
      */
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    /**
-     * @description Checks if the authenticated user ID matches the provided user ID.
-     * @param {string} userId The user ID to compare against the authenticated user's ID.
-     * @return {bool} True if the user IDs match, false otherwise.
-     */
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
-    /**
-     * @description Checks if the authenticated user is the owner of an existing document.
-     * @param {string} userId The user ID to compare against the authenticated user's ID.
-     * @return {bool} True if the user IDs match and the resource exists, false otherwise.
-     */
-    function isExistingOwner(userId) {
-      return isSignedIn() && isOwner(userId) && exists(path);
-    }
-    
-    /**
-     * @description Checks if the update is only adding the requester's UID to a list.
-     * @param {string} fieldName The name of the list field being modified.
-     * @return {bool} True if the update is valid, false otherwise.
-     */
-    function isAddingSelfToList(fieldName) {
-      let requestData = request.resource.data;
-      let existingData = resource.data;
-      let affectedKeys = requestData.diff(existingData).affectedKeys();
-
-      return affectedKeys.hasOnly([fieldName]) &&
-             requestData[fieldName].size() == existingData[fieldName].size() + 1 &&
-             requestData[fieldName].hasAll(existingData[fieldName]) &&
-             requestData[fieldName].hasAny([request.auth.uid]);
-    }
-    
-     /**
-     * @description Checks if the update is only removing the requester's UID from a list.
-     * @param {string} fieldName The name of the list field being modified.
-     * @return {bool} True if the update is valid, false otherwise.
-     */
-    function isRemovingSelfFromList(fieldName) {
-      let requestData = request.resource.data;
-      let existingData = resource.data;
-      let affectedKeys = requestData.diff(existingData).affectedKeys();
-
-      return affectedKeys.hasOnly([fieldName]) &&
-             requestData[fieldName].size() == existingData[fieldName].size() - 1 &&
-             existingData[fieldName].hasAny([request.auth.uid]) &&
-             !requestData[fieldName].hasAny([request.auth.uid]);
-    }
-
-    /**
-     * @description Validates sending a friend request. The requester (current user)
-     * is adding themselves to the target user's 'friendRequestsReceived' list.
-     * @param {string} targetUserId The user receiving the request.
-     * @return {bool} True if the operation is a valid friend request.
-     */
-    function canSendFriendRequest(targetUserId) {
-      // The current user (requester) is updating the target user's document.
-      // So, `resource` is the target user's document.
-      return isSignedIn() &&
-             request.auth.uid != targetUserId &&
-             isAddingSelfToList('friendRequestsReceived');
-    }
-
-    /**
-     * @description Validates accepting a friend request. The requester (current user)
-     * is updating the sender's document to add themselves as a friend and remove the sent request.
-     * @param {string} senderUserId The user who originally sent the request.
-     * @return {bool} True if the operation is a valid acceptance.
-     */
-    function canAcceptFriendRequest(senderUserId) {
-      let requestData = request.resource.data;
-      let existingData = resource.data;
-      let affectedKeys = requestData.diff(existingData).affectedKeys();
-      
-      // The current user (acceptor) is updating the sender's document.
-      // We must verify that the acceptor was actually in the sender's "friendRequestsSent" list.
-      // This is implicit, as the frontend batch ensures the acceptor removes themselves from their own "friendRequestsReceived".
-      // The main check is that the acceptor's `friendRequestsReceived` contained the sender. We can read the acceptor's doc.
-      let acceptorDoc = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-
-      return isSignedIn() &&
-             request.auth.uid != senderUserId &&
-             acceptorDoc.friendRequestsReceived.hasAny([senderUserId]) &&
-             affectedKeys.hasOnly(['friendIds', 'friendRequestsSent']) &&
-             // Verify friend is added
-             requestData.friendIds.size() == existingData.friendIds.size() + 1 &&
-             requestData.friendIds.hasAny([request.auth.uid]) &&
-             // Verify request is removed
-             requestData.friendRequestsSent.size() == existingData.friendRequestsSent.size() - 1 &&
-             !requestData.friendRequestsSent.hasAny([request.auth.uid]);
-    }
-    
-    /**
-     * @description Validates declining a request or removing a friend.
-     * Handles two cases:
-     * 1. Declining a request: Requester removes self from sender's 'friendRequestsSent' list.
-     * 2. Removing a friend: Requester removes self from ex-friend's 'friendIds' list.
-     * @param {string} otherUserId The other user in the relationship.
-     * @return {bool} True if the operation is valid.
-     */
-    function canDeclineOrRemoveFriend(otherUserId) {
-        let requestData = request.resource.data;
-        let existingData = resource.data;
-        let affectedKeys = requestData.diff(existingData).affectedKeys();
-
-        // Case 1: Declining a friend request.
-        // The current user (decliner) updates the sender's document to remove self from `friendRequestsSent`.
-        let isDecliningRequest = affectedKeys.hasOnly(['friendRequestsSent']) &&
-                                isRemovingSelfFromList('friendRequestsSent');
-
-        // Case 2: Removing a friend.
-        // The current user (remover) updates the other user's document to remove self from `friendIds`.
-        let isRemovingFriend = affectedKeys.hasOnly(['friendIds']) &&
-                               isRemovingSelfFromList('friendIds');
-
-        return isSignedIn() &&
-               request.auth.uid != otherUserId &&
-               (isDecliningRequest || isRemovingFriend);
-    }
-
-
     match /users/{userId} {
-      allow get: if isSignedIn();
-      allow list: if false; // Deny listing users for security
-      allow create: if isSignedIn() && isOwner(userId);
-      allow delete: if false; // Prevent accidental deletion
-
-      allow update: if isExistingOwner(userId) ||
-                     canSendFriendRequest(userId) ||
-                     canAcceptFriendRequest(userId) ||
-                     canDeclineOrRemoveFriend(userId);
-    }
-    
-    match /chats/{chatId} {
-      // Allow read/write only if the user is a participant in the chat.
-      allow read, write: if isSignedIn() && request.auth.uid in resource.data.participantIds;
-      // Allow create only if the creating user is one of the participants.
-      allow create: if isSignedIn() && request.auth.uid in request.resource.data.participantIds;
-    }
-
-    match /chats/{chatId}/messages/{messageId} {
-        // Allow read only if the user is a participant in the parent chat document.
-        allow read: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds;
-        // Allow create only if the sender is the currently signed-in user and they are a participant.
-        allow create: if isSignedIn() && request.resource.data.senderId == request.auth.uid &&
-                        request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds;
-        // Disallow updates and deletes for message history integrity.
-        allow update, delete: if false;
-    }
-
-    match /posts/{postId} {
-      allow read: if true;
-      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-      allow update, delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
-
-       match /comments/{commentId} {
-        allow read: if true;
-        allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-        allow update, delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
+      function isSignedIn() {
+        return request.auth != null;
       }
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource.data != null;
+      }
+
+      allow get: if true;
+      allow list: if true;
+
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == request.auth.uid;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
     }
 
-    match /wallMessages/{messageId} {
-      allow read: if true;
+    /**
+     * @description Controls access to posts in the social circle.
+     * @path /posts/{postId}
+     * @allow (get, list) - Any user can read any post.
+     * @allow (create) - Authenticated user can create a post and authorId in data matches auth.uid.
+     * @allow (update, delete) - Only the author of the post can update or delete it.
+     * @deny (create) - If the user is not authenticated or authorId does not match auth.uid.
+     * @deny (update, delete) - If a user attempts to modify someone else's post.
+     * @principle Enforces document ownership for writes and public read access.
+     */
+    match /posts/{postId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      allow get: if true;
+      allow list: if true;
+
       allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-      allow update, delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
+      allow update: if isSignedIn() && resource.data.authorId == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
+    }
+
+    /**
+     * @description Controls access to comments on a specific post.
+     * @path /posts/{postId}/comments/{commentId}
+     * @allow (get, list) - Any user can read any comment.
+     * @allow (create) - Authenticated user can create a comment and authorId in data matches auth.uid.
+     * @allow (update, delete) - Only the author of the comment can update or delete it.
+     * @deny (create) - If the user is not authenticated or authorId does not match auth.uid.
+     * @deny (update, delete) - If a user attempts to modify someone else's comment.
+     * @principle Enforces document ownership for writes and public read access.
+     */
+    match /posts/{postId}/comments/{commentId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      allow get: if true;
+      allow list: if true;
+
+      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
+      allow update: if isSignedIn() && resource.data.authorId == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
+    }
+
+    /**
+     * @description Controls access to wall messages.
+     * @path /wallMessages/{messageId}
+     * @allow (get, list) - Any user can read any wall message.
+     * @allow (create) - Authenticated user can create a wall message and authorId in data matches auth.uid.
+     * @allow (update, delete) - Only the author of the wall message can update or delete it.
+     * @deny (create) - If the user is not authenticated or authorId does not match auth.uid.
+     * @deny (update, delete) - If a user attempts to modify someone else's wall message.
+     * @principle Enforces document ownership for writes and public read access.
+     */
+    match /wallMessages/{messageId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      allow get: if true;
+      allow list: if true;
+
+      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
+      allow update: if isSignedIn() && resource.data.authorId == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
+    }
+
+    /**
+     * @description Controls access to chat metadata.
+     * @path /chats/{chatId}
+     * @allow (get, list) - Only participants in the chat can read the chat metadata.
+     * @allow (create) - Authenticated user can create the chat if they are a participant.
+     * @allow (update, delete) - Only participants can update or delete the chat.
+     * @deny (create) - If the user is not authenticated or is not a participant.
+     * @deny (update, delete) - If a user attempts to modify a chat they don't participate in.
+     * @principle Enforces shared access for private chat sessions.
+     */
+    match /chats/{chatId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      allow get: if isSignedIn() && request.auth.uid in resource.data.participantIds;
+      allow list: if isSignedIn() && request.auth.uid in resource.data.participantIds;
+
+      allow create: if isSignedIn() && request.resource.data.participantIds.hasAll([request.auth.uid]);
+      allow update: if isSignedIn() && request.resource.data.participantIds.hasAll([request.auth.uid]);
+      allow delete: if isSignedIn() && request.resource.data.participantIds.hasAll([request.auth.uid]);
+    }
+
+    /**
+     * @description Controls access to chat messages within a specific chat.
+     * @path /chats/{chatId}/messages/{messageId}
+     * @allow (get, list) - Only participants in the chat can read the messages.
+     * @allow (create) - Authenticated user can create a message in a chat they participate in and senderId in data matches auth.uid.
+     * @allow (update, delete) - No updates or deletes are allowed on messages after creation.
+     * @deny (create) - If the user is not authenticated, is not a participant, or senderId does not match auth.uid.
+     * @principle Enforces shared access for private chat sessions and message immutability.
+     */
+    match /chats/{chatId}/messages/{messageId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+      function isParticipant(chatId) {
+          return request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds;
+      }
+
+      allow get: if isSignedIn() && isParticipant(chatId);
+      allow list: if isSignedIn() && isParticipant(chatId);
+
+      allow create: if isSignedIn() && isParticipant(chatId) && request.resource.data.senderId == request.auth.uid;
+      allow update: if false;
+      allow delete: if false;
     }
   }
 }

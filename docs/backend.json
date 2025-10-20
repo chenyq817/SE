@@ -212,63 +212,58 @@
         "participantIds": {
           "type": "array",
           "description": "Array of user IDs participating in the chat.",
-          "items": {
-            "type": "string"
-          }
+          "items": { "type": "string" }
         },
         "participantInfo": {
           "type": "object",
-          "description": "Map of participant info, keyed by userId.",
+          "description": "Map of participant user IDs to their profile info for easy display.",
           "additionalProperties": {
             "type": "object",
             "properties": {
-              "displayName": {"type": "string"},
-              "avatarId": {"type": "string"},
-              "imageBase64": {"type": "string"}
-            }
+              "displayName": { "type": "string" },
+              "avatarId": { "type": "string" },
+              "imageBase64": { "type": "string" }
+            },
+            "required": ["displayName", "avatarId"]
           }
         },
         "lastMessage": {
-          "type": "string",
-          "description": "The content of the last message sent in the chat."
-        },
-        "lastMessageTimestamp": {
-          "type": "string",
-          "description": "Timestamp of the last message.",
-          "format": "date-time"
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the chat was created.",
-          "format": "date-time"
+          "type": "object",
+          "properties": {
+            "content": { "type": "string" },
+            "senderId": { "type": "string" },
+            "timestamp": { "type": "string", "format": "date-time" }
+          }
         }
       },
-      "required": ["participantIds", "participantInfo", "createdAt"]
+      "required": ["participantIds", "participantInfo"]
     },
     "ChatMessage": {
       "title": "Chat Message",
       "type": "object",
       "description": "Represents a single message within a chat.",
       "properties": {
-        "senderId": {
-          "type": "string",
-          "description": "ID of the user who sent the message."
-        },
+        "chatId": { "type": "string" },
+        "senderId": { "type": "string" },
         "content": {
           "type": "string",
+<<<<<<< HEAD
           "description": "The text content of the message. Optional if an image is sent."
         },
         "imageBase64": {
           "type": "string",
-          "description": "Base64 encoded string of an image sent in the message."
+          "description": "Base64 encoded string of the image being sent. Optional."
+=======
+          "description": "The text content of the message."
+>>>>>>> parent of 0c1c661 (在私聊功能添加发送图片和emoji的功能)
         },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the message was sent.",
-          "format": "date-time"
-        }
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["senderId", "createdAt"]
+<<<<<<< HEAD
+      "required": ["chatId", "senderId", "createdAt"]
+=======
+      "required": ["senderId", "content", "createdAt"]
+>>>>>>> parent of 0c1c661 (在私聊功能添加发送图片和emoji的功能)
     }
   },
   "auth": {
@@ -303,12 +298,18 @@
       "description": "Holds all public messages on the community wall."
     },
     "/chats/{chatId}": {
-      "schema": { "$ref": "#/entities/Chat" },
-      "description": "Holds all private chat sessions."
+      "schema": {
+        "$ref": "#/entities/Chat"
+      },
+      "description": "Holds metadata for each private chat session."
     },
     "/chats/{chatId}/messages/{messageId}": {
-      "schema": { "$ref": "#/entities/ChatMessage" },
-      "description": "Holds all messages for a specific chat session."
+      "schema": {
+        "$ref": "#/entities/ChatMessage"
+      },
+      "description": "Subcollection holding all messages for a specific chat."
     }
   }
 }
+
+    
