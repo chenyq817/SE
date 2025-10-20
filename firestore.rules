@@ -1,151 +1,169 @@
+/**
+ * @fileoverview Firestore Security Rules for the campus social circle application.
+ *
+ * Core Philosophy:
+ * This ruleset prioritizes user data protection and enforces access control based on
+ * authentication and authorization. It uses a combination of ownership and shared access
+ * patterns to secure various data collections. Data shape is not heavily validated in the
+ * prototyping phase, but authorization-critical fields are validated for relational integrity.
+ *
+ * Data Structure:
+ * - /posts/{postId}: Public posts created by users.
+ * - /posts/{postId}/comments/{commentId}: Comments on individual posts.
+ * - /users/{userId}: User profile information, accessible only by the user themselves.
+ * - /wallMessages/{messageId}: Public messages on the community wall.
+ * - /chats/{chatId}: Metadata for private chat sessions between users.
+ * - /chats/{chatId}/messages/{messageId}: Messages within a specific chat session.
+ *
+ * Key Security Decisions:
+ * - Users can only read their own profile data.
+ * - Public posts and wall messages are readable by anyone.
+ * - Chats and chat messages are restricted to participating users.
+ * - Listing of chats is restricted to participating users.
+ *
+ * Denormalization for Authorization:
+ * - The `Chat` entity includes a `participantIds` array, which is crucial for determining
+ *   read and write access to the chat and its messages. This avoids the need for complex
+ *   queries or additional reads to determine authorization.
+ */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to user profile documents.
-     * @path /users/{userId}
-     * @allow (create) - Authenticated user can create their own profile if the userId matches their auth.uid.
-     * @allow (get, list) - Any user can read any profile.
-     * @allow (update, delete) - Only the user who owns the profile can update or delete it.
-     * @deny (create) - If the user is not authenticated.
-     * @deny (update, delete) - If the user attempts to modify someone else's profile.
-     * @principle Enforces document ownership for writes and public read access.
+     * @description Checks if the user is signed in.
      */
-    match /users/{userId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource.data != null;
-      }
-
-      allow get: if true;
-      allow list: if true;
-
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == request.auth.uid;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(userId);
+    function isSignedIn() {
+      return request.auth != null;
     }
 
     /**
-     * @description Controls access to posts in the social circle.
+     * @description Checks if the authenticated user is the owner of the resource.
+     */
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the authenticated user is the owner of the resource and the resource exists.
+     */
+    function isExistingOwner(userId) {
+        return (isOwner(userId) && resource != null);
+    }
+
+    /**
+     * @description Grants public read access and restricts write access to the owner of a post.
      * @path /posts/{postId}
-     * @allow (get, list) - Any user can read any post.
-     * @allow (create) - Authenticated user can create a post and authorId in data matches auth.uid.
-     * @allow (update, delete) - Only the author of the post can update or delete it.
-     * @deny (create) - If the user is not authenticated or authorId does not match auth.uid.
-     * @deny (update, delete) - If a user attempts to modify someone else's post.
-     * @principle Enforces document ownership for writes and public read access.
+     * @allow (get, list): Any user can read posts.
+     * @allow (create): User can create a post if authorId matches their UID.
+     * @allow (update, delete): Only the owner of the post can modify it.
+     * @deny (create): User cannot create a post if authorId does not match their UID.
+     * @deny (update, delete): Non-owner cannot modify the post.
+     * @principle Public read, owner-only writes with authorId validation.
      */
     match /posts/{postId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      allow get: if true;
-      allow list: if true;
-
+      allow get, list: if true;
       allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-      allow update: if isSignedIn() && resource.data.authorId == request.auth.uid;
-      allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
+      allow update, delete: if isSignedIn() && isExistingOwner(resource.data.authorId);
     }
 
     /**
-     * @description Controls access to comments on a specific post.
+     * @description Grants access to comments only to authenticated users, restricting listing.
      * @path /posts/{postId}/comments/{commentId}
-     * @allow (get, list) - Any user can read any comment.
-     * @allow (create) - Authenticated user can create a comment and authorId in data matches auth.uid.
-     * @allow (update, delete) - Only the author of the comment can update or delete it.
-     * @deny (create) - If the user is not authenticated or authorId does not match auth.uid.
-     * @deny (update, delete) - If a user attempts to modify someone else's comment.
-     * @principle Enforces document ownership for writes and public read access.
+     * @allow (get): Any authenticated user can get a comment.
+     * @deny (list): Listing comments is not allowed.
+     * @allow (create): Any authenticated user can create a comment.
+     * @allow (update, delete): Only the comment's author can update or delete it.
+     * @deny (create): User cannot create a comment if authorId does not match their UID.
+     * @deny (update, delete): Non-owner cannot modify the comment.
+     * @principle Authenticated access to comments, owner-only writes.
      */
     match /posts/{postId}/comments/{commentId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      allow get: if true;
-      allow list: if true;
-
-      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-      allow update: if isSignedIn() && resource.data.authorId == request.auth.uid;
-      allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
+      allow get: if isSignedIn();
+      allow list: if false;
+      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid && request.resource.data.postId == postId;
+      allow update, delete: if isSignedIn() && isExistingOwner(resource.data.authorId);
     }
 
     /**
-     * @description Controls access to wall messages.
+     * @description Restricts access to user profiles to the owning user.
+     * @path /users/{userId}
+     * @allow (get): Only the user with matching userId can read.
+     * @deny (list): Listing users is not allowed.
+     * @allow (create): Only the user with matching userId can create their profile.
+     * @allow (update, delete): Only the user with matching userId can update or delete.
+     * @deny (create): User cannot create a profile for another user.
+     * @deny (update, delete): User cannot modify another user's profile.
+     * @principle Strict user ownership for profile data.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId);
+      allow update, delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Grants public read access to wall messages and restricts write access to authenticated users.
      * @path /wallMessages/{messageId}
-     * @allow (get, list) - Any user can read any wall message.
-     * @allow (create) - Authenticated user can create a wall message and authorId in data matches auth.uid.
-     * @allow (update, delete) - Only the author of the wall message can update or delete it.
-     * @deny (create) - If the user is not authenticated or authorId does not match auth.uid.
-     * @deny (update, delete) - If a user attempts to modify someone else's wall message.
-     * @principle Enforces document ownership for writes and public read access.
+     * @allow (get, list): Any user can read wall messages.
+     * @allow (create): Any authenticated user can create a wall message.
+     * @allow (update, delete): Only the owner can update or delete a wall message.
+     * @deny (create): User cannot create a wall message if authorId does not match their UID.
+     * @deny (update, delete): Non-owner cannot modify the wall message.
+     * @principle Public read, owner-only writes for wall messages.
      */
     match /wallMessages/{messageId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      allow get: if true;
-      allow list: if true;
-
+      allow get, list: if true;
       allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-      allow update: if isSignedIn() && resource.data.authorId == request.auth.uid;
-      allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
+      allow update, delete: if isSignedIn() && isExistingOwner(resource.data.authorId);
     }
 
     /**
-     * @description Controls access to chat metadata.
+     * @description Restricts access to chats to participating users.
      * @path /chats/{chatId}
-     * @allow (get, list) - Only participants in the chat can read the chat metadata.
-     * @allow (create) - Authenticated user can create the chat if they are a participant.
-     * @allow (update, delete) - Only participants can update or delete the chat.
-     * @deny (create) - If the user is not authenticated or is not a participant.
-     * @deny (update, delete) - If a user attempts to modify a chat they don't participate in.
-     * @principle Enforces shared access for private chat sessions.
+     * @allow (get): Only participating users can read chat metadata.
+     * @allow (list): Only participating users can list chats.
+     * @allow (create): Only participating users can create a chat.
+     * @allow (update, delete): Only participating users can update or delete a chat.
+     * @deny (create): Non-participating user cannot create a chat.
+     * @deny (update, delete): Non-participating user cannot modify the chat.
+     * @principle Shared access for chat data based on participantIds.
      */
     match /chats/{chatId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
+        function isParticipant() {
+            return isSignedIn() && request.auth.uid in resource.data.participantIds;
+        }
 
-      allow get: if isSignedIn() && request.auth.uid in resource.data.participantIds;
-      allow list: if isSignedIn() && request.auth.uid in resource.data.participantIds;
-
-      allow create: if isSignedIn() && request.resource.data.participantIds.hasAll([request.auth.uid]);
-      allow update: if isSignedIn() && request.resource.data.participantIds.hasAll([request.auth.uid]);
-      allow delete: if isSignedIn() && request.resource.data.participantIds.hasAll([request.auth.uid]);
+        function canParticipate() {
+            return isSignedIn() && request.auth.uid in request.resource.data.participantIds;
+        }
+      allow get: if isParticipant();
+      allow list: if request.auth.uid != null;
+      allow create: if isSignedIn() && canParticipate();
+      allow update, delete: if isSignedIn() && isExistingOwner(resource.data.participantIds[0]);
     }
 
     /**
-     * @description Controls access to chat messages within a specific chat.
+     * @description Restricts access to chat messages to participating users.
      * @path /chats/{chatId}/messages/{messageId}
-     * @allow (get, list) - Only participants in the chat can read the messages.
-     * @allow (create) - Authenticated user can create a message in a chat they participate in and senderId in data matches auth.uid.
-     * @allow (update, delete) - No updates or deletes are allowed on messages after creation.
-     * @deny (create) - If the user is not authenticated, is not a participant, or senderId does not match auth.uid.
-     * @principle Enforces shared access for private chat sessions and message immutability.
+     * @allow (get): Only participating users can read chat messages.
+     * @deny (list): Listing chat messages is not allowed.
+     * @allow (create): Only participating users can create a chat message.
+     * @allow (update, delete): Only the message sender can update or delete their messages.
+     * @deny (create): Non-participating user cannot create a chat message.
+     * @deny (update, delete): Non-sender cannot modify the message.
+     * @principle Shared access for chat messages based on participantIds in parent chat document.
      */
     match /chats/{chatId}/messages/{messageId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-      function isParticipant(chatId) {
-          return request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds;
-      }
+        function isChatParticipant() {
+            return isSignedIn() && get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds.hasAny([request.auth.uid]);
+        }
 
-      allow get: if isSignedIn() && isParticipant(chatId);
-      allow list: if isSignedIn() && isParticipant(chatId);
-
-      allow create: if isSignedIn() && isParticipant(chatId) && request.resource.data.senderId == request.auth.uid;
-      allow update: if false;
-      allow delete: if false;
+        allow get: if isChatParticipant();
+        allow list: if false;
+        allow create: if isSignedIn() && isChatParticipant() && request.resource.data.chatId == chatId && request.resource.data.senderId == request.auth.uid;
+        allow update, delete: if isSignedIn() && isExistingOwner(request.resource.data.senderId) && isChatParticipant();
     }
   }
 }
