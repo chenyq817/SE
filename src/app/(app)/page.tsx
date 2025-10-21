@@ -16,7 +16,6 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export default function DashboardPage() {
   const newsImage = PlaceHolderImages.find(img => img.id === 'news-1');
-  const activityImage = PlaceHolderImages.find(img => img.id === 'activity-1');
 
   return (
     <div className="flex flex-col h-full">
@@ -52,7 +51,7 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <section className="grid gap-6 md:grid-cols-2">
           <Card className="flex flex-col">
             <CardHeader>
               <div className="flex items-center gap-3">
@@ -87,39 +86,6 @@ export default function DashboardPage() {
           </Card>
 
           <Card className="flex flex-col">
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <Calendar className="w-6 h-6 text-primary" />
-                <CardTitle className="font-headline">Upcoming Activities</CardTitle>
-              </div>
-              <CardDescription>Don't miss out on these events.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex-grow space-y-4">
-              {activityImage && (
-                <div className="relative aspect-video w-full">
-                  <Image
-                    src={activityImage.imageUrl}
-                    alt={activityImage.description}
-                    fill
-                    className="rounded-md object-cover"
-                    data-ai-hint={activityImage.imageHint}
-                  />
-                </div>
-              )}
-              <h3 className="font-semibold">Annual Tech Symposium</h3>
-              <p className="text-sm text-muted-foreground">Join industry leaders and innovators for a day of insightful talks and networking...</p>
-            </CardContent>
-            <CardFooter>
-              <Link href="/activities" className="w-full" passHref>
-                <Button variant="outline" className="w-full">
-                  Explore Activities
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-            </CardFooter>
-          </Card>
-
-          <Card className="flex flex-col lg:col-span-1 md:col-span-2">
             <CardHeader>
                 <div className="flex items-center gap-3">
                   <Anchor className="w-6 h-6 text-primary" />
@@ -161,5 +127,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    

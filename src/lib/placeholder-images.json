@@ -3,80 +3,62 @@
     {
       "id": "news-1",
       "description": "University building at dusk",
-      "imageUrl": "https://picsum.photos/seed/101/600/400",
+      "imageUrl": "https://images.unsplash.com/flagged/photo-1554473675-d0904f3cbf38?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHx1bml2ZXJzaXR5JTIwY2FtcHVzfGVufDB8fHx8MTc2MDk2NzQ3N3ww&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "university campus"
     },
     {
       "id": "news-2",
       "description": "Students in a modern library",
-      "imageUrl": "https://picsum.photos/seed/102/600/400",
+      "imageUrl": "https://images.unsplash.com/photo-1595315343110-9b445a960442?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxzdHVkZW50cyUyMGxpYnJhcnl8ZW58MHx8fHwxNzYxMDE2NzgzfDA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "students library"
     },
     {
       "id": "news-3",
       "description": "Scientific research in a lab",
-      "imageUrl": "https://picsum.photos/seed/103/600/400",
+      "imageUrl": "https://images.unsplash.com/photo-1581093577421-f561a654a353?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxzY2llbmNlJTIwbGFifGVufDB8fHx8MTc2MDk3NzQzMHww&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "science lab"
     },
     {
       "id": "news-4",
       "description": "University sports team celebrating",
-      "imageUrl": "https://picsum.photos/seed/104/600/400",
+      "imageUrl": "https://images.unsplash.com/photo-1513635625218-6956bc843133?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxzcG9ydHMlMjB0ZWFtfGVufDB8fHx8MTc2MDk3MjA4NHww&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "sports team"
     },
     {
       "id": "avatar-1",
       "description": "Portrait of a smiling young woman",
-      "imageUrl": "https://picsum.photos/seed/201/100/100",
+      "imageUrl": "https://images.unsplash.com/photo-1557053910-d9eadeed1c58?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHx3b21hbiUyMHBvcnRyYWl0fGVufDB8fHx8MTc2MDk0MDg0N3ww&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "woman portrait"
     },
     {
       "id": "avatar-2",
       "description": "Portrait of a young man with glasses",
-      "imageUrl": "https://picsum.photos/seed/202/100/100",
+      "imageUrl": "https://images.unsplash.com/photo-1522556189639-b150ed9c4330?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxtYW4lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjEwMTgyNDR8MA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "man portrait"
     },
     {
       "id": "avatar-3",
       "description": "Portrait of a person in a cafe",
-      "imageUrl": "https://picsum.photos/seed/203/100/100",
+      "imageUrl": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjA5MjcyMzB8MA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "person portrait"
     },
     {
       "id": "avatar-4",
       "description": "Anonymous user avatar",
-      "imageUrl": "https://picsum.photos/seed/204/100/100",
+      "imageUrl": "https://images.unsplash.com/photo-1605106702842-01a887a31122?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxhYnN0cmFjdCUyMHBhdHRlcm58ZW58MHx8fHwxNzYwOTUzOTMxfDA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "abstract pattern"
     },
     {
       "id": "social-1",
       "description": "Group of friends laughing on campus",
-      "imageUrl": "https://picsum.photos/seed/301/800/600",
+      "imageUrl": "https://images.unsplash.com/photo-1511988617509-a57c8a288659?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxmcmllbmRzJTIwbGF1Z2hpbmd8ZW58MHx8fHwxNzYwOTc3Njg2fDA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "friends laughing"
     },
     {
       "id": "social-2",
       "description": "Close up of coffee art",
-      "imageUrl": "https://picsum.photos/seed/302/800/600",
+      "imageUrl": "https://images.unsplash.com/photo-1681838853984-697bbb001257?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxjb2ZmZWUlMjBhcnR8ZW58MHx8fHwxNzYwOTkzNjUyfDA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "coffee art"
-    },
-    {
-      "id": "activity-1",
-      "description": "People at a technology lecture",
-      "imageUrl": "https://picsum.photos/seed/401/600/400",
-      "imageHint": "conference lecture"
-    },
-    {
-      "id": "activity-2",
-      "description": "People playing basketball",
-      "imageUrl": "https://picsum.photos/seed/402/600/400",
-      "imageHint": "basketball game"
-    },
-    {
-      "id": "activity-3",
-      "description": "Outdoor music festival",
-      "imageUrl": "https://picsum.photos/seed/403/600/400",
-      "imageHint": "music festival"
     }
   ]
 }
