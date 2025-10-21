@@ -81,28 +81,22 @@ export default function UserProfilePage() {
                 </div>
             </CardHeader>
             <CardContent className="border-t pt-6 grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-                {userProfile.age && (
                   <div className="flex items-center gap-3">
                     <Cake className="w-5 h-5 text-muted-foreground"/>
                     <span className="text-muted-foreground">Age:</span>
-                    <span className="font-medium">{userProfile.age}</span>
+                    <span className="font-medium">{userProfile.age || ''}</span>
                   </div>
-                )}
-                {userProfile.gender && userProfile.gender !== "Prefer not to say" && (
                   <div className="flex items-center gap-3">
                     <VenetianMask className="w-5 h-5 text-muted-foreground"/>
                     <span className="text-muted-foreground">Gender:</span>
-                    <span className="font-medium">{userProfile.gender}</span>
+                    <span className="font-medium">{userProfile.gender && userProfile.gender !== "Prefer not to say" ? userProfile.gender : ''}</span>
                   </div>
-                )}
-                {userProfile.address && (
                   <div className="flex items-center gap-3 md:col-span-2">
                     <MapPin className="w-5 h-5 text-muted-foreground"/>
                     <span className="text-muted-foreground">Location:</span>
-                    <span className="font-medium">{userProfile.address}</span>
+                    <span className="font-medium">{userProfile.address || ''}</span>
                   </div>
-                )}
-                {!userProfile.age && !userProfile.gender && !userProfile.address && (
+                {!userProfile.age && (!userProfile.gender || userProfile.gender === "Prefer not to say") && !userProfile.address && (
                     <p className="text-muted-foreground text-center col-span-full">This user hasn't shared any additional information.</p>
                 )}
             </CardContent>
