@@ -206,8 +206,8 @@ export default function ChatPage() {
         } else if (newImage) {
             lastMessageData.content = '[Image]';
         }
-
-        if(newImage){
+        
+        if (newImage) {
             lastMessageData.imageBase64 = newImage;
         }
         
@@ -391,3 +391,5 @@ export default function ChatPage() {
         </div>
     );
 }
+
+    
