@@ -144,60 +144,74 @@ export default function ProfilePage() {
     const avatarChanged = data.avatarId !== userProfile?.avatarId || data.imageBase64 !== userProfile?.imageBase64;
 
     if (nameChanged || avatarChanged) {
-        const postsRef = collection(firestore, 'posts');
-        const commentsRef = collection(firestore, 'wallMessages');
-
-        const userPostsQuery = query(postsRef, where('authorId', '==', user.uid));
-        const userCommentsQuery = query(commentsRef, where('authorId', '==', user.uid));
+        const batch = writeBatch(firestore);
 
         try {
-            const [postsSnapshot, commentsSnapshot] = await Promise.all([
-                getDocs(userPostsQuery),
-                getDocs(userCommentsQuery),
+            // Query for posts, wall messages
+            const postsQuery = query(collection(firestore, 'posts'), where('authorId', '==', user.uid));
+            const wallMessagesQuery = query(collection(firestore, 'wallMessages'), where('authorId', '==', user.uid));
+
+            const [postsSnapshot, wallMessagesSnapshot] = await Promise.all([
+                getDocs(postsQuery),
+                getDocs(wallMessagesQuery)
             ]);
-            
-            const batch = writeBatch(firestore);
 
-            if (!postsSnapshot.empty) {
-                postsSnapshot.forEach(postDoc => {
-                    const postRef = doc(firestore, 'posts', postDoc.id);
-                    const updatePayload: any = {};
-                    if(nameChanged) updatePayload.authorName = data.displayName;
-                    if(avatarChanged) {
-                         updatePayload.authorAvatarId = data.avatarId;
-                         updatePayload.authorImageBase64 = data.imageBase64;
-                    }
-                    batch.update(postRef, updatePayload);
-                });
-            }
+            const postIds: string[] = [];
 
-            if (!commentsSnapshot.empty) {
-                commentsSnapshot.forEach(commentDoc => {
-                    const commentRef = doc(firestore, 'wallMessages', commentDoc.id);
-                    if(nameChanged) {
-                        batch.update(commentRef, { authorName: data.displayName });
-                    }
-                });
-            }
+            // Update posts
+            postsSnapshot.forEach(postDoc => {
+                postIds.push(postDoc.id);
+                const postRef = doc(firestore, 'posts', postDoc.id);
+                const updatePayload: any = {};
+                if (nameChanged) updatePayload.authorName = data.displayName;
+                if (avatarChanged) {
+                    updatePayload.authorImageBase64 = data.imageBase64 || "";
+                    updatePayload.authorAvatarId = data.avatarId || "";
+                }
+                batch.update(postRef, updatePayload);
+            });
 
-            if (!postsSnapshot.empty || !commentsSnapshot.empty) {
-                 batch.commit().catch(error => {
-                    const permissionError = new FirestorePermissionError({
-                      path: 'batch update',
-                      operation: 'update',
-                      requestResourceData: data,
+            // Update wall messages
+            wallMessagesSnapshot.forEach(msgDoc => {
+                const msgRef = doc(firestore, 'wallMessages', msgDoc.id);
+                if (nameChanged) {
+                    batch.update(msgRef, { authorName: data.displayName });
+                }
+            });
+
+            // Update comments in all user's posts
+            if (nameChanged || avatarChanged) {
+                for (const postId of postIds) {
+                    const commentsQuery = query(
+                        collection(firestore, 'posts', postId, 'comments'),
+                        where('authorId', '==', user.uid)
+                    );
+                    const commentsSnapshot = await getDocs(commentsQuery);
+                    commentsSnapshot.forEach(commentDoc => {
+                        const commentRef = doc(firestore, 'posts', postId, 'comments', commentDoc.id);
+                        const updatePayload: any = {};
+                        if (nameChanged) updatePayload.authorName = data.displayName;
+                        if (avatarChanged) {
+                            updatePayload.authorImageBase64 = data.imageBase64 || "";
+                            updatePayload.authorAvatarId = data.avatarId || "";
+                        }
+                        batch.update(commentRef, updatePayload);
                     });
-                    errorEmitter.emit('permission-error', permissionError);
-                });
+                }
             }
+            
+            await batch.commit();
+
         } catch (error) {
+            console.error("Error updating user's content:", error);
             const permissionError = new FirestorePermissionError({
-                path: 'batch read',
-                operation: 'list',
+                path: 'batch update on user content',
+                operation: 'update',
             });
             errorEmitter.emit('permission-error', permissionError);
         }
     }
+
 
     toast({ title: 'Profile update initiated!' });
     form.reset(data);
@@ -330,4 +344,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
 

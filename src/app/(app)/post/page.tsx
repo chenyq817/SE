@@ -51,8 +51,7 @@ type Post = {
   authorId: string;
   authorName: string; 
   authorAvatarId?: string; 
-  authorAvatarUrl?: string; // For backward compatibility
-  authorImageBase64?: string; // For custom uploads
+  authorImageBase64?: string;
   content: string;
   location?: string;
   imageBase64?: string; 
