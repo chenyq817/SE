@@ -27,7 +27,7 @@ export default function DashboardPage() {
           style={{ backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(${campusImage?.imageUrl})`}}
         >
           <div className="flex flex-col items-start text-white">
-            <h2 className="text-3xl font-bold font-headline">Welcome to HUST Echo</h2>
+            <h2 className="text-3xl font-bold font-headline">Welcome to I know hust</h2>
             <p className="mt-2 text-lg text-muted-foreground text-gray-200">明德厚学，求是创新</p>
           </div>
         </section>
