@@ -30,7 +30,7 @@ const menuItems = [
   { href: "/news", label: "News", icon: Newspaper },
   { href: "/post", label: "Posts", icon: FileText },
   { href: "/social", label: "Social", icon: Users },
-  { href: "/chat", label: "Chats", icon: MessageSquare },
+  // { href: "/chat", label: "Chats", icon: MessageSquare },
   { href: "/schedules", label: "Schedules", icon: Calendar },
   { href: "/activities", label: "Activities", icon: Flame },
   { href: "/community", label: "Community", icon: Anchor },
@@ -98,4 +98,3 @@ export function AppSidebar() {
   );
 }
 
-    
