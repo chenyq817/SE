@@ -51,49 +51,49 @@
     {
       "id": "avatar-1",
       "description": "Abstract colorful geometric pattern",
-      "imageUrl": "https://images.unsplash.com/photo-1550859492-d5da9d7e4554?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageUrl": "https://images.unsplash.com/photo-1550859492-d5da9d7e4554?q=80&w=600&auto=format&fit=crop",
       "imageHint": "abstract geometric"
     },
     {
       "id": "avatar-2",
       "description": "Serene mountain landscape at sunrise",
-      "imageUrl": "https://images.unsplash.com/photo-1491466424936-e304919a0072?q=80&w=2864&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageUrl": "https://images.unsplash.com/photo-1491466424936-e304919a0072?q=80&w=600&auto=format&fit=crop",
       "imageHint": "mountain landscape"
     },
     {
       "id": "avatar-3",
       "description": "A cute, minimalist cartoon cat",
-      "imageUrl": "https://images.unsplash.com/photo-1596854446345-6b5a73ab8c23?q=80&w=2835&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageUrl": "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?q=80&w=600&auto=format&fit=crop",
       "imageHint": "cartoon cat"
     },
     {
       "id": "avatar-4",
       "description": "Anonymous user avatar",
-      "imageUrl": "https://images.unsplash.com/photo-1605106702842-01a887a31122?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxhYnN0cmFjdCUyMHBhdHRlcm58ZW58MHx8fHwxNzYwOTUzOTMxfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1508921340878-ba53e1f416ec?q=80&w=600&auto=format&fit=crop",
       "imageHint": "abstract pattern"
     },
     {
       "id": "avatar-5",
       "description": "Starry night sky over a forest",
-      "imageUrl": "https://images.unsplash.com/photo-1472552944129-b035e9ea3744?q=80&w=2938&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageUrl": "https://images.unsplash.com/photo-1472552944129-b035e9ea3744?q=80&w=600&auto=format&fit=crop",
       "imageHint": "starry night"
     },
     {
       "id": "avatar-6",
       "description": "A vibrant and colorful abstract painting",
-      "imageUrl": "https://images.unsplash.com/photo-1536924940846-227afb31e2a5?q=80&w=2834&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageUrl": "https://images.unsplash.com/photo-1536924940846-227afb31e2a5?q=80&w=600&auto=format&fit=crop",
       "imageHint": "abstract painting"
     },
     {
       "id": "avatar-7",
       "description": "A playful cartoon dog character",
-      "imageUrl": "https://images.unsplash.com/photo-1541364983171-a8ba01e95cfc?q=80&w=2787&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageUrl": "https://images.unsplash.com/photo-1541364983171-a8ba01e95cfc?q=80&w=600&auto=format&fit=crop",
       "imageHint": "cartoon dog"
     },
     {
       "id": "avatar-8",
       "description": "Calm ocean waves on a sandy beach",
-      "imageUrl": "https://images.unsplash.com/photo-1519046904884-53103b34b206?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageUrl": "https://images.unsplash.com/photo-1519046904884-53103b34b206?q=80&w=600&auto=format&fit=crop",
       "imageHint": "ocean beach"
     },
     {
