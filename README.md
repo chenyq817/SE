@@ -1,68 +1,68 @@
-# Yu Garden Echo - Campus Social Circle
+# 豫园回声 - 校园社交圈
 
-This is a Next.js starter project built in Firebase Studio, designed as an all-in-one campus companion app. It features social posting, friend management, private chat, community walls, and a news feed.
+这是一个在 Firebase Studio 中构建的 Next.js 入门项目，旨在成为一个多功能一体的校园伴侣应用。它包含了社交发帖、好友管理、私人聊天、社区墙和新闻订阅等功能。
 
-## Features
+## 功能特性
 
-- **Dashboard**: A central hub for campus news and quick access to features.
-- **Campus Posts**: A timeline where users can share text and images.
-- **Social Hub**: Find and manage friends, send requests, and initiate chats.
-- **Private Chat**: Real-time one-on-one messaging with friends, including image and emoji support.
-- **Community Wall**: A public space for leaving short, fun messages for everyone.
-- **News Feed**: Stay updated with campus news categorized into Academics, Sports, and Campus Life.
-- **User Profiles**: Customizable user profiles with avatars and personal information.
-- **Admin Dashboard**: A special section for content moderation (for admin users).
+- **仪表盘 (Dashboard)**：一个集中的信息中心，用于展示校园新闻并提供各项功能的快速入口。
+- **校园帖子 (Campus Posts)**：一个时间线，用户可以在此分享文字和图片。
+- **社交中心 (Social Hub)**：查找和管理好友、发送好友请求并发起聊天。
+- **私人聊天 (Private Chat)**：与好友进行实时的一对一私信，支持发送图片和表情符号。
+- **社区墙 (Community Wall)**：一个公共空间，可以为所有人留下有趣的短消息。
+- **新闻订阅 (News Feed)**：按“学术”、“体育”和“校园生活”分类，随时了解最新的校园新闻。
+- **用户资料 (User Profiles)**：可定制的用户个人资料，包括头像和个人信息。
+- **管理后台 (Admin Dashboard)**：一个供管理员用户进行内容审核的特殊板块。
 
-## Local Development Setup
+## 本地开发环境设置
 
-To run this project on your local machine, please follow these steps.
+要在您的本地计算机上运行此项目，请按照以下步骤操作。
 
-### 1. Prerequisites
+### 1. 先决条件
 
-- [Node.js](https://nodejs.org/) (v18 or later recommended)
-- [npm](https://www.npmjs.com/) (usually comes with Node.js)
+- [Node.js](https://nodejs.org/) (推荐 v18 或更高版本)
+- [npm](https://www.npmjs.com/) (通常随 Node.js 一起安装)
 
-### 2. Installation
+### 2. 安装
 
-Clone the repository and install the dependencies:
+克隆仓库并安装项目依赖：
 
 ```bash
-# Using npm
+# 使用 npm
 npm install
 ```
 
-### 3. Environment Variables
+### 3. 环境变量
 
-This project uses Google's Generative AI (Gemini) for some features, which requires an API key.
+本项目使用 Google 的生成式 AI (Gemini) 功能，因此需要一个 API 密钥。
 
-1.  Create a new file named `.env.local` in the root of your project directory.
-2.  Obtain a `GEMINI_API_KEY` from [Google AI Studio](https://aistudio.google.com/app/apikey).
-3.  Add the key to your `.env.local` file like this:
+1.  在您的项目根目录下创建一个名为 `.env.local` 的新文件。
+2.  从 [Google AI Studio](https://aistudio.google.com/app/apikey) 获取一个 `GEMINI_API_KEY`。
+3.  将此密钥添加到您的 `.env.local` 文件中，格式如下：
 
     ```
     GEMINI_API_KEY=your_api_key_here
     ```
 
-### 4. Running the Development Server
+### 4. 运行开发服务器
 
-Once the dependencies are installed and the environment variables are set, you can run the local development server:
+安装完依赖并设置好环境变量后，您就可以运行本地开发服务器了：
 
 ```bash
 npm run dev
 ```
 
-This will start the application on `http://localhost:9002`.
+这将在 `http://localhost:9002` 上启动应用程序。
 
-### 5. Firebase Connection
+### 5. Firebase 连接
 
-The project is pre-configured to connect to a Firebase project. The connection details are in `src/firebase/config.ts`. When you run the app locally, it will read and write data to the specified Firebase project. You can view the data directly in the [Firebase Console](https://console.firebase.google.com/).
+该项目已预先配置好与一个 Firebase 项目的连接。连接详细信息位于 `src/firebase/config.ts`。当您在本地运行应用时，它将读写指定 Firebase 项目中的数据。您可以直接在 [Firebase 控制台](https://console.firebase.google.com/) 中查看这些数据。
 
-## Available Scripts
+## 可用脚本
 
-Here are the main scripts available in `package.json`:
+以下是 `package.json` 中定义的主要脚本：
 
-- `npm run dev`: Starts the Next.js development server with Turbopack.
-- `npm run build`: Builds the application for production.
-- `npm run start`: Starts the production server after building.
-- `npm run lint`: Runs ESLint to check for code quality issues.
-- `npm run typecheck`: Runs the TypeScript compiler to check for type errors.
+- `npm run dev`: 使用 Turbopack 启动 Next.js 开发服务器。
+- `npm run build`: 为生产环境构建应用程序。
+- `npm run start`: 在构建后启动生产服务器。
+- `npm run lint`: 运行 ESLint 检查代码质量问题。
+- `npm run typecheck`: 运行 TypeScript 编译器检查类型错误。
