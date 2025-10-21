@@ -19,14 +19,17 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, Eye } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useUser, useFirestore, useCollection, useMemoFirebase, deleteDocumentNonBlocking } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useMemo } from "react";
 import { Loader2 } from "lucide-react";
-import { collection, query, orderBy, doc, getDocs } from "firebase/firestore";
+import { collection, query, orderBy, doc, getDocs, where } from "firebase/firestore";
 import type { WithId } from "@/firebase";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { PlaceHolderImages } from "@/lib/placeholder-images";
+import Link from "next/link";
 
 type ContentItem = {
     id: string;
@@ -37,11 +40,19 @@ type ContentItem = {
     createdAt: any;
 };
 
+type UserProfile = WithId<{
+  displayName: string;
+  avatarId: string;
+  imageBase64?: string;
+}>;
+
+
 export default function AdminPage() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const firestore = useFirestore();
   const [allContent, setAllContent] = useState<ContentItem[]>([]);
+  const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [isContentLoading, setIsContentLoading] = useState(true);
 
   useEffect(() => {
@@ -55,7 +66,7 @@ export default function AdminPage() {
   useEffect(() => {
     if (!firestore || !user || user.email !== 'admin@111.com') return;
 
-    const fetchAllContent = async () => {
+    const fetchAllData = async () => {
         setIsContentLoading(true);
         try {
             // Fetch posts
@@ -76,11 +87,21 @@ export default function AdminPage() {
                 type: 'Wall Message' as const,
             }));
 
-            // Combine and sort
+            // Combine and sort content
             const combinedContent = [...postsData, ...wallMessagesData]
                 .sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
 
             setAllContent(combinedContent);
+            
+            // Fetch users
+            const usersQuery = query(collection(firestore, 'users'));
+            const usersSnapshot = await getDocs(usersQuery);
+            const usersData = usersSnapshot.docs
+              .map(doc => ({ id: doc.id, ...doc.data() } as UserProfile))
+              .filter(u => u.id !== user.uid); // Filter out admin
+            
+            setAllUsers(usersData);
+
         } catch (error) {
             console.error("Error fetching content for admin panel:", error);
         } finally {
@@ -88,7 +109,7 @@ export default function AdminPage() {
         }
     };
 
-    fetchAllContent();
+    fetchAllData();
   }, [firestore, user]);
 
 
@@ -114,6 +135,55 @@ export default function AdminPage() {
     <div className="flex flex-col h-full">
       <Header title="Admin Dashboard" />
       <main className="flex-1 p-4 md:p-6 lg:p-8 space-y-6">
+        <Card>
+            <CardHeader>
+                <CardTitle>User Management</CardTitle>
+                <CardDescription>View and manage all registered users.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Avatar</TableHead>
+                            <TableHead>Display Name</TableHead>
+                            <TableHead><span className="sr-only">Actions</span></TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {allUsers.map(profile => {
+                          const avatarSrc = profile.imageBase64 || PlaceHolderImages.find(p => p.id === profile.avatarId)?.imageUrl;
+                          return (
+                            <TableRow key={profile.id}>
+                                <TableCell>
+                                  <Link href={`/profile/${profile.id}`}>
+                                    <Avatar>
+                                        <AvatarImage src={avatarSrc} alt={profile.displayName} />
+                                        <AvatarFallback>{profile.displayName.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                  </Link>
+                                </TableCell>
+                                <TableCell className="font-medium">{profile.displayName}</TableCell>
+                                <TableCell className="text-right">
+                                    <Button asChild variant="outline" size="sm">
+                                      <Link href={`/profile/${profile.id}`}>
+                                        <Eye className="mr-2 h-4 w-4" />
+                                        View Profile
+                                      </Link>
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                    </TableBody>
+                </Table>
+                 {!isLoading && allUsers.length === 0 && (
+                    <div className="text-center p-8 text-muted-foreground">
+                        No other users found.
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+
         <Card>
             <CardHeader>
                 <CardTitle>Content Moderation</CardTitle>
