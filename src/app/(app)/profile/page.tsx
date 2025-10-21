@@ -127,8 +127,11 @@ export default function ProfilePage() {
         displayName_lowercase: data.displayName.toLowerCase(),
     };
     
-    if (updatedData.imageBase64 === '') {
-      delete updatedData.imageBase64;
+    // Ensure only one of avatarId or imageBase64 is saved
+    if (updatedData.imageBase64) {
+      updatedData.avatarId = '';
+    } else {
+      updatedData.imageBase64 = '';
     }
 
     if (user.displayName !== data.displayName) {
@@ -327,3 +330,6 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+
+    

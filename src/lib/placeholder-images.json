@@ -26,21 +26,21 @@
     },
     {
       "id": "avatar-1",
-      "description": "Portrait of a smiling young woman",
-      "imageUrl": "https://images.unsplash.com/photo-1557053910-d9eadeed1c58?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHx3b21hbiUyMHBvcnRyYWl0fGVufDB8fHx8MTc2MDk0MDg0N3ww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "woman portrait"
+      "description": "Abstract colorful geometric pattern",
+      "imageUrl": "https://images.unsplash.com/photo-1550859492-d5da9d7e4554?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageHint": "abstract geometric"
     },
     {
       "id": "avatar-2",
-      "description": "Portrait of a young man with glasses",
-      "imageUrl": "https://images.unsplash.com/photo-1522556189639-b150ed9c4330?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxtYW4lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjEwMTgyNDR8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "man portrait"
+      "description": "Serene mountain landscape at sunrise",
+      "imageUrl": "https://images.unsplash.com/photo-1491466424936-e304919a0072?q=80&w=2864&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageHint": "mountain landscape"
     },
     {
       "id": "avatar-3",
-      "description": "Portrait of a person in a cafe",
-      "imageUrl": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjA5MjcyMzB8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "person portrait"
+      "description": "A cute, minimalist cartoon cat",
+      "imageUrl": "https://images.unsplash.com/photo-1596854446345-6b5a73ab8c23?q=80&w=2835&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageHint": "cartoon cat"
     },
     {
       "id": "avatar-4",
@@ -50,27 +50,27 @@
     },
     {
       "id": "avatar-5",
-      "description": "A person with a bright smile",
-      "imageUrl": "https://images.unsplash.com/photo-1542909168-82c3e7fdca5c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxmYWNlfGVufDB8fHx8MTc2NTU1ODMwMnww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "smiling face"
+      "description": "Starry night sky over a forest",
+      "imageUrl": "https://images.unsplash.com/photo-1472552944129-b035e9ea3744?q=80&w=2938&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageHint": "starry night"
     },
     {
       "id": "avatar-6",
-      "description": "A thoughtful person looking aside",
-      "imageUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxmYWNlfGVufDB8fHx8MTc2NTU1ODMwMnww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "thoughtful person"
+      "description": "A vibrant and colorful abstract painting",
+      "imageUrl": "https://images.unsplash.com/photo-1536924940846-227afb31e2a5?q=80&w=2834&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageHint": "abstract painting"
     },
     {
       "id": "avatar-7",
-      "description": "A woman with curly hair",
-      "imageUrl": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxwb3J0cmFpdHxlbnwwfHx8fDE3NjU1NTgzMzN8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "woman portrait"
+      "description": "A playful cartoon dog character",
+      "imageUrl": "https://images.unsplash.com/photo-1541364983171-a8ba01e95cfc?q=80&w=2787&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageHint": "cartoon dog"
     },
     {
       "id": "avatar-8",
-      "description": "A man wearing a hat",
-      "imageUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxwb3J0cmFpdHxlbnwwfHx8fDE3NjU1NTgzMzN8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "man hat"
+      "description": "Calm ocean waves on a sandy beach",
+      "imageUrl": "https://images.unsplash.com/photo-1519046904884-53103b34b206?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageHint": "ocean beach"
     },
     {
       "id": "social-1",
