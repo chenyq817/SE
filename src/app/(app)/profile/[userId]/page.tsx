@@ -68,29 +68,17 @@ export default function UserProfilePage() {
             <ArrowLeft className="mr-2 h-4 w-4" /> Back
           </Button>
           <Card className="overflow-hidden shadow-lg">
-            <CardHeader className="p-0">
-               <div className="relative h-48 w-full bg-muted">
-                 {profileAvatarSrc && (
-                    <Image 
-                      src={profileAvatarSrc}
-                      alt="Profile banner"
-                      fill
-                      className="object-cover object-center blur-md opacity-50"
-                    />
-                 )}
-               </div>
-               <div className="relative flex flex-col items-center p-6 -mt-20 space-y-2">
-                 <Avatar className="h-28 w-28 border-4 border-background shadow-md">
+             <CardHeader className="flex flex-col items-center justify-center gap-4 p-6 text-center bg-card">
+                <Avatar className="h-28 w-28 border-4 border-background shadow-md">
                     {profileAvatarSrc && <AvatarImage src={profileAvatarSrc} alt={userProfile.displayName} />}
                     <AvatarFallback className="text-4xl">
                         {userProfile.displayName.charAt(0)}
                     </AvatarFallback>
                 </Avatar>
-                <div className="text-center">
+                <div>
                   <CardTitle className="text-3xl font-headline">{userProfile.displayName}</CardTitle>
                   {userProfile.bio && <CardDescription className="mt-2 text-lg">{userProfile.bio}</CardDescription>}
                 </div>
-               </div>
             </CardHeader>
             <CardContent className="border-t pt-6 grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
                 {userProfile.age && (
