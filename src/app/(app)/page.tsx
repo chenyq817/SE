@@ -13,11 +13,9 @@ import { Header } from "@/components/layout/header";
 import { Newspaper, ArrowRight, Rss, Anchor, Users } from "lucide-react";
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { BroadcastPlayer } from "@/components/broadcast-player";
 
 export default function DashboardPage() {
   const newsImage = PlaceHolderImages.find(img => img.id === 'news-1');
-  const broadcastText = "各位同学，老师们，大家好！欢迎收听今天的豫园回声校园广播。在这里，我们为您带来最新的校园动态、温馨的祝福和有趣的故事。无论您是匆忙赶往下一堂课，还是在图书馆里稍作休憩，希望我们的声音能为您带来片刻的轻松与愉悦。让我们一起感受校园的脉搏，分享生活中的点滴美好。";
 
   return (
     <div className="flex flex-col h-full">
@@ -43,9 +41,6 @@ export default function DashboardPage() {
               <CardContent>
                 <p>Stay connected with the heart of the campus. Catch today's updates!</p>
               </CardContent>
-              <CardFooter>
-                <BroadcastPlayer text={broadcastText} />
-              </CardFooter>
             </Card>
           </div>
         </section>
