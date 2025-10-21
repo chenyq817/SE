@@ -22,14 +22,14 @@
 - [Node.js](https://nodejs.org/) (推荐 v18 或更高版本)
 - [npm](https://www.npmjs.com/) (通常随 Node.js 一起安装)
 
-### 2. 安装
+### 2. 安装项目依赖
 
-克隆仓库并安装项目依赖：
+这是**最重要的一步**。在项目根目录下，打开您的命令行工具，然后运行以下命令来安装所有必需的软件包：
 
 ```bash
-# 使用 npm
 npm install
 ```
+> **注意**: 必须先成功运行此命令，否则后续步骤会因找不到 `next` 等命令而失败。
 
 ### 3. 环境变量
 
@@ -61,7 +61,7 @@ npm run dev
 
 以下是 `package.json` 中定义的主要脚本：
 
-- `npm run dev`: 使用 Turbopack 启动 Next.js 开发服务器。
+- `npm run dev`: 启动 Next.js 开发服务器。
 - `npm run build`: 为生产环境构建应用程序。
 - `npm run start`: 在构建后启动生产服务器。
 - `npm run lint`: 运行 ESLint 检查代码质量问题。
