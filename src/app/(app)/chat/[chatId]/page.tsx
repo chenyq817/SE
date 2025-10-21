@@ -17,7 +17,7 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn } from '@/lib/utils';
 import type { WithId } from '@/firebase';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 type UserProfile = {
     displayName: string;
@@ -317,6 +317,9 @@ export default function ChatPage() {
                                             </div>
                                         </DialogTrigger>
                                         <DialogContent className="max-w-4xl h-auto p-0">
+                                            <DialogHeader>
+                                                <DialogTitle className="sr-only">Enlarged Image</DialogTitle>
+                                            </DialogHeader>
                                             <div className="relative aspect-video">
                                                 <Image src={message.imageBase64} alt="Sent image enlarged" fill className="object-contain"/>
                                             </div>
@@ -404,5 +407,7 @@ export default function ChatPage() {
         </div>
     );
 }
+
+    
 
     

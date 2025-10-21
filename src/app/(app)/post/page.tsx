@@ -32,6 +32,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -310,6 +311,9 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
                             </div>
                         </DialogTrigger>
                         <DialogContent className="max-w-4xl h-auto p-0">
+                            <DialogHeader>
+                                <DialogTitle className="sr-only">Enlarged Post Image</DialogTitle>
+                            </DialogHeader>
                            <div className="relative aspect-video">
                                 <Image
                                     src={post.imageBase64}
@@ -564,6 +568,8 @@ export default function PostPage() {
         </div>
     );
 }
+
+    
 
     
 
