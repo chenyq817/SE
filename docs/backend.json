@@ -284,7 +284,7 @@
       "schema": {
         "$ref": "#/entities/Comment"
       },
-      "description": "Holds all comments associated with a specific post. This is a subcollection."
+      "description": "Holds all comments associated with a specific post. Admin can delete any comment."
     },
     "/users/{userId}": {
       "schema": {
