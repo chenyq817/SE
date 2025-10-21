@@ -10,12 +10,13 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/layout/header";
-import { Newspaper, ArrowRight, Rss, Anchor, Users } from "lucide-react";
+import { Newspaper, ArrowRight, Rss, Anchor, Users, MessageSquare, FileText } from "lucide-react";
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export default function DashboardPage() {
   const newsImage = PlaceHolderImages.find(img => img.id === 'news-1');
+  const campusImage = PlaceHolderImages.find(img => img.id === 'news-2');
 
   return (
     <div className="flex flex-col h-full">
@@ -23,25 +24,11 @@ export default function DashboardPage() {
       <main className="flex-1 p-4 md:p-6 lg:p-8 space-y-8">
         <section
           className="rounded-lg border bg-card text-card-foreground shadow-lg w-full p-6 md:p-8 bg-cover bg-center"
-          style={{ backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(${newsImage?.imageUrl})`}}
+          style={{ backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(${campusImage?.imageUrl})`}}
         >
           <div className="flex flex-col items-start text-white">
-            <h2 className="text-3xl font-bold font-headline">Welcome to Yu Garden Echo</h2>
-            <p className="mt-2 text-lg text-muted-foreground text-gray-200">Your all-in-one campus companion.</p>
-            <Card className="mt-6 bg-background/20 backdrop-blur-sm border-gray-400 text-white">
-              <CardHeader>
-                <div className="flex items-center gap-4">
-                  <Rss className="w-8 h-8 text-accent" />
-                  <div>
-                    <CardTitle className="font-headline text-white">"Hua Xiao Ke" Broadcast</CardTitle>
-                    <CardDescription className="text-gray-300">Your daily campus news and greetings.</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p>Stay connected with the heart of the campus. Catch today's updates!</p>
-              </CardContent>
-            </Card>
+            <h2 className="text-3xl font-bold font-headline">Welcome to HUST Echo</h2>
+            <p className="mt-2 text-lg text-muted-foreground text-gray-200">明德厚学，求是创新</p>
           </div>
         </section>
 
@@ -89,21 +76,24 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="flex-grow grid grid-cols-1 gap-4">
               <Link href="/post" passHref>
-                <div className="rounded-lg border p-4 hover:bg-accent/10 transition-colors h-full flex flex-col justify-center">
-                  <h3 className="font-semibold text-center">Campus Posts</h3>
+                <div className="rounded-lg border p-4 hover:bg-accent/10 transition-colors h-full flex flex-col justify-center items-center gap-2">
+                  <FileText className="w-8 h-8 text-primary"/>
+                  <h3 className="font-semibold">Campus Posts</h3>
                   <p className="text-sm text-muted-foreground text-center">See what's happening right now.</p>
                 </div>
               </Link>
                <Link href="/social" passHref>
-                <div className="rounded-lg border p-4 hover:bg-accent/10 transition-colors h-full flex flex-col justify-center">
-                  <h3 className="font-semibold text-center">Social Hub</h3>
+                <div className="rounded-lg border p-4 hover:bg-accent/10 transition-colors h-full flex flex-col justify-center items-center gap-2">
+                  <Users className="w-8 h-8 text-primary"/>
+                  <h3 className="font-semibold">Social Hub</h3>
                   <p className="text-sm text-muted-foreground text-center">Find friends and connect.</p>
                 </div>
               </Link>
                <Link href="/community" passHref>
-                <div className="rounded-lg border p-4 hover:bg-accent/10 transition-colors h-full flex flex-col justify-center">
-                  <h3 className="font-semibold text-center">Community Fun</h3>
-                  <p className="text-sm text-muted-foreground text-center">Wall messages and more.</p>
+                <div className="rounded-lg border p-4 hover:bg-accent/10 transition-colors h-full flex flex-col justify-center items-center gap-2">
+                  <MessageSquare className="w-8 h-8 text-primary"/>
+                  <h3 className="font-semibold">Community Wall</h3>
+                  <p className="text-sm text-muted-foreground text-center">Leave a message for everyone.</p>
                 </div>
               </Link>
             </CardContent>
