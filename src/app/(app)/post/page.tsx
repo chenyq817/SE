@@ -15,7 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { ThumbsUp, MessageSquare, MapPin, ImagePlus, X, MoreHorizontal, Send, Smile } from "lucide-react";
+import { ThumbsUp, MessageSquare, MapPin, ImagePlus, X, MoreHorizontal, Send, Smile, Trash2 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
@@ -41,8 +41,8 @@ import {
 import { Label } from "@/components/ui/label";
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn } from '@/lib/utils';
-import { useCollection, useFirestore, useUser, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, useDoc, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { collection, query, orderBy, serverTimestamp, arrayUnion, arrayRemove, doc, writeBatch, increment, getDocs, updateDoc } from 'firebase/firestore';
+import { useCollection, useFirestore, useUser, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, useDoc, errorEmitter, FirestorePermissionError, deleteDocumentNonBlocking } from '@/firebase';
+import { collection, query, orderBy, serverTimestamp, arrayUnion, arrayRemove, doc, writeBatch, increment, getDocs, updateDoc, deleteDoc } from 'firebase/firestore';
 import type { WithId } from '@/firebase';
 import { Separator } from '@/components/ui/separator';
 
@@ -101,11 +101,30 @@ const formatTimestamp = (timestamp: any) => {
 };
 
 
-function CommentCard({ comment }: { comment: WithId<Comment>}) {
+function CommentCard({ post, comment }: { post: WithId<Post>, comment: WithId<Comment>}) {
+    const firestore = useFirestore();
+    const { user } = useUser();
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    
     const authorAvatarSrc = comment.authorImageBase64 || PlaceHolderImages.find(img => img.id === comment.authorAvatarId)?.imageUrl;
+    
+    const isAdmin = user?.email === 'admin@111.com';
+    const isAuthor = user?.uid === comment.authorId;
+    const canDelete = isAdmin || isAuthor;
+
+    const handleDelete = () => {
+        if (!firestore) return;
+        const postRef = doc(firestore, 'posts', post.id);
+        const commentRef = doc(firestore, 'posts', post.id, 'comments', comment.id);
+
+        deleteDocumentNonBlocking(commentRef);
+        updateDocumentNonBlocking(postRef, { commentCount: increment(-1) });
+        
+        setIsDeleteDialogOpen(false);
+    };
 
     return (
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-3 group">
             <Link href={`/profile/${comment.authorId}`} passHref>
                 <Avatar className="h-9 w-9">
                     {authorAvatarSrc && <AvatarImage src={authorAvatarSrc} alt={comment.authorName} />}
@@ -119,6 +138,34 @@ function CommentCard({ comment }: { comment: WithId<Comment>}) {
                 </div>
                 <p className="text-sm">{comment.content}</p>
             </div>
+             {canDelete && (
+                <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <AlertDialogTrigger asChild>
+                                <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+                            </AlertDialogTrigger>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Delete this comment?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete this comment.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            )}
         </div>
     )
 }
@@ -170,7 +217,7 @@ function CommentSection({ post }: { post: WithId<Post>}) {
             <Separator />
             <div className="space-y-4">
                 {isLoading && <p className="text-sm text-muted-foreground">Loading comments...</p>}
-                {comments?.map(comment => <CommentCard key={comment.id} comment={comment} />)}
+                {comments?.map(comment => <CommentCard key={comment.id} post={post} comment={comment} />)}
             </div>
 
             <div className="flex items-start gap-3 pt-4">
@@ -575,3 +622,4 @@ export default function PostPage() {
     
 
     
+

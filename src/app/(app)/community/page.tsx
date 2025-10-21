@@ -13,9 +13,9 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Columns, Send, Smile } from "lucide-react";
+import { Columns, Send, Smile, Trash2 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { useUser, useFirestore, addDocumentNonBlocking, useCollection, useMemoFirebase, useDoc } from "@/firebase";
+import { useUser, useFirestore, addDocumentNonBlocking, useCollection, useMemoFirebase, useDoc, deleteDocumentNonBlocking } from "@/firebase";
 import { collection, query, serverTimestamp, orderBy, doc } from "firebase/firestore";
 import type { WithId } from "@/firebase";
 
@@ -30,11 +30,36 @@ type WallMessage = {
   createdAt: any;
 };
 
-const WallMessageCard = ({ children, className }: { children: React.ReactNode, className?: string }) => (
-    <div className={`p-4 bg-yellow-200 dark:bg-yellow-700 dark:text-yellow-100 rounded-lg shadow-md transform -rotate-1 hover:rotate-0 hover:scale-105 transition-transform ${className}`}>
-        <p className="font-serif">{children}</p>
-    </div>
-)
+const WallMessageCard = ({ msg }: { msg: WithId<WallMessage> }) => {
+    const { user } = useUser();
+    const firestore = useFirestore();
+
+    const isAdmin = user?.email === 'admin@111.com';
+    const isAuthor = user?.uid === msg.authorId;
+    const canDelete = isAdmin || isAuthor;
+
+    const handleDelete = () => {
+        if (!firestore) return;
+        const messageRef = doc(firestore, "wallMessages", msg.id);
+        deleteDocumentNonBlocking(messageRef);
+    };
+
+    return (
+      <div className="group relative p-4 bg-yellow-200 dark:bg-yellow-700 dark:text-yellow-100 rounded-lg shadow-md transform -rotate-1 hover:rotate-0 hover:scale-105 transition-transform">
+          <p className="font-serif">{msg.content}</p>
+          {canDelete && (
+              <Button
+                  variant="destructive"
+                  size="icon"
+                  className="absolute -top-2 -right-2 h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={handleDelete}
+              >
+                  <Trash2 className="h-4 w-4" />
+              </Button>
+          )}
+      </div>
+    );
+};
 
 const emojis = ['😀', '😂', '😍', '🤔', '👍', '❤️', '🔥', '🎉', '😊', '🙏', '💯', '🙌'];
 
@@ -96,9 +121,7 @@ export default function CommunityPage() {
                 <div className="p-4 bg-secondary/50 rounded-lg h-72 overflow-y-auto grid grid-cols-2 md:grid-cols-3 gap-4">
                     {wallMessagesLoading && <p className="text-muted-foreground">Loading messages...</p>}
                     {wallMessages && wallMessages.map((msg, index) => (
-                      <WallMessageCard key={msg.id} className={index % 3 === 0 ? 'rotate-1' : index % 3 === 1 ? '-rotate-2' : ''}>
-                        {msg.content}
-                      </WallMessageCard>
+                      <WallMessageCard key={msg.id} msg={msg} />
                     ))}
                     {!wallMessagesLoading && wallMessages?.length === 0 && (
                       <div className="col-span-full text-center text-muted-foreground self-center">

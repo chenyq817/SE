@@ -18,9 +18,9 @@
           "type": "string",
           "description": "Avatar ID of the user who created the post."
         },
-        "authorAvatarUrl": {
+        "authorImageBase64": {
           "type": "string",
-          "description": "Custom avatar URL of the user who created the post."
+          "description": "Base64 encoded string of the user's custom avatar at the time of posting."
         },
         "content": {
           "type": "string",
