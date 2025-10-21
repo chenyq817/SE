@@ -19,45 +19,30 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Users, FileText, BarChart } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useUser, useFirestore, useCollection, useMemoFirebase, deleteDocumentNonBlocking } from "@/firebase";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Loader2 } from "lucide-react";
-import { collection, query, orderBy, doc } from "firebase/firestore";
+import { collection, query, orderBy, doc, getDocs } from "firebase/firestore";
 import type { WithId } from "@/firebase";
 
-type Post = {
-  authorId: string;
-  authorName: string; 
-  content: string;
-  createdAt: any; 
+type ContentItem = {
+    id: string;
+    type: 'Post' | 'Wall Message';
+    authorId: string;
+    authorName: string;
+    content: string;
+    createdAt: any;
 };
-
-const StatCard = ({ title, value, icon: Icon }: { title: string, value: string, icon: React.ElementType }) => (
-    <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{title}</CardTitle>
-            <Icon className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-            <div className="text-2xl font-bold">{value}</div>
-        </CardContent>
-    </Card>
-);
 
 export default function AdminPage() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const firestore = useFirestore();
-
-  const postsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'posts'), orderBy('createdAt', 'desc'));
-  }, [firestore]);
-
-  const { data: posts, isLoading: arePostsLoading } = useCollection<Post>(postsQuery);
+  const [allContent, setAllContent] = useState<ContentItem[]>([]);
+  const [isContentLoading, setIsContentLoading] = useState(true);
 
   useEffect(() => {
     if (!isUserLoading) {
@@ -67,13 +52,55 @@ export default function AdminPage() {
     }
   }, [user, isUserLoading, router]);
 
-  const handleDeletePost = (postId: string) => {
+  useEffect(() => {
+    if (!firestore || !user || user.email !== 'admin@111.com') return;
+
+    const fetchAllContent = async () => {
+        setIsContentLoading(true);
+        try {
+            // Fetch posts
+            const postsQuery = query(collection(firestore, 'posts'), orderBy('createdAt', 'desc'));
+            const postsSnapshot = await getDocs(postsQuery);
+            const postsData = postsSnapshot.docs.map(doc => ({
+                ...(doc.data() as any),
+                id: doc.id,
+                type: 'Post' as const,
+            }));
+
+            // Fetch wall messages
+            const wallMessagesQuery = query(collection(firestore, 'wallMessages'), orderBy('createdAt', 'desc'));
+            const wallMessagesSnapshot = await getDocs(wallMessagesQuery);
+            const wallMessagesData = wallMessagesSnapshot.docs.map(doc => ({
+                ...(doc.data() as any),
+                id: doc.id,
+                type: 'Wall Message' as const,
+            }));
+
+            // Combine and sort
+            const combinedContent = [...postsData, ...wallMessagesData]
+                .sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
+
+            setAllContent(combinedContent);
+        } catch (error) {
+            console.error("Error fetching content for admin panel:", error);
+        } finally {
+            setIsContentLoading(false);
+        }
+    };
+
+    fetchAllContent();
+  }, [firestore, user]);
+
+
+  const handleDelete = (item: ContentItem) => {
     if (!firestore) return;
-    const postRef = doc(firestore, 'posts', postId);
-    deleteDocumentNonBlocking(postRef);
+    const collectionName = item.type === 'Post' ? 'posts' : 'wallMessages';
+    const itemRef = doc(firestore, collectionName, item.id);
+    deleteDocumentNonBlocking(itemRef);
+    setAllContent(prevContent => prevContent.filter(content => content.id !== item.id));
   };
 
-  const isLoading = isUserLoading || arePostsLoading;
+  const isLoading = isUserLoading || isContentLoading;
 
   if (isLoading || !user || user.email !== 'admin@111.com') {
      return (
@@ -87,16 +114,10 @@ export default function AdminPage() {
     <div className="flex flex-col h-full">
       <Header title="Admin Dashboard" />
       <main className="flex-1 p-4 md:p-6 lg:p-8 space-y-6">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <StatCard title="Total Users" value="12,483" icon={Users} />
-            <StatCard title="Total Posts" value={posts?.length.toString() || '0'} icon={FileText} />
-            <StatCard title="Active Users (24h)" value="2,104" icon={BarChart} />
-        </div>
-        
         <Card>
             <CardHeader>
                 <CardTitle>Content Moderation</CardTitle>
-                <CardDescription>Review and manage all user-submitted posts.</CardDescription>
+                <CardDescription>Review and manage all user-submitted posts and messages.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Table>
@@ -104,16 +125,22 @@ export default function AdminPage() {
                         <TableRow>
                             <TableHead>Author</TableHead>
                             <TableHead>Content</TableHead>
+                            <TableHead>Type</TableHead>
                             <TableHead>Created At</TableHead>
                             <TableHead><span className="sr-only">Actions</span></TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {posts && posts.map(post => (
-                            <TableRow key={post.id}>
-                                <TableCell className="font-medium">{post.authorName}</TableCell>
-                                <TableCell className="truncate max-w-sm">{post.content}</TableCell>
-                                <TableCell>{post.createdAt ? new Date(post.createdAt.seconds * 1000).toLocaleString() : 'N/A'}</TableCell>
+                        {allContent.map(item => (
+                            <TableRow key={`${item.type}-${item.id}`}>
+                                <TableCell className="font-medium">{item.authorName}</TableCell>
+                                <TableCell className="truncate max-w-sm">{item.content}</TableCell>
+                                <TableCell>
+                                    <Badge variant={item.type === 'Post' ? 'secondary' : 'outline'}>
+                                        {item.type}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell>{item.createdAt ? new Date(item.createdAt.seconds * 1000).toLocaleString() : 'N/A'}</TableCell>
                                 <TableCell>
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
@@ -124,11 +151,11 @@ export default function AdminPage() {
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
                                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                            <DropdownMenuItem 
+                                            <DropdownMenuItem
                                               className="text-destructive"
-                                              onClick={() => handleDeletePost(post.id)}
+                                              onClick={() => handleDelete(item)}
                                             >
-                                              Delete Post
+                                              Delete
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
@@ -137,6 +164,11 @@ export default function AdminPage() {
                         ))}
                     </TableBody>
                 </Table>
+                 {!isLoading && allContent.length === 0 && (
+                    <div className="text-center p-8 text-muted-foreground">
+                        No content to moderate.
+                    </div>
+                )}
             </CardContent>
         </Card>
       </main>
