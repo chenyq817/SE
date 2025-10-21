@@ -86,9 +86,6 @@ export function UserNav() {
                 <span>Profile</span>
               </DropdownMenuItem>
             </Link>
-          <DropdownMenuItem disabled>
-            Settings
-          </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
