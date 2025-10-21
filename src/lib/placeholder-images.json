@@ -26,9 +26,15 @@
     },
     {
       "id": "news-7",
-      "description": "University sports team celebrating",
+      "description": "",
       "imageUrl": "https://news.hust.edu.cn/__local/D/A2/FF/5E85C8B2ED2CF7BACC1F3C66369_8535E7C6_74F34.jpg",
-      "imageHint": "sports team"
+      "imageHint": "innovation competition"
+    },
+    {
+      "id": "news-8",
+      "description": "",
+      "imageUrl": "https://news.hust.edu.cn/__local/0/DE/07/08032EC11AFF81AA2B4F5BD581A_60EC519D_142D9A.jpg",
+      "imageHint": "run"
     },
     {
       "id": "avatar-1",
