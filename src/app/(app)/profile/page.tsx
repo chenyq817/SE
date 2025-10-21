@@ -134,79 +134,59 @@ export default function ProfilePage() {
       updatedData.imageBase64 = '';
     }
 
-    if (user.displayName !== data.displayName) {
-        await updateProfile(user, { displayName: data.displayName });
-    }
-
+    // This updates the main user profile document non-blockingly
     updateDocumentNonBlocking(userProfileRef, updatedData);
-
-    const nameChanged = data.displayName !== userProfile?.displayName;
+    
+    // The rest of the logic performs a batch update for related content
+    const nameChanged = false; // Name change is disabled
     const avatarChanged = data.avatarId !== userProfile?.avatarId || data.imageBase64 !== userProfile?.imageBase64;
 
-    if (nameChanged || avatarChanged) {
+    if (avatarChanged) {
         const batch = writeBatch(firestore);
 
         try {
-            // Query for posts, wall messages
+            // Define queries for user's content
             const postsQuery = query(collection(firestore, 'posts'), where('authorId', '==', user.uid));
             const wallMessagesQuery = query(collection(firestore, 'wallMessages'), where('authorId', '==', user.uid));
 
+            // Fetch all content types that need updating
             const [postsSnapshot, wallMessagesSnapshot] = await Promise.all([
                 getDocs(postsQuery),
                 getDocs(wallMessagesQuery)
             ]);
+            
+            const avatarUpdatePayload = {
+              authorImageBase64: data.imageBase64 || "",
+              authorAvatarId: data.avatarId || ""
+            };
 
+            // Update posts and collect post IDs for comment updates
             const postIds: string[] = [];
-
-            // Update posts
             postsSnapshot.forEach(postDoc => {
                 postIds.push(postDoc.id);
                 const postRef = doc(firestore, 'posts', postDoc.id);
-                const updatePayload: any = {};
-                if (nameChanged) updatePayload.authorName = data.displayName;
-                if (avatarChanged) {
-                    updatePayload.authorImageBase64 = data.imageBase64 || "";
-                    updatePayload.authorAvatarId = data.avatarId || "";
-                }
-                batch.update(postRef, updatePayload);
+                batch.update(postRef, avatarUpdatePayload);
             });
 
             // Update wall messages
             wallMessagesSnapshot.forEach(msgDoc => {
                 const msgRef = doc(firestore, 'wallMessages', msgDoc.id);
-                if (nameChanged) {
-                    batch.update(msgRef, { authorName: data.displayName });
-                }
+                // Wall messages don't have avatar info, only authorName. If they did, it would be updated here.
             });
-
-            // Update comments in all user's posts
-            if (nameChanged || avatarChanged) {
-                 const allCommentsQuery = query(
-                    collection(firestore, "posts"),
+            
+            // Now, update comments inside all user's posts
+            for (const postId of postIds) {
+                const commentsQuery = query(
+                    collection(firestore, "posts", postId, "comments"),
                     where("authorId", "==", user.uid)
                 );
-                const userPostsSnapshot = await getDocs(allCommentsQuery);
-                for (const postDoc of userPostsSnapshot.docs) {
-                    const commentsQuery = query(
-                        collection(firestore, "posts", postDoc.id, "comments"),
-                        where("authorId", "==", user.uid)
-                    );
-                    const commentsSnapshot = await getDocs(commentsQuery);
-                    commentsSnapshot.forEach(commentDoc => {
-                        const commentRef = doc(firestore, "posts", postDoc.id, "comments", commentDoc.id);
-                        const updatePayload: any = {};
-                        if (nameChanged) updatePayload.authorName = data.displayName;
-                        if (avatarChanged) {
-                           updatePayload.authorImageBase64 = data.imageBase64 || "";
-                           updatePayload.authorAvatarId = data.avatarId || "";
-                        }
-                        if (Object.keys(updatePayload).length > 0) {
-                           batch.update(commentRef, updatePayload);
-                        }
-                    });
-                }
+                const commentsSnapshot = await getDocs(commentsQuery);
+                commentsSnapshot.forEach(commentDoc => {
+                    const commentRef = doc(firestore, "posts", postId, "comments", commentDoc.id);
+                    batch.update(commentRef, avatarUpdatePayload);
+                });
             }
-            
+
             await batch.commit();
 
         } catch (error) {
@@ -288,7 +268,7 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
                 <CardTitle>Personal Information</CardTitle>
-                <CardDescription>Update your details below. Your display name cannot be changed after initial setup.</CardDescription>
+                <CardDescription>Update your details below. Your display name cannot be changed.</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -351,6 +331,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
-
-
