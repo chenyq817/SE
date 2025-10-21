@@ -66,4 +66,14 @@ The discussion drew a large audience and sparked a dynamic Q&A session, highligh
     imageId: "news-2",
     date: "2024-10-21",
   },
+  {
+    id: 7,
+    title: "Debate Club Hosts Panel on Modern Politics",
+    category: "Academics",
+    excerpt: "Experts and students engaged in a lively discussion on the future of global political landscapes.",
+    content: `新闻网讯（通讯员 郭菁）10月12日至15日，中国国际大学生创新大赛（2025）总决赛举行。华中科技大学参赛团队从全球161个国家和地区、5673所学校的619万个项目中脱颖而出，最终斩获金奖5项、银奖5项，铜奖3项，金奖总数湖北省第一。本科生创业组金奖项目“桥介数物——通用机器人小脑研发领航者”晋级全国金奖排位赛，创造我校历年来排位赛最好成绩`,
+    imageId: "news-7",
+    date: "2024-10-22",
+  },
+  
 ];

@@ -25,6 +25,12 @@
       "imageHint": "sports team"
     },
     {
+      "id": "news-7",
+      "description": "University sports team celebrating",
+      "imageUrl": "https://news.hust.edu.cn/__local/D/A2/FF/5E85C8B2ED2CF7BACC1F3C66369_8535E7C6_74F34.jpg",
+      "imageHint": "sports team"
+    },
+    {
       "id": "avatar-1",
       "description": "Abstract colorful geometric pattern",
       "imageUrl": "https://images.unsplash.com/photo-1550859492-d5da9d7e4554?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
