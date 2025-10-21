@@ -100,11 +100,11 @@ export default function ProfilePage() {
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.size > 1048487) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
         toast({
           variant: 'destructive',
           title: 'Image is too large',
-          description: 'Please upload an image smaller than 1MB.',
+          description: 'Please upload an image smaller than 5MB.',
         });
         return;
       }

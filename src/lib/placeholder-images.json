@@ -49,6 +49,30 @@
       "imageHint": "abstract pattern"
     },
     {
+      "id": "avatar-5",
+      "description": "A person with a bright smile",
+      "imageUrl": "https://images.unsplash.com/photo-1542909168-82c3e7fdca5c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxmYWNlfGVufDB8fHx8MTc2NTU1ODMwMnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "smiling face"
+    },
+    {
+      "id": "avatar-6",
+      "description": "A thoughtful person looking aside",
+      "imageUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxmYWNlfGVufDB8fHx8MTc2NTU1ODMwMnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "thoughtful person"
+    },
+    {
+      "id": "avatar-7",
+      "description": "A woman with curly hair",
+      "imageUrl": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxwb3J0cmFpdHxlbnwwfHx8fDE3NjU1NTgzMzN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman portrait"
+    },
+    {
+      "id": "avatar-8",
+      "description": "A man wearing a hat",
+      "imageUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxwb3J0cmFpdHxlbnwwfHx8fDE3NjU1NTgzMzN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man hat"
+    },
+    {
       "id": "social-1",
       "description": "Group of friends laughing on campus",
       "imageUrl": "https://images.unsplash.com/photo-1511988617509-a57c8a288659?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxmcmllbmRzJTIwbGF1Z2hpbmd8ZW58MHx8fHwxNzYwOTc3Njg2fDA&ixlib=rb-4.1.0&q=80&w=1080",
