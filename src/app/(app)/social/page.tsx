@@ -3,6 +3,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Header } from "@/components/layout/header";
 import {
   Card,
@@ -164,10 +165,12 @@ export default function SocialPage() {
         return (
             <div className="flex items-center justify-between p-2 rounded-lg hover:bg-secondary">
                 <div className="flex items-center gap-3">
-                    <Avatar>
-                        <AvatarImage src={avatarSrc} alt={profile.displayName} />
-                        <AvatarFallback>{profile.displayName.charAt(0)}</AvatarFallback>
-                    </Avatar>
+                    <Link href={`/profile/${profile.id}`} passHref>
+                      <Avatar>
+                          <AvatarImage src={avatarSrc} alt={profile.displayName} />
+                          <AvatarFallback>{profile.displayName.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                    </Link>
                     <p className="font-medium">{profile.displayName}</p>
                 </div>
                 <div className="flex gap-2">

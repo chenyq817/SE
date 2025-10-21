@@ -271,14 +271,16 @@ export default function ChatPage() {
                     <Button variant="ghost" size="icon" onClick={() => router.back()}>
                         <ArrowLeft />
                     </Button>
-                     {otherParticipantInfo && (
-                        <div className="flex items-center gap-3">
-                            <Avatar>
-                                <AvatarImage src={otherUserAvatarSrc} alt={otherParticipantInfo.displayName} />
-                                <AvatarFallback>{otherParticipantInfo.displayName.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <h1 className="text-lg font-semibold font-headline md:text-xl">{otherParticipantInfo.displayName}</h1>
-                        </div>
+                     {otherParticipantInfo && otherParticipantId && (
+                        <Link href={`/profile/${otherParticipantId}`} passHref>
+                            <div className="flex items-center gap-3">
+                                <Avatar>
+                                    <AvatarImage src={otherUserAvatarSrc} alt={otherParticipantInfo.displayName} />
+                                    <AvatarFallback>{otherParticipantInfo.displayName.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <h1 className="text-lg font-semibold font-headline md:text-xl">{otherParticipantInfo.displayName}</h1>
+                            </div>
+                        </Link>
                      )}
                 </div>
             </header>
@@ -291,11 +293,13 @@ export default function ChatPage() {
                     const senderAvatarSrc = senderInfo?.imageBase64 || PlaceHolderImages.find(p => p.id === senderInfo?.avatarId)?.imageUrl;
                     return (
                         <div key={message.id} className={cn("flex items-end gap-3", isSender ? "justify-end" : "justify-start")}>
-                            {!isSender && (
-                                 <Avatar className="h-8 w-8">
-                                    <AvatarImage src={senderAvatarSrc} />
-                                    <AvatarFallback>{senderInfo?.displayName.charAt(0)}</AvatarFallback>
-                                </Avatar>
+                            {!isSender && senderInfo && (
+                                <Link href={`/profile/${message.senderId}`} passHref>
+                                    <Avatar className="h-8 w-8">
+                                        <AvatarImage src={senderAvatarSrc} />
+                                        <AvatarFallback>{senderInfo.displayName.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                </Link>
                             )}
                              <div className={cn(
                                 "max-w-xs md:max-w-md lg:max-w-lg rounded-xl px-4 py-2",
@@ -387,5 +391,3 @@ export default function ChatPage() {
         </div>
     );
 }
-
-    

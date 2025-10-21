@@ -127,6 +127,11 @@
           "items": {
             "type": "string"
           }
+        },
+        "lastActive": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of the user's last activity."
         }
       },
       "required": [
@@ -155,6 +160,10 @@
         "authorAvatarId": {
           "type": "string",
           "description": "Avatar ID of the user who created the comment."
+        },
+        "authorImageBase64": {
+          "type": "string",
+          "description": "Base64 encoded string of the user's custom avatar at the time of commenting."
         },
         "content": {
           "type": "string",
@@ -247,23 +256,15 @@
         "senderId": { "type": "string" },
         "content": {
           "type": "string",
-<<<<<<< HEAD
           "description": "The text content of the message. Optional if an image is sent."
         },
         "imageBase64": {
           "type": "string",
           "description": "Base64 encoded string of the image being sent. Optional."
-=======
-          "description": "The text content of the message."
->>>>>>> parent of 0c1c661 (在私聊功能添加发送图片和emoji的功能)
         },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-<<<<<<< HEAD
       "required": ["chatId", "senderId", "createdAt"]
-=======
-      "required": ["senderId", "content", "createdAt"]
->>>>>>> parent of 0c1c661 (在私聊功能添加发送图片和emoji的功能)
     }
   },
   "auth": {
@@ -311,5 +312,3 @@
     }
   }
 }
-
-    

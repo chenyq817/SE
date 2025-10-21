@@ -1,9 +1,9 @@
 
-
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
 import Image from "next/image";
+import Link from 'next/link';
 import { Header } from "@/components/layout/header";
 import {
   Card,
@@ -62,7 +62,7 @@ type Post = {
 
 type Comment = {
     postId: string;
-    authorId: string | null;
+    authorId: string;
     authorName: string;
     authorAvatarId?: string;
     authorImageBase64?: string;
@@ -106,10 +106,12 @@ function CommentCard({ comment }: { comment: WithId<Comment>}) {
 
     return (
         <div className="flex items-start gap-3">
-             <Avatar className="h-9 w-9">
-                {authorAvatarSrc && <AvatarImage src={authorAvatarSrc} alt={comment.authorName} />}
-                <AvatarFallback>{comment.authorName.charAt(0)}</AvatarFallback>
-            </Avatar>
+            <Link href={`/profile/${comment.authorId}`} passHref>
+                <Avatar className="h-9 w-9">
+                    {authorAvatarSrc && <AvatarImage src={authorAvatarSrc} alt={comment.authorName} />}
+                    <AvatarFallback>{comment.authorName.charAt(0)}</AvatarFallback>
+                </Avatar>
+            </Link>
             <div className="flex-grow bg-secondary/50 rounded-lg px-4 py-2">
                 <div className="flex items-center gap-2">
                     <p className="font-semibold text-sm">{comment.authorName}</p>
@@ -140,36 +142,20 @@ function CommentSection({ post }: { post: WithId<Post>}) {
     const { data: comments, isLoading } = useCollection<Comment>(commentsQuery);
 
     const handleComment = async () => {
-        if (!newCommentContent.trim() || !firestore) return;
+        if (!newCommentContent.trim() || !firestore || !user || !userProfile) return;
 
         const postRef = doc(firestore, 'posts', post.id);
         const commentsColRef = collection(firestore, 'posts', post.id, 'comments');
         
-        let commentData: Omit<Comment, 'id'>;
-
-        if (user && userProfile) {
-            commentData = {
-                postId: post.id,
-                authorId: user.uid,
-                authorName: userProfile.displayName,
-                content: newCommentContent,
-                createdAt: serverTimestamp(),
-            };
-            if (userProfile.imageBase64) {
-                commentData.authorImageBase64 = userProfile.imageBase64;
-            } else {
-                commentData.authorAvatarId = userProfile.avatarId;
-            }
-        } else {
-            commentData = {
-                postId: post.id,
-                authorId: null,
-                authorName: 'Anonymous',
-                content: newCommentContent,
-                createdAt: serverTimestamp(),
-                authorAvatarId: 'avatar-4',
-            };
-        }
+        const commentData: Comment = {
+            postId: post.id,
+            authorId: user.uid,
+            authorName: userProfile.displayName,
+            authorImageBase64: userProfile.imageBase64 || "",
+            authorAvatarId: userProfile.avatarId || "avatar-4",
+            content: newCommentContent,
+            createdAt: serverTimestamp(),
+        };
 
         addDocumentNonBlocking(commentsColRef, commentData);
         updateDocumentNonBlocking(postRef, { commentCount: increment(1) });
@@ -188,18 +174,23 @@ function CommentSection({ post }: { post: WithId<Post>}) {
             </div>
 
             <div className="flex items-start gap-3 pt-4">
-                <Avatar className="h-9 w-9">
-                    {userAvatarSrc && <AvatarImage src={userAvatarSrc} alt={userProfile?.displayName || 'Anonymous'} />}
-                    <AvatarFallback>{userProfile?.displayName?.charAt(0) || 'A'}</AvatarFallback>
-                </Avatar>
+                {user && userProfile && (
+                <Link href="/profile" passHref>
+                    <Avatar className="h-9 w-9">
+                        {userAvatarSrc && <AvatarImage src={userAvatarSrc} alt={userProfile.displayName} />}
+                        <AvatarFallback>{userProfile.displayName.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                </Link>
+                )}
                 <div className="flex-grow flex items-center gap-2">
                     <Textarea 
                         placeholder="Write a comment..." 
                         className="min-h-0 h-10"
                         value={newCommentContent}
                         onChange={(e) => setNewCommentContent(e.target.value)}
+                        disabled={!user}
                     />
-                    <Button size="icon" onClick={handleComment} disabled={!newCommentContent.trim()}>
+                    <Button size="icon" onClick={handleComment} disabled={!newCommentContent.trim() || !user}>
                         <Send className="w-4 h-4" />
                     </Button>
                 </div>
@@ -258,10 +249,12 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
     return (
         <Card className="hover:shadow-lg transition-shadow duration-300">
             <CardHeader className="flex flex-row items-start gap-4">
-                <Avatar>
-                    {authorAvatarSrc && <AvatarImage src={authorAvatarSrc} alt={post.authorName} />}
-                    <AvatarFallback>{post.authorName.charAt(0)}</AvatarFallback>
-                </Avatar>
+                <Link href={`/profile/${post.authorId}`} passHref>
+                    <Avatar>
+                        {authorAvatarSrc && <AvatarImage src={authorAvatarSrc} alt={post.authorName} />}
+                        <AvatarFallback>{post.authorName.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                </Link>
                 <div className="flex-grow">
                     <div className="flex items-center gap-2">
                         <p className="font-semibold">{post.authorName}</p>
@@ -435,10 +428,12 @@ export default function PostPage() {
                         <CardHeader className="flex flex-col items-start gap-4 p-4">
                             <div className="flex w-full gap-4">
                                 {user && userProfile && (
-                                <Avatar>
-                                    {userAvatarSrc && <AvatarImage src={userAvatarSrc} alt="Your avatar" />}
-                                    <AvatarFallback>{userProfile?.displayName?.charAt(0) || 'U'}</AvatarFallback>
-                                </Avatar>
+                                <Link href="/profile" passHref>
+                                    <Avatar>
+                                        {userAvatarSrc && <AvatarImage src={userAvatarSrc} alt="Your avatar" />}
+                                        <AvatarFallback>{userProfile?.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                                    </Avatar>
+                                </Link>
                                 )}
                                 <div className="flex-grow">
                                     <Textarea 
