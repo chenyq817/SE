@@ -77,8 +77,15 @@ export default function ChatPage() {
     const { data: messages, isLoading: areMessagesLoading } = useCollection<ChatMessage>(messagesQuery);
 
     const otherParticipantId = useMemo(() => {
-        return chat?.participantIds.find(id => id !== user?.uid);
-    }, [chat, user]);
+        if (chat) {
+          return chat.participantIds.find(id => id !== user?.uid);
+        }
+        if (chatId.includes('-')) {
+            const ids = chatId.split('-');
+            return ids.find(id => id !== user?.uid);
+        }
+        return undefined;
+    }, [chat, user, chatId]);
 
     const otherParticipantInfo = useMemo(() => {
         if (!chat || !otherParticipantId) return null;
@@ -90,94 +97,49 @@ export default function ChatPage() {
         if (isUserLoading || isChatLoading) return;
         if (!user || !firestore) return;
 
-        const setupChat = async () => {
-            if (!chat && !isChatLoading && user && otherParticipantId) {
-                 const currentUserProfileRef = doc(firestore, 'users', user.uid);
-                 const otherUserProfileRef = doc(firestore, 'users', otherParticipantId);
+        const setupNewChat = async (otherId: string) => {
+             if (!user || !firestore) return;
+             const currentChatDocRef = doc(firestore, 'chats', chatId);
+             const chatDocSnap = await getDoc(currentChatDocRef);
 
-                 try {
-                     const [currentUserProfileSnap, otherUserProfileSnap] = await Promise.all([
-                         getDocs(query(collection(firestore, 'users'), where('__name__', '==', user.uid))),
-                         getDocs(query(collection(firestore, 'users'), where('__name__', '==', otherParticipantId))),
-                     ]);
+             // Only proceed if chat doesn't exist
+             if(chatDocSnap.exists()) return;
 
-                     const currentUserProfile = currentUserProfileSnap.docs[0]?.data() as UserProfile;
-                     const otherUserProfile = otherUserProfileSnap.docs[0]?.data() as UserProfile;
+             try {
+                const currentUserProfileSnap = await getDoc(doc(firestore, 'users', user.uid));
+                const otherUserProfileSnap = await getDoc(doc(firestore, 'users', otherId));
 
-                     if (currentUserProfile && otherUserProfile) {
-                         const newChatData: Chat = {
-                             participantIds: [user.uid, otherParticipantId],
-                             participantInfo: {
-                                 [user.uid]: {
-                                     displayName: currentUserProfile.displayName,
-                                     avatarId: currentUserProfile.avatarId,
-                                 },
-                                 [otherParticipantId]: {
-                                     displayName: otherUserProfile.displayName,
-                                     avatarId: otherUserProfile.avatarId,
-                                 },
-                             },
-                         };
-                         
-                         if (currentUserProfile.imageBase64) {
-                             newChatData.participantInfo[user.uid].imageBase64 = currentUserProfile.imageBase64;
-                         }
-                         if (otherUserProfile.imageBase64) {
-                             newChatData.participantInfo[otherParticipantId].imageBase64 = otherUserProfile.imageBase64;
-                         }
+                const currentUserProfile = currentUserProfileSnap.data() as UserProfile;
+                const otherUserProfile = otherUserProfileSnap.data() as UserProfile;
 
-                         setDocumentNonBlocking(doc(firestore, 'chats', chatId), newChatData, { merge: true });
-                     }
-                 } catch (error) {
-                     console.error("Error setting up chat:", error);
-                 }
+                if (currentUserProfile && otherUserProfile) {
+                    const newChatData: any = {
+                        participantIds: [user.uid, otherId].sort(), // Sort IDs for consistency
+                        participantInfo: {
+                            [user.uid]: {
+                                displayName: currentUserProfile.displayName,
+                                avatarId: currentUserProfile.avatarId,
+                                ...(currentUserProfile.imageBase64 && { imageBase64: currentUserProfile.imageBase64 }),
+                            },
+                            [otherId]: {
+                                displayName: otherUserProfile.displayName,
+                                avatarId: otherUserProfile.avatarId,
+                                ...(otherUserProfile.imageBase64 && { imageBase64: otherUserProfile.imageBase64 }),
+                            },
+                        },
+                    };
+                    
+                    // Use setDocumentNonBlocking to create the chat document
+                    // This allows rules to pass for subsequent message writes
+                    setDocumentNonBlocking(currentChatDocRef, newChatData, { merge: true });
+                }
+            } catch (error) {
+                console.error("Error setting up new chat:", error);
             }
         };
 
-        if (chatId.includes('-') && !chat) {
-            const ids = chatId.split('-');
-            const otherId = ids.find(id => id !== user?.uid);
-            if (otherId) {
-                // Since otherParticipantId depends on `chat`, we pass `otherId` to setupChat
-                const setupChat = async () => {
-                    if (!user || !firestore) return;
-                    try {
-                        const currentUserProfileSnap = await getDoc(doc(firestore, 'users', user.uid));
-                        const otherUserProfileSnap = await getDoc(doc(firestore, 'users', otherId));
-
-                        const currentUserProfile = currentUserProfileSnap.data() as UserProfile;
-                        const otherUserProfile = otherUserProfileSnap.data() as UserProfile;
-
-                        if (currentUserProfile && otherUserProfile) {
-                            const newChatData: any = {
-                                participantIds: [user.uid, otherId],
-                                participantInfo: {
-                                    [user.uid]: {
-                                        displayName: currentUserProfile.displayName,
-                                        avatarId: currentUserProfile.avatarId,
-                                    },
-                                    [otherId]: {
-                                        displayName: otherUserProfile.displayName,
-                                        avatarId: otherUserProfile.avatarId,
-                                    },
-                                },
-                            };
-                            
-                            if (currentUserProfile.imageBase64) {
-                                newChatData.participantInfo[user.uid].imageBase64 = currentUserProfile.imageBase64;
-                            }
-                            if (otherUserProfile.imageBase64) {
-                                newChatData.participantInfo[otherId].imageBase64 = otherUserProfile.imageBase64;
-                            }
-
-                            setDocumentNonBlocking(doc(firestore, 'chats', chatId), newChatData, { merge: true });
-                        }
-                    } catch (error) {
-                        console.error("Error setting up new chat:", error);
-                    }
-                };
-                setupChat();
-            }
+        if (chatId.includes('-') && !chat && otherParticipantId) {
+           setupNewChat(otherParticipantId);
         }
     }, [chat, isChatLoading, user, isUserLoading, firestore, chatId, otherParticipantId]);
     
@@ -194,11 +156,14 @@ export default function ChatPage() {
             createdAt: serverTimestamp(),
         };
 
+        let lastMessageContent = '';
         if (newMessageContent.trim()) {
             messageData.content = newMessageContent;
+            lastMessageContent = newMessageContent.trim();
         }
         if (newImage) {
             messageData.imageBase64 = newImage;
+            lastMessageContent = '[Image]';
         }
         
         addDocumentNonBlocking(collection(firestore, 'chats', chatId, 'messages'), messageData);
@@ -206,13 +171,11 @@ export default function ChatPage() {
         const lastMessageData: any = {
             senderId: user.uid,
             timestamp: serverTimestamp(),
+            content: lastMessageContent,
         };
         
         if (newImage) {
-            lastMessageData.content = '[Image]';
             lastMessageData.imageBase64 = newImage;
-        } else if (newMessageContent.trim()) {
-            lastMessageData.content = newMessageContent.trim();
         }
         
         setDocumentNonBlocking(doc(firestore, 'chats', chatId), { lastMessage: lastMessageData }, { merge: true });
@@ -253,13 +216,11 @@ export default function ChatPage() {
         // This handles the case where the chat doesn't exist and isn't being created.
         return (
              <div className="flex flex-col h-full">
-                <Header title="Chat Not Found" />
+                <Header title="Chat" />
                 <main className="flex-1 flex items-center justify-center">
                     <div className="text-center">
-                        <p className="text-lg text-muted-foreground">The chat you are looking for does not exist or is being created.</p>
-                        <Button asChild variant="link" className="mt-4">
-                            <Link href="/social">Go to Social Hub</Link>
-                        </Button>
+                        <p className="text-lg text-muted-foreground">Preparing chat...</p>
+                        <Loader2 className="h-6 w-6 animate-spin mx-auto mt-4" />
                     </div>
                 </main>
             </div>
@@ -407,7 +368,3 @@ export default function ChatPage() {
         </div>
     );
 }
-
-    
-
-    
