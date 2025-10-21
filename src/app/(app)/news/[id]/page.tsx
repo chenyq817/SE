@@ -1,3 +1,4 @@
+
 'use client'
 
 import Image from 'next/image';
@@ -54,12 +55,10 @@ export default function NewsDetailPage({ params }: { params: { id: string } }) {
               </div>
             )}
             
-            <div className="prose dark:prose-invert max-w-none text-lg">
-              <p>{newsItem.excerpt}</p>
-              <p>This is where the full content of the news article would be displayed. For this demo, we'll just add some placeholder text to illustrate the layout.</p>
-              <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus. Suspendisse lectus tortor, dignissim sit amet, adipiscing nec, ultricies sed, dolor. Cras elementum ultrices diam. Maecenas ligula massa, varius a, semper congue, euismod non, mi. Proin porttitor, orci nec nonummy molestie, enim est eleifend mi, non fermentum diam nisl sit amet erat. Duis semper. Duis arcu massa, scelerisque vitae, consequat in, pretium a, enim. Pellentesque congue.</p>
-              <p>Curabitur et ligula. Ut molestie a, ultricies porta urna. Vestibulum commodo volutpat a, convallis ac, laoreet enim. Phasellus fermentum in, dolor. Pellentesque facilisis. Nulla imperdiet sit amet magna. Vestibulum dapibus, mauris nec malesuada fames ac turpis velit, rhoncus eu, luctus et interdum adipiscing wisi. Aliquam erat ac ipsum. Integer aliquam purus. Quisque lorem tortor fringilla sed, vestibulum id, eleifend justo vel bibendum sapien massa ac turpis faucibus orci luctus non, consectetuer lobortis quis, varius in, purus. Integer ultrices posuere cubilia Curae; Duis lobortis massa id nisl.</p>
-            </div>
+            <div 
+              className="prose dark:prose-invert max-w-none text-lg"
+              dangerouslySetInnerHTML={{ __html: newsItem.content.replace(/\n/g, '<br />') }} 
+            />
           </article>
         </div>
       </main>
