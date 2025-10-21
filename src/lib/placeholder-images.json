@@ -37,6 +37,18 @@
       "imageHint": "run"
     },
     {
+      "id": "news-9",
+      "description": "",
+      "imageUrl": "https://news.hust.edu.cn/__local/F/C5/A3/21B77A98080B3122426F2211D8D_8B1C197D_594A9B.png",
+      "imageHint": "badminton"
+    },
+    {
+      "id": "news-10",
+      "description": "",
+      "imageUrl": "https://news.hust.edu.cn/__local/1/EA/8D/5468C52E9DE767790E244C1982F_4ABD9E5B_177548.png",
+      "imageHint": "music"
+    },
+    {
       "id": "avatar-1",
       "description": "Abstract colorful geometric pattern",
       "imageUrl": "https://images.unsplash.com/photo-1550859492-d5da9d7e4554?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",

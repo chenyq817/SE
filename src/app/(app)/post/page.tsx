@@ -66,6 +66,7 @@ type Comment = {
     authorId: string | null;
     authorName: string;
     authorAvatarId?: string;
+    authorImageBase64?: string;
     content: string;
     createdAt: any;
 };
@@ -102,7 +103,7 @@ const formatTimestamp = (timestamp: any) => {
 
 
 function CommentCard({ comment }: { comment: WithId<Comment>}) {
-    const authorAvatarSrc = PlaceHolderImages.find(img => img.id === comment.authorAvatarId)?.imageUrl;
+    const authorAvatarSrc = comment.authorImageBase64 || PlaceHolderImages.find(img => img.id === comment.authorAvatarId)?.imageUrl;
 
     return (
         <div className="flex items-start gap-3">
@@ -154,8 +155,12 @@ function CommentSection({ post }: { post: WithId<Post>}) {
                 authorName: userProfile.displayName,
                 content: newCommentContent,
                 createdAt: serverTimestamp(),
-                authorAvatarId: userProfile.avatarId,
             };
+            if (userProfile.imageBase64) {
+                commentData.authorImageBase64 = userProfile.imageBase64;
+            } else {
+                commentData.authorAvatarId = userProfile.avatarId;
+            }
         } else {
             commentData = {
                 postId: post.id,
@@ -553,3 +558,5 @@ export default function PostPage() {
         </div>
     );
 }
+
+    
