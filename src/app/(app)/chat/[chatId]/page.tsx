@@ -17,6 +17,7 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn } from '@/lib/utils';
 import type { WithId } from '@/firebase';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 
 type UserProfile = {
     displayName: string;
@@ -40,6 +41,12 @@ type Chat = {
             avatarId: string;
             imageBase64?: string;
         }
+    };
+    lastMessage?: {
+        content?: string;
+        senderId: string;
+        timestamp: any;
+        imageBase64?: string;
     };
 };
 
@@ -201,14 +208,11 @@ export default function ChatPage() {
             timestamp: serverTimestamp(),
         };
         
-        if (newMessageContent.trim()) {
-            lastMessageData.content = newMessageContent.trim();
-        } else if (newImage) {
-            lastMessageData.content = '[Image]';
-        }
-        
         if (newImage) {
+            lastMessageData.content = '[Image]';
             lastMessageData.imageBase64 = newImage;
+        } else if (newMessageContent.trim()) {
+            lastMessageData.content = newMessageContent.trim();
         }
         
         setDocumentNonBlocking(doc(firestore, 'chats', chatId), { lastMessage: lastMessageData }, { merge: true });
@@ -302,13 +306,22 @@ export default function ChatPage() {
                                 </Link>
                             )}
                              <div className={cn(
-                                "max-w-xs md:max-w-md lg:max-w-lg rounded-xl px-4 py-2",
+                                "max-w-xs md:max-w-md lg:max-w-lg rounded-xl px-4 py-2 flex flex-col",
                                 isSender ? "bg-primary text-primary-foreground" : "bg-background"
                             )}>
                                 {message.imageBase64 && (
-                                    <div className="relative aspect-video w-full mb-2">
-                                        <Image src={message.imageBase64} alt="Sent image" fill className="rounded-md object-cover" />
-                                    </div>
+                                    <Dialog>
+                                        <DialogTrigger asChild>
+                                            <div className="relative aspect-square w-48 mb-2 rounded-md overflow-hidden cursor-pointer">
+                                                <Image src={message.imageBase64} alt="Sent image" fill className="object-cover" />
+                                            </div>
+                                        </DialogTrigger>
+                                        <DialogContent className="max-w-4xl h-auto p-0">
+                                            <div className="relative aspect-video">
+                                                <Image src={message.imageBase64} alt="Sent image enlarged" fill className="object-contain"/>
+                                            </div>
+                                        </DialogContent>
+                                    </Dialog>
                                 )}
                                 {message.content && <p className="whitespace-pre-wrap">{message.content}</p>}
                             </div>

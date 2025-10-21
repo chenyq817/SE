@@ -32,8 +32,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -298,16 +296,30 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
                 )}
             </CardHeader>
             <CardContent>
-                <p className="mb-4">{post.content}</p>
+                <p className="mb-4 whitespace-pre-wrap">{post.content}</p>
                 {post.imageBase64 && (
-                    <div className="relative aspect-video w-full">
-                        <Image
-                            src={post.imageBase64}
-                            alt="Social post image"
-                            fill
-                            className="rounded-md object-cover"
-                        />
-                    </div>
+                     <Dialog>
+                        <DialogTrigger asChild>
+                           <div className="relative aspect-video w-full rounded-md overflow-hidden cursor-pointer">
+                                <Image
+                                    src={post.imageBase64}
+                                    alt="Social post image"
+                                    fill
+                                    className="object-cover"
+                                />
+                            </div>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-4xl h-auto p-0">
+                           <div className="relative aspect-video">
+                                <Image
+                                    src={post.imageBase64}
+                                    alt="Social post image enlarged"
+                                    fill
+                                    className="object-contain"
+                                />
+                            </div>
+                        </DialogContent>
+                    </Dialog>
                 )}
             </CardContent>
             <CardFooter className="flex justify-start gap-4 border-t pt-4">
@@ -552,5 +564,7 @@ export default function PostPage() {
         </div>
     );
 }
+
+    
 
     
