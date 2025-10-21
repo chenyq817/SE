@@ -181,21 +181,28 @@ export default function ProfilePage() {
 
             // Update comments in all user's posts
             if (nameChanged || avatarChanged) {
-                for (const postId of postIds) {
+                 const allCommentsQuery = query(
+                    collection(firestore, "posts"),
+                    where("authorId", "==", user.uid)
+                );
+                const userPostsSnapshot = await getDocs(allCommentsQuery);
+                for (const postDoc of userPostsSnapshot.docs) {
                     const commentsQuery = query(
-                        collection(firestore, 'posts', postId, 'comments'),
-                        where('authorId', '==', user.uid)
+                        collection(firestore, "posts", postDoc.id, "comments"),
+                        where("authorId", "==", user.uid)
                     );
                     const commentsSnapshot = await getDocs(commentsQuery);
                     commentsSnapshot.forEach(commentDoc => {
-                        const commentRef = doc(firestore, 'posts', postId, 'comments', commentDoc.id);
+                        const commentRef = doc(firestore, "posts", postDoc.id, "comments", commentDoc.id);
                         const updatePayload: any = {};
                         if (nameChanged) updatePayload.authorName = data.displayName;
                         if (avatarChanged) {
-                            updatePayload.authorImageBase64 = data.imageBase64 || "";
-                            updatePayload.authorAvatarId = data.avatarId || "";
+                           updatePayload.authorImageBase64 = data.imageBase64 || "";
+                           updatePayload.authorAvatarId = data.avatarId || "";
                         }
-                        batch.update(commentRef, updatePayload);
+                        if (Object.keys(updatePayload).length > 0) {
+                           batch.update(commentRef, updatePayload);
+                        }
                     });
                 }
             }
@@ -281,14 +288,14 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
                 <CardTitle>Personal Information</CardTitle>
-                <CardDescription>Update your details below.</CardDescription>
+                <CardDescription>Update your details below. Your display name cannot be changed after initial setup.</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                         <Label htmlFor="displayName">Display Name</Label>
-                        <Input id="displayName" {...form.register('displayName')} />
+                        <Input id="displayName" {...form.register('displayName')} disabled />
                         {form.formState.errors.displayName && <p className="text-sm text-destructive">{form.formState.errors.displayName.message}</p>}
                     </div>
                      <div className="space-y-2">
@@ -344,5 +351,6 @@ export default function ProfilePage() {
     </div>
   );
 }
+
 
 
