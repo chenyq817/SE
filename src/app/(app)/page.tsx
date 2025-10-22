@@ -1,3 +1,4 @@
+
 import Link from "next/link";
 import {
   Card,
@@ -12,7 +13,8 @@ import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export default function HomePage() {
-  const campusImage = PlaceHolderImages.find(img => img.id === 'news-2');
+  // 您可以在 @/lib/placeholder-images.json 文件中修改 ID 为 'news-2' 的图片来更换这里的背景
+  const heroImage = PlaceHolderImages.find(img => img.id === 'news-2');
 
   const navItems = [
     {
@@ -54,9 +56,19 @@ export default function HomePage() {
       <Header title="主页" />
       <main className="flex-1 p-4 md:p-6 lg:p-8 space-y-8">
         <section
-          className="rounded-xl border bg-card text-card-foreground shadow-lg w-full p-8 md:p-12 bg-gradient-to-r from-primary to-blue-600"
+          className="relative rounded-xl border bg-card text-card-foreground shadow-lg w-full p-8 md:p-12 overflow-hidden"
         >
-          <div className="flex flex-col items-start text-white">
+          {heroImage && (
+             <Image
+                src={heroImage.imageUrl}
+                alt={heroImage.description}
+                fill
+                className="object-cover z-0"
+                data-ai-hint={heroImage.imageHint}
+             />
+          )}
+          <div className="absolute inset-0 bg-black/50 z-10" />
+          <div className="relative z-20 flex flex-col items-start text-white">
             <h2 className="text-4xl font-bold font-headline">欢迎来到“喻园回声”</h2>
             <p className="mt-2 text-lg text-gray-200">明德厚学，求是创新</p>
           </div>
