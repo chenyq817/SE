@@ -24,14 +24,14 @@ import {
 import { useUser } from "@/firebase";
 
 const menuItems = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/news", label: "News", icon: Newspaper },
-  { href: "/post", label: "Posts", icon: FileText },
-  { href: "/social", label: "Social", icon: Users },
-  { href: "/community", label: "Community", icon: Anchor },
+  { href: "/", label: "仪表盘", icon: LayoutDashboard },
+  { href: "/news", label: "新闻", icon: Newspaper },
+  { href: "/post", label: "帖子", icon: FileText },
+  { href: "/social", label: "社交", icon: Users },
+  { href: "/community", label: "社区", icon: MessageSquare },
 ];
 
-const adminMenuItem = { href: "/admin", label: "Admin", icon: Shield };
+const adminMenuItem = { href: "/admin", label: "管理后台", icon: Shield };
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -63,6 +63,7 @@ export function AppSidebar() {
                 href={item.href}
                 isActive={isActive(item.href)}
                 tooltip={item.label}
+                className="text-base"
               >
                 <item.icon />
                 <span>{item.label}</span>
@@ -78,6 +79,7 @@ export function AppSidebar() {
                 href={adminMenuItem.href}
                 isActive={isActive(adminMenuItem.href)}
                 tooltip={adminMenuItem.label}
+                className="text-base"
               >
                   <adminMenuItem.icon />
                   <span>{adminMenuItem.label}</span>
