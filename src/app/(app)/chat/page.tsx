@@ -53,7 +53,7 @@ export default function ChatListPage() {
 
     return (
         <div className="flex flex-col h-full">
-            <Header title="My Chats" />
+            <Header title="我的聊天" />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                 <Card className="max-w-4xl mx-auto">
                     <CardContent className="p-0">
@@ -73,7 +73,7 @@ export default function ChatListPage() {
 
                                         const avatarSrc = otherParticipantInfo.imageBase64 || PlaceHolderImages.find(p => p.id === otherParticipantInfo.avatarId)?.imageUrl;
                                         
-                                        const lastMessageContent = chat.lastMessage?.imageBase64 ? "[Image]" : chat.lastMessage?.content;
+                                        const lastMessageContent = chat.lastMessage?.imageBase64 ? "[图片]" : chat.lastMessage?.content;
 
                                         return (
                                             <li key={chat.id} onClick={() => handleChatSelect(chat.id)} className="p-4 hover:bg-secondary cursor-pointer transition-colors">
@@ -84,7 +84,7 @@ export default function ChatListPage() {
                                                     </Avatar>
                                                     <div className="flex-grow overflow-hidden">
                                                         <p className="font-semibold truncate">{otherParticipantInfo.displayName}</p>
-                                                        <p className="text-sm text-muted-foreground truncate">{lastMessageContent || 'No messages yet'}</p>
+                                                        <p className="text-sm text-muted-foreground truncate">{lastMessageContent || '暂无消息'}</p>
                                                     </div>
                                                     {chat.lastMessage?.timestamp && (
                                                         <p className="text-xs text-muted-foreground self-start whitespace-nowrap">
@@ -98,15 +98,11 @@ export default function ChatListPage() {
                                 </ul>
                             ) : (
                                 <div className="flex items-center justify-center h-full">
-                                    <p className="text-muted-foreground">You have no active chats.</p>
+                                    <p className="text-muted-foreground">你还没有任何聊天。</p>
                                 </div>
                             )}
                         </div>
                     </CardContent>
                 </Card>
             </main>
-        </div>
-    );
-}
-
-    
+        

@@ -23,9 +23,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { updateProfile } from 'firebase/auth';
 
 const profileSchema = z.object({
-  displayName: z.string().min(3, { message: 'Display name must be at least 3 characters.' }),
+  displayName: z.string().min(3, { message: '昵称必须至少为3个字符。' }),
   displayName_lowercase: z.string().optional(),
-  bio: z.string().max(160, { message: 'Bio must be 160 characters or less.' }).optional(),
+  bio: z.string().max(160, { message: '个人简介必须在160个字符以内。' }).optional(),
   age: z.coerce.number().min(0).optional(),
   gender: z.string().optional(),
   address: z.string().optional(),
@@ -103,8 +103,8 @@ export default function ProfilePage() {
       if (file.size > 5 * 1024 * 1024) { // 5MB limit
         toast({
           variant: 'destructive',
-          title: 'Image is too large',
-          description: 'Please upload an image smaller than 5MB.',
+          title: '图片过大',
+          description: '请上传小于5MB的图片。',
         });
         return;
       }
@@ -190,9 +190,9 @@ export default function ProfilePage() {
             await batch.commit();
 
         } catch (error) {
-            console.error("Error updating user's content:", error);
+            console.error("更新用户内容时出错:", error);
             const permissionError = new FirestorePermissionError({
-                path: 'batch update on user content',
+                path: '用户内容的批量更新',
                 operation: 'update',
             });
             errorEmitter.emit('permission-error', permissionError);
@@ -200,7 +200,7 @@ export default function ProfilePage() {
     }
 
 
-    toast({ title: 'Profile update initiated!' });
+    toast({ title: '个人资料更新已启动！' });
     form.reset(data);
     setIsSaving(false);
   };
@@ -222,7 +222,7 @@ export default function ProfilePage() {
   
   return (
     <div className="flex flex-col h-full">
-      <Header title="My Profile" />
+      <Header title="我的个人资料" />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="max-w-4xl mx-auto space-y-8">
           <Card>
@@ -236,13 +236,13 @@ export default function ProfilePage() {
                     </Avatar>
                     <div>
                         <CardTitle className="text-3xl font-headline">{form.watch('displayName')}</CardTitle>
-                        <CardDescription>Manage your profile settings and personal information.</CardDescription>
+                        <CardDescription>管理您的个人资料设置和个人信息。</CardDescription>
                     </div>
                 </div>
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
-                    <h3 className="font-semibold">Change Avatar</h3>
+                    <h3 className="font-semibold">更换头像</h3>
                     <div className="flex flex-wrap gap-4 items-center">
                         {defaultAvatars.map(avatar => (
                             <button key={avatar.id} onClick={() => handleAvatarSelect(avatar.id)}>
@@ -259,7 +259,7 @@ export default function ProfilePage() {
                             className="hidden"
                             accept="image/png, image/jpeg, image/gif"
                         />
-                        <Button variant="outline" onClick={() => imageInputRef.current?.click()}>Upload Image</Button>
+                        <Button variant="outline" onClick={() => imageInputRef.current?.click()}>上传图片</Button>
                     </div>
                 </div>
             </CardContent>
@@ -267,67 +267,25 @@ export default function ProfilePage() {
           
           <Card>
             <CardHeader>
-                <CardTitle>Personal Information</CardTitle>
-                <CardDescription>Update your details below. Your display name cannot be changed.</CardDescription>
+                <CardTitle>个人信息</CardTitle>
+                <CardDescription>更新您的详细信息。您的昵称无法更改。</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                        <Label htmlFor="displayName">Display Name</Label>
+                        <Label htmlFor="displayName">昵称</Label>
                         <Input id="displayName" {...form.register('displayName')} disabled />
                         {form.formState.errors.displayName && <p className="text-sm text-destructive">{form.formState.errors.displayName.message}</p>}
                     </div>
                      <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
+                        <Label htmlFor="email">邮箱</Label>
                         <Input id="email" value={user?.email || ''} disabled />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="age">Age</Label>
+                        <Label htmlFor="age">年龄</Label>
                         <Input id="age" type="number" {...form.register('age')} />
                          {form.formState.errors.age && <p className="text-sm text-destructive">{form.formState.errors.age.message}</p>}
                     </div>
                      <div className="space-y-2">
-                        <Label htmlFor="gender">Gender</Label>
-                        <Controller
-                            control={form.control}
-                            name="gender"
-                            render={({ field }) => (
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select gender" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Male">Male</SelectItem>
-                                        <SelectItem value="Female">Female</SelectItem>
-                                        <SelectItem value="Other">Other</SelectItem>
-                                        <SelectItem value="Prefer not to say">Prefer not to say</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            )}
-                        />
-                    </div>
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="address">Address</Label>
-                    <Input id="address" {...form.register('address')} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bio">Bio / Signature</Label>
-                  <Textarea id="bio" placeholder="Tell us a little about yourself" {...form.register('bio')} />
-                   {form.formState.errors.bio && <p className="text-sm text-destructive">{form.formState.errors.bio.message}</p>}
-                </div>
-                <div className="flex justify-end">
-                  <Button type="submit" disabled={isSaving || !form.formState.isDirty}>
-                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Save Changes
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-      </main>
-    </div>
-  );
-}
+                        <Label htmlFor="gender">性别</Label>Show in original language

@@ -46,11 +46,11 @@ export default function UserProfilePage() {
   if (!userProfile) {
     return (
       <div className="flex flex-col h-full">
-        <Header title="User Not Found" />
+        <Header title="未找到用户" />
         <main className="flex-1 flex flex-col items-center justify-center p-4">
-          <p className="text-lg text-muted-foreground">This user profile could not be found.</p>
+          <p className="text-lg text-muted-foreground">无法找到该用户个人资料。</p>
            <Button onClick={() => router.back()} variant="outline" className="mt-4">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Go Back
+            <ArrowLeft className="mr-2 h-4 w-4" /> 返回
           </Button>
         </main>
       </div>
@@ -61,11 +61,11 @@ export default function UserProfilePage() {
 
   return (
     <div className="flex flex-col h-full">
-      <Header title={`${userProfile.displayName}'s Profile`} />
+      <Header title={`${userProfile.displayName}的个人资料`} />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="max-w-3xl mx-auto space-y-8">
           <Button onClick={() => router.back()} variant="outline" size="sm">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back
+            <ArrowLeft className="mr-2 h-4 w-4" /> 返回
           </Button>
           <Card className="overflow-hidden shadow-lg">
              <CardHeader className="flex flex-col items-center justify-center gap-4 p-6 text-center bg-card">
@@ -83,26 +83,22 @@ export default function UserProfilePage() {
             <CardContent className="border-t pt-6 grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
                   <div className="flex items-center gap-3">
                     <Cake className="w-5 h-5 text-muted-foreground"/>
-                    <span className="text-muted-foreground">Age:</span>
+                    <span className="text-muted-foreground">年龄:</span>
                     <span className="font-medium">{userProfile.age || ''}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <VenetianMask className="w-5 h-5 text-muted-foreground"/>
-                    <span className="text-muted-foreground">Gender:</span>
+                    <span className="text-muted-foreground">性别:</span>
                     <span className="font-medium">{userProfile.gender && userProfile.gender !== "Prefer not to say" ? userProfile.gender : ''}</span>
                   </div>
                   <div className="flex items-center gap-3 md:col-span-2">
                     <MapPin className="w-5 h-5 text-muted-foreground"/>
-                    <span className="text-muted-foreground">Location:</span>
+                    <span className="text-muted-foreground">位置:</span>
                     <span className="font-medium">{userProfile.address || ''}</span>
                   </div>
-                {!userProfile.age && (!userProfile.gender || userProfile.gender === "Prefer not to say") && !userProfile.address && (
-                    <p className="text-muted-foreground text-center col-span-full">This user hasn't shared any additional information.</p>
-                )}
             </CardContent>
           </Card>
         </div>
       </main>
     </div>
   );
-}

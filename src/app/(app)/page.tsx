@@ -1,4 +1,3 @@
-
 import Link from "next/link";
 import {
   Card,
@@ -19,32 +18,32 @@ export default function DashboardPage() {
     {
       href: "/news",
       icon: Newspaper,
-      title: "Smart News",
-      description: "Catch up on the latest campus news and events.",
+      title: "校园新闻",
+      description: "了解最新的校园新闻和活动。",
       color: "bg-blue-100 dark:bg-blue-900/50",
       textColor: "text-blue-600 dark:text-blue-400"
     },
     {
       href: "/post",
       icon: FileText,
-      title: "Campus Posts",
-      description: "See what's happening and share your moments.",
+      title: "校园帖子",
+      description: "看看正在发生什么，分享你的瞬间。",
        color: "bg-green-100 dark:bg-green-900/50",
        textColor: "text-green-600 dark:text-green-400"
     },
     {
       href: "/social",
       icon: Users,
-      title: "Social Hub",
-      description: "Find friends, manage connections, and start chatting.",
+      title: "社交中心",
+      description: "寻找朋友，管理联系人，开始聊天。",
       color: "bg-yellow-100 dark:bg-yellow-900/50",
       textColor: "text-yellow-600 dark:text-yellow-400"
     },
     {
       href: "/community",
       icon: MessageSquare,
-      title: "Community Wall",
-      description: "Leave a public message for everyone to see.",
+      title: "社区墙",
+      description: "留下一条公开信息，让所有人看到。",
       color: "bg-purple-100 dark:bg-purple-900/50",
       textColor: "text-purple-600 dark:text-purple-400"
     },
@@ -52,13 +51,13 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col h-full bg-secondary/50">
-      <Header title="Dashboard" />
+      <Header title="仪表盘" />
       <main className="flex-1 p-4 md:p-6 lg:p-8 space-y-8">
         <section
           className="rounded-xl border bg-card text-card-foreground shadow-lg w-full p-8 md:p-12 bg-gradient-to-r from-primary to-blue-600"
         >
           <div className="flex flex-col items-start text-white">
-            <h2 className="text-4xl font-bold font-headline">Welcome to I know hust</h2>
+            <h2 className="text-4xl font-bold font-headline">欢迎来到“喻园回声”</h2>
             <p className="mt-2 text-lg text-gray-200">明德厚学，求是创新</p>
           </div>
         </section>

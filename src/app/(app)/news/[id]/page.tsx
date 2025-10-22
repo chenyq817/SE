@@ -30,7 +30,7 @@ export default function NewsDetailPage({ params }: { params: { id: string } }) {
           <Button asChild variant="outline" className="mb-6">
             <Link href="/news">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to News
+              返回新闻
             </Link>
           </Button>
 
@@ -59,9 +59,4 @@ export default function NewsDetailPage({ params }: { params: { id: string } }) {
               className="prose dark:prose-invert max-w-none text-lg"
               dangerouslySetInnerHTML={{ __html: newsItem.content.replace(/\n/g, '<br />') }} 
             />
-          </article>
-        </div>
-      </main>
-    </div>
-  );
-}
+          </

@@ -1,3 +1,4 @@
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { Header } from "@/components/layout/header";
@@ -46,7 +47,7 @@ const NewsCard = ({ item }: { item: typeof newsItems[0] }) => {
         <CardFooter className="flex justify-between items-center mt-auto">
           <p className="text-sm text-muted-foreground">{item.date}</p>
           <div className="flex items-center text-primary font-semibold text-sm">
-            Read More <ArrowRight className="ml-2 w-4 h-4" />
+            阅读更多 <ArrowRight className="ml-2 w-4 h-4" />
           </div>
         </CardFooter>
       </Link>
@@ -55,38 +56,35 @@ const NewsCard = ({ item }: { item: typeof newsItems[0] }) => {
 };
 
 export default function NewsPage() {
-  const academicNews = newsItems.filter(item => item.category === 'Academics');
-  const sportsNews = newsItems.filter(item => item.category === 'Sports');
-  const campusLifeNews = newsItems.filter(item => item.category === 'Campus Life' || item.category === "Arts & Culture");
+  const academicNews = newsItems.filter(item => item.category === '学术');
+  const sportsNews = newsItems.filter(item => item.category === '体育');
+  const campusLifeNews = newsItems.filter(item => item.category === '校园生活' || item.category === "文体艺术");
 
   return (
     <div className="flex flex-col h-full">
-      <Header title="Smart News Feed" />
+      <Header title="校园新闻" />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <Tabs defaultValue="academics" className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-6">
-            <TabsTrigger value="academics">Academics</TabsTrigger>
-            <TabsTrigger value="sports">Sports</TabsTrigger>
-            <TabsTrigger value="campus-life">Campus Life</TabsTrigger>
+            <TabsTrigger value="academics">学术</TabsTrigger>
+            <TabsTrigger value="sports">体育</TabsTrigger>
+            <TabsTrigger value="campus-life">校园生活</TabsTrigger>
           </TabsList>
           
           <TabsContent value="academics">
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {academicNews.length > 0 ? academicNews.map((item) => <NewsCard key={item.id} item={item} />) : <p className="text-center text-muted-foreground col-span-full">No academic news available.</p>}
+              {academicNews.length > 0 ? academicNews.map((item) => <NewsCard key={item.id} item={item} />) : <p className="text-center text-muted-foreground col-span-full">暂无学术新闻。</p>}
             </div>
           </TabsContent>
           <TabsContent value="sports">
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {sportsNews.length > 0 ? sportsNews.map((item) => <NewsCard key={item.id} item={item} />) : <p className="text-center text-muted-foreground col-span-full">No sports news available.</p>}
+              {sportsNews.length > 0 ? sportsNews.map((item) => <NewsCard key={item.id} item={item} />) : <p className="text-center text-muted-foreground col-span-full">暂无体育新闻。</p>}
             </div>
           </TabsContent>
           <TabsContent value="campus-life">
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {campusLifeNews.length > 0 ? campusLifeNews.map((item) => <NewsCard key={item.id} item={item} />) : <p className="text-center text-muted-foreground col-span-full">No campus life news available.</p>}
+              {campusLifeNews.length > 0 ? campusLifeNews.map((item) => <NewsCard key={item.id} item={item} />) : <p className="text-center text-muted-foreground col-span-full">暂无校园生活新闻。</p>}
             </div>
           </TabsContent>
         </Tabs>
       </main>
-    </div>
-  );
-}

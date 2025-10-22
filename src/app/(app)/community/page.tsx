@@ -101,37 +101,35 @@ export default function CommunityPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <Header title="Community Fun" />
+      <Header title="社区墙" />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="grid gap-8 lg:grid-cols-1">
           
-          {/* HUST Bottle feature temporarily disabled */}
-
           <Card className="hover:shadow-xl transition-shadow duration-300">
             <CardHeader>
                  <div className="flex items-center gap-3">
                     <Columns className="w-8 h-8 text-primary" />
                     <div>
-                        <CardTitle className="font-headline text-2xl">WeChat on the Wall</CardTitle>
-                        <CardDescription>Leave a public message for everyone to see.</CardDescription>
+                        <CardTitle className="font-headline text-2xl">留言墙</CardTitle>
+                        <CardDescription>留下一条公开的留言，让大家都能看到。</CardDescription>
                     </div>
                 </div>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="p-4 bg-secondary/50 rounded-lg h-72 overflow-y-auto grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {wallMessagesLoading && <p className="text-muted-foreground">Loading messages...</p>}
+                    {wallMessagesLoading && <p className="text-muted-foreground">正在加载留言...</p>}
                     {wallMessages && wallMessages.map((msg, index) => (
                       <WallMessageCard key={msg.id} msg={msg} />
                     ))}
                     {!wallMessagesLoading && wallMessages?.length === 0 && (
                       <div className="col-span-full text-center text-muted-foreground self-center">
-                          The wall is empty. Be the first to write something!
+                          留言墙是空的。快来写点什么吧！
                       </div>
                     )}
                 </div>
                  <div className="flex gap-2">
                     <Textarea 
-                      placeholder="Write on the wall..." 
+                      placeholder="在墙上写点什么..." 
                       disabled={!user}
                       value={newWallMessage}
                       onChange={(e) => setNewWallMessage(e.target.value)}
@@ -160,7 +158,7 @@ export default function CommunityPage() {
                     </Popover>
                     <Button 
                       size="icon" 
-                      aria-label="Post message" 
+                      aria-label="发布留言" 
                       disabled={!user || !newWallMessage.trim()}
                       onClick={handlePostWallMessage}
                     >
@@ -172,11 +170,3 @@ export default function CommunityPage() {
 
         </div>
       </main>
-
-      {/* Dialogs for HUST Bottle are kept in case the feature is re-enabled, but won't be triggered */}
-      
-    </div>
-  );
-}
-
-    

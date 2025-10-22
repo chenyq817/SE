@@ -134,7 +134,7 @@ export default function ChatPage() {
                     setDocumentNonBlocking(currentChatDocRef, newChatData, { merge: true });
                 }
             } catch (error) {
-                console.error("Error setting up new chat:", error);
+                console.error("创建新聊天时出错:", error);
             }
         };
 
@@ -157,13 +157,13 @@ export default function ChatPage() {
         };
 
         let lastMessageContent = '';
+        if (newImage) {
+            messageData.imageBase64 = newImage;
+            lastMessageContent = '[图片]';
+        }
         if (newMessageContent.trim()) {
             messageData.content = newMessageContent;
             lastMessageContent = newMessageContent.trim();
-        }
-        if (newImage) {
-            messageData.imageBase64 = newImage;
-            lastMessageContent = '[Image]';
         }
         
         addDocumentNonBlocking(collection(firestore, 'chats', chatId, 'messages'), messageData);
@@ -216,10 +216,10 @@ export default function ChatPage() {
         // This handles the case where the chat doesn't exist and isn't being created.
         return (
              <div className="flex flex-col h-full">
-                <Header title="Chat" />
+                <Header title="聊天" />
                 <main className="flex-1 flex items-center justify-center">
                     <div className="text-center">
-                        <p className="text-lg text-muted-foreground">Preparing chat...</p>
+                        <p className="text-lg text-muted-foreground">正在准备聊天...</p>
                         <Loader2 className="h-6 w-6 animate-spin mx-auto mt-4" />
                     </div>
                 </main>
@@ -274,15 +274,15 @@ export default function ChatPage() {
                                     <Dialog>
                                         <DialogTrigger asChild>
                                             <div className="relative aspect-square w-48 mb-2 rounded-md overflow-hidden cursor-pointer">
-                                                <Image src={message.imageBase64} alt="Sent image" fill className="object-cover" />
+                                                <Image src={message.imageBase64} alt="发送的图片" fill className="object-cover" />
                                             </div>
                                         </DialogTrigger>
                                         <DialogContent className="max-w-4xl h-auto p-0">
                                             <DialogHeader>
-                                                <DialogTitle className="sr-only">Enlarged Image</DialogTitle>
+                                                <DialogTitle className="sr-only">放大的图片</DialogTitle>
                                             </DialogHeader>
                                             <div className="relative aspect-video">
-                                                <Image src={message.imageBase64} alt="Sent image enlarged" fill className="object-contain"/>
+                                                <Image src={message.imageBase64} alt="放大的已发送图片" fill className="object-contain"/>
                                             </div>
                                         </DialogContent>
                                     </Dialog>
@@ -299,7 +299,7 @@ export default function ChatPage() {
                 <div className="max-w-4xl mx-auto">
                     {newImage && (
                         <div className="relative w-24 h-24 mb-2">
-                            <Image src={newImage} alt="Preview" fill className="rounded-md object-cover" />
+                            <Image src={newImage} alt="预览" fill className="rounded-md object-cover" />
                             <Button
                                 variant="destructive"
                                 size="icon"
@@ -315,7 +315,7 @@ export default function ChatPage() {
                     )}
                     <div className="flex items-center gap-2">
                         <Textarea
-                            placeholder="Type a message..."
+                            placeholder="输入消息..."
                             value={newMessageContent}
                             onChange={(e) => setNewMessageContent(e.target.value)}
                             onKeyDown={(e) => {
@@ -364,7 +364,3 @@ export default function ChatPage() {
                         </Button>
                     </div>
                 </div>
-            </footer>
-        </div>
-    );
-}

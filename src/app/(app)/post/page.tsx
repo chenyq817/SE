@@ -82,9 +82,9 @@ type UserProfile = {
 };
 
 const formatTimestamp = (timestamp: any) => {
-      if (!timestamp) return 'Just now';
+      if (!timestamp) return '刚刚';
       if (typeof timestamp.toDate !== 'function') {
-        return 'Posting...';
+        return '发布中...';
       }
       const date = timestamp.toDate();
       const now = new Date();
@@ -94,10 +94,10 @@ const formatTimestamp = (timestamp: any) => {
       const hours = Math.floor(minutes / 60);
       const days = Math.floor(hours / 24);
 
-      if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
-      if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-      if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-      return 'Just now';
+      if (days > 0) return `${days}天前`;
+      if (hours > 0) return `${hours}小时前`;
+      if (minutes > 0) return `${minutes}分钟前`;
+      return '刚刚';
 };
 
 
@@ -148,20 +148,20 @@ function CommentCard({ post, comment }: { post: WithId<Post>, comment: WithId<Co
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             <AlertDialogTrigger asChild>
-                                <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive">删除</DropdownMenuItem>
                             </AlertDialogTrigger>
                         </DropdownMenuContent>
                     </DropdownMenu>
                     <AlertDialogContent>
                         <AlertDialogHeader>
-                            <AlertDialogTitle>Delete this comment?</AlertDialogTitle>
+                            <AlertDialogTitle>删除这条评论？</AlertDialogTitle>
                             <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete this comment.
+                                此操作无法撤销。这将永久删除该评论。
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                            <AlertDialogCancel>取消</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">删除</AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
@@ -216,7 +216,7 @@ function CommentSection({ post }: { post: WithId<Post>}) {
         <div className="pt-4 space-y-4 px-6 pb-4">
             <Separator />
             <div className="space-y-4">
-                {isLoading && <p className="text-sm text-muted-foreground">Loading comments...</p>}
+                {isLoading && <p className="text-sm text-muted-foreground">正在加载评论...</p>}
                 {comments?.map(comment => <CommentCard key={comment.id} post={post} comment={comment} />)}
             </div>
 
@@ -231,7 +231,7 @@ function CommentSection({ post }: { post: WithId<Post>}) {
                 )}
                 <div className="flex-grow flex items-center gap-2">
                     <Textarea 
-                        placeholder="Write a comment..." 
+                        placeholder="写一条评论..." 
                         className="min-h-0 h-10"
                         value={newCommentContent}
                         onChange={(e) => setNewCommentContent(e.target.value)}
@@ -320,25 +320,25 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
                           <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-8 w-8">
                                   <MoreHorizontal className="h-4 w-4" />
-                                  <span className="sr-only">More options</span>
+                                  <span className="sr-only">更多操作</span>
                               </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                               <AlertDialogTrigger asChild>
-                                <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive">删除</DropdownMenuItem>
                               </AlertDialogTrigger>
                           </DropdownMenuContent>
                       </DropdownMenu>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                          <AlertDialogTitle>你确定要删除吗？</AlertDialogTitle>
                           <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete your post and all its comments.
+                            此操作无法撤销。这将永久删除您的帖子及其所有评论。
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                          <AlertDialogCancel>取消</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">删除</AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
                    </AlertDialog>
@@ -352,7 +352,7 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
                            <div className="relative aspect-video w-full rounded-md overflow-hidden cursor-pointer">
                                 <Image
                                     src={post.imageBase64}
-                                    alt="Social post image"
+                                    alt="社交帖子图片"
                                     fill
                                     className="object-cover"
                                 />
@@ -360,12 +360,12 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
                         </DialogTrigger>
                         <DialogContent className="max-w-4xl h-auto p-0">
                             <DialogHeader>
-                                <DialogTitle className="sr-only">Enlarged Post Image</DialogTitle>
+                                <DialogTitle className="sr-only">放大的帖子图片</DialogTitle>
                             </DialogHeader>
                            <div className="relative aspect-video">
                                 <Image
                                     src={post.imageBase64}
-                                    alt="Social post image enlarged"
+                                    alt="放大的社交帖子图片"
                                     fill
                                     className="object-contain"
                                 />
@@ -406,8 +406,8 @@ export default function PostPage() {
     const { user } = useUser();
     const [newPostContent, setNewPostContent] = useState('');
     const [newPostImage, setNewPostImage] = useState<string | null>(null);
-    const [newPostLocation, setNewPostLocation] = useState('On Campus');
-    const [tempLocation, setTempLocation] = useState('On Campus');
+    const [newPostLocation, setNewPostLocation] = useState('在校园');
+    const [tempLocation, setTempLocation] = useState('在校园');
     const [isLocationDialogOpen, setIsLocationDialogOpen] = useState(false);
     const imageInputRef = useRef<HTMLInputElement>(null);
   
@@ -464,7 +464,7 @@ export default function PostPage() {
             postData.authorAvatarId = userProfile.avatarId || "avatar-4";
         }
 
-        if (newPostLocation && newPostLocation.trim() && newPostLocation !== 'On Campus') {
+        if (newPostLocation && newPostLocation.trim() && newPostLocation !== '在校园') {
             postData.location = newPostLocation;
         }
 
@@ -476,8 +476,8 @@ export default function PostPage() {
 
         setNewPostContent('');
         setNewPostImage(null);
-        setNewPostLocation('On Campus');
-        setTempLocation('On Campus');
+        setNewPostLocation('在校园');
+        setTempLocation('在校园');
         if(imageInputRef.current) {
             imageInputRef.current.value = '';
         }
@@ -485,7 +485,7 @@ export default function PostPage() {
 
     return (
         <div className="flex flex-col h-full">
-            <Header title="Campus Posts" />
+            <Header title="校园帖子" />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                 <div className="max-w-2xl mx-auto space-y-6">
                     <Card className="shadow-sm">
@@ -494,14 +494,14 @@ export default function PostPage() {
                                 {user && userProfile && (
                                 <Link href="/profile" passHref>
                                     <Avatar>
-                                        {userAvatarSrc && <AvatarImage src={userAvatarSrc} alt="Your avatar" />}
+                                        {userAvatarSrc && <AvatarImage src={userAvatarSrc} alt="你的头像" />}
                                         <AvatarFallback>{userProfile?.displayName?.charAt(0) || 'U'}</AvatarFallback>
                                     </Avatar>
                                 </Link>
                                 )}
                                 <div className="flex-grow">
                                     <Textarea 
-                                        placeholder="What's on your mind?" 
+                                        placeholder="你在想些什么？" 
                                         className="mb-2" 
                                         value={newPostContent}
                                         onChange={(e) => setNewPostContent(e.target.value)}
@@ -511,7 +511,7 @@ export default function PostPage() {
                             </div>
                              {newPostImage && (
                                 <div className="relative w-full pl-16">
-                                    <Image src={newPostImage} alt="Preview" width={80} height={80} className="rounded-md object-cover" />
+                                    <Image src={newPostImage} alt="预览" width={80} height={80} className="rounded-md object-cover" />
                                     <Button
                                         variant="destructive"
                                         size="icon"
@@ -539,16 +539,16 @@ export default function PostPage() {
                                     </DialogTrigger>
                                     <DialogContent>
                                         <DialogHeader>
-                                            <DialogTitle>Set Location</DialogTitle>
-                                            <DialogDescription>Where are you posting from?</DialogDescription>
+                                            <DialogTitle>设置位置</DialogTitle>
+                                            <DialogDescription>你正在哪里发布？</DialogDescription>
                                         </DialogHeader>
                                         <Input 
                                             value={tempLocation} 
                                             onChange={(e) => setTempLocation(e.target.value)}
-                                            placeholder="e.g. Main Library"
+                                            placeholder="例如：主图书馆"
                                         />
                                         <DialogFooter>
-                                            <Button onClick={handleLocationSave}>Save</Button>
+                                            <Button onClick={handleLocationSave}>保存</Button>
                                         </DialogFooter>
                                     </DialogContent>
                                 </Dialog>
@@ -589,7 +589,7 @@ export default function PostPage() {
                                 onClick={handlePost} 
                                 disabled={(!newPostContent.trim() && !newPostImage) || !user}
                             >
-                                Post
+                                发布
                             </Button>
                         </CardFooter>
                     </Card>
@@ -607,19 +607,9 @@ export default function PostPage() {
                         </div>
                     ) : (
                         <div className="text-center py-16">
-                            <p className="text-muted-foreground">No posts yet.</p>
-                            <p className="text-sm text-muted-foreground">Be the first to share something!</p>
+                            <p className="text-muted-foreground">还没有帖子。</p>
+                            <p className="text-sm text-muted-foreground">成为第一个分享的人吧！</p>
                         </div>
                     )}
                 </div>
-            </main>
-        </div>
-    );
-}
-
-    
-
-    
-
-    
-
+            </
