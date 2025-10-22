@@ -88,3 +88,6 @@ export default function NewsPage() {
           </TabsContent>
         </Tabs>
       </main>
+    </div>
+  );
+}
