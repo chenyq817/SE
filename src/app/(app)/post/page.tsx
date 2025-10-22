@@ -255,7 +255,7 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
     const authorAvatarSrc = post.authorImageBase64 || PlaceHolderImages.find(img => img.id === post.authorAvatarId)?.imageUrl;
     
     const isLiked = user ? post.likeIds.includes(user.uid) : false;
-    const isAdmin = user?.email === 'admin@111.com';
+    const isAdmin = ['admin@111.com', 'newadmin@111.com'].includes(user?.email || '');
     const isAuthor = user ? user.uid === post.authorId : false;
     const canDelete = isAdmin || isAuthor;
 
@@ -612,4 +612,9 @@ export default function PostPage() {
                         </div>
                     )}
                 </div>
-            </
+            </main>
+        </div>
+    );
+}
+
+    
