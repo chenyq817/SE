@@ -30,10 +30,6 @@
           "type": "string",
           "description": "Base64 encoded string of the image attached to the post."
         },
-        "location": {
-          "type": "string",
-          "description": "Location associated with the post (e.g., building, library)."
-        },
         "likeIds": {
           "type": "array",
           "description": "Array of user IDs who liked the post.",

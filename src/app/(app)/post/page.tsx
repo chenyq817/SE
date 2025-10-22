@@ -14,8 +14,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { ThumbsUp, MessageSquare, MapPin, ImagePlus, X, MoreHorizontal, Send, Smile, Trash2 } from "lucide-react";
+import { ThumbsUp, MessageSquare, ImagePlus, X, MoreHorizontal, Send, Smile } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
@@ -38,11 +37,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label";
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn } from '@/lib/utils';
 import { useCollection, useFirestore, useUser, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking, useDoc, errorEmitter, FirestorePermissionError, deleteDocumentNonBlocking } from '@/firebase';
-import { collection, query, orderBy, serverTimestamp, arrayUnion, arrayRemove, doc, writeBatch, increment, getDocs, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, orderBy, serverTimestamp, arrayUnion, doc, writeBatch, increment, getDocs } from 'firebase/firestore';
 import type { WithId } from '@/firebase';
 import { Separator } from '@/components/ui/separator';
 
@@ -53,7 +51,6 @@ type Post = {
   authorAvatarId?: string; 
   authorImageBase64?: string;
   content: string;
-  location?: string;
   imageBase64?: string; 
   likeIds: string[];
   commentCount: number;
@@ -307,12 +304,6 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
                         <p className="font-semibold">{post.authorName}</p>
                         <p className="text-xs text-muted-foreground">{formatTimestamp(post.createdAt)}</p>
                     </div>
-                    {post.location && (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <MapPin className="w-3 h-3" />
-                            <span>{post.location}</span>
-                        </div>
-                    )}
                 </div>
                 {canDelete && (
                    <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
@@ -406,9 +397,6 @@ export default function PostPage() {
     const { user } = useUser();
     const [newPostContent, setNewPostContent] = useState('');
     const [newPostImage, setNewPostImage] = useState<string | null>(null);
-    const [newPostLocation, setNewPostLocation] = useState('在校园');
-    const [tempLocation, setTempLocation] = useState('在校园');
-    const [isLocationDialogOpen, setIsLocationDialogOpen] = useState(false);
     const imageInputRef = useRef<HTMLInputElement>(null);
   
     const postsQuery = useMemoFirebase(() => {
@@ -437,11 +425,6 @@ export default function PostPage() {
         }
     };
     
-    const handleLocationSave = () => {
-        setNewPostLocation(tempLocation);
-        setIsLocationDialogOpen(false);
-    };
-    
     const handleEmojiSelect = (emoji: string) => {
         setNewPostContent(prev => prev + emoji);
     };
@@ -464,10 +447,6 @@ export default function PostPage() {
             postData.authorAvatarId = userProfile.avatarId || "avatar-4";
         }
 
-        if (newPostLocation && newPostLocation.trim() && newPostLocation !== '在校园') {
-            postData.location = newPostLocation;
-        }
-
         if (newPostImage) {
             postData.imageBase64 = newPostImage;
         }
@@ -476,8 +455,6 @@ export default function PostPage() {
 
         setNewPostContent('');
         setNewPostImage(null);
-        setNewPostLocation('在校园');
-        setTempLocation('在校园');
         if(imageInputRef.current) {
             imageInputRef.current.value = '';
         }
@@ -530,28 +507,6 @@ export default function PostPage() {
                         </CardHeader>
                         <CardFooter className="flex justify-between items-center p-4 border-t">
                             <div className="flex items-center gap-2 text-muted-foreground">
-                                <Dialog open={isLocationDialogOpen} onOpenChange={setIsLocationDialogOpen}>
-                                    <DialogTrigger asChild>
-                                        <Button variant="ghost" size="sm" className="gap-2" disabled={!user}>
-                                            <MapPin className="w-4 h-4"/>
-                                            <span className="text-sm truncate max-w-[120px]">{newPostLocation}</span>
-                                        </Button>
-                                    </DialogTrigger>
-                                    <DialogContent>
-                                        <DialogHeader>
-                                            <DialogTitle>设置位置</DialogTitle>
-                                            <DialogDescription>你正在哪里发布？</DialogDescription>
-                                        </DialogHeader>
-                                        <Input 
-                                            value={tempLocation} 
-                                            onChange={(e) => setTempLocation(e.target.value)}
-                                            placeholder="例如：主图书馆"
-                                        />
-                                        <DialogFooter>
-                                            <Button onClick={handleLocationSave}>保存</Button>
-                                        </DialogFooter>
-                                    </DialogContent>
-                                </Dialog>
                                 <Button variant="ghost" size="icon" onClick={() => imageInputRef.current?.click()} disabled={!user}>
                                     <ImagePlus className="w-5 h-5"/>
                                 </Button>
@@ -616,5 +571,3 @@ export default function PostPage() {
         </div>
     );
 }
-
-    
