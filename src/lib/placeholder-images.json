@@ -2,26 +2,38 @@
   "placeholderImages": [
     {
       "id": "news-1",
-      "description": "University building at dusk",
-      "imageUrl": "https://images.unsplash.com/flagged/photo-1554473675-d0904f3cbf38?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHx1bml2ZXJzaXR5JTIwY2FtcHVzfGVufDB8fHx8MTc2MDk2NzQ3N3ww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "university campus"
+      "description": "University library at sunset",
+      "imageUrl": "https://images.unsplash.com/photo-1529142215251-e39a3a19036c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHx1bml2ZXJzaXR5JTIwbGlicmFyeXxlbnwwfHx8fDE3NjA5NDg4Nzd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "university library"
     },
     {
       "id": "news-2",
-      "description": "Students in a modern library",
-      "imageUrl": "https://images.unsplash.com/photo-1595315343110-9b445a960442?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxzdHVkZW50cyUyMGxpYnJhcnl8ZW58MHx8fHwxNzYxMDE2NzgzfDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "students library"
+      "description": "Students walking on a university campus path",
+      "imageUrl": "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHx1bml2ZXJzaXR5JTIwY2FtcHVzfGVufDB8fHx8MTc2MDk0OTYwNnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "university campus"
     },
     {
       "id": "news-3",
-      "description": "Scientific research in a lab",
-      "imageUrl": "https://images.unsplash.com/photo-1581093577421-f561a654a353?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxzY2llbmNlJTIwbGFifGVufDB8fHx8MTc2MDk3NzQzMHww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "science lab"
+      "description": "Modern university building with glass facade",
+      "imageUrl": "https://images.unsplash.com/photo-1562774053-61a7983c842f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHx1bml2ZXJzaXR5JTIwYnVpbGRpbmd8ZW58MHx8fHwxNzYwOTQ5NjQxfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "university building"
     },
     {
       "id": "news-4",
-      "description": "University sports team celebrating",
-      "imageUrl": "https://images.unsplash.com/photo-1513635625218-6956bc843133?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxzcG9ydHMlMjB0ZWFtfGVufDB8fHx8MTc2MDk3MjA4NHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "description": "Students in a lecture hall",
+      "imageUrl": "https://images.unsplash.com/photo-1540575467063-178a50c2df87?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxsZWN0dXJlJTIwaGFsbHxlbnwwfHx8fDE3NjA5NDk3MjJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "lecture hall"
+    },
+    {
+      "id": "news-5",
+      "description": "Graduation caps being thrown in the air",
+      "imageUrl": "https://images.unsplash.com/photo-1568226292329-a3b0a6bf9a42?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxncmFkdWF0aW9ufGVufDB8fHx8MTc2MDk0OTc1OXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "graduation caps"
+    },
+    {
+      "id": "news-6",
+      "description": "University sports team celebrating a victory",
+      "imageUrl": "https://images.unsplash.com/photo-1546519638-68e109498ffc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxzb2NjZXIlMjB0ZWFtfGVufDB8fHx8MTc2MDk0OTgyMHww&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "sports team"
     },
     {
@@ -49,9 +61,45 @@
       "imageHint": "music"
     },
     {
+      "id": "news-11",
+      "description": "",
+      "imageUrl": "https://news.hust.edu.cn/__local/3/49/85/4ED15CFEFA56201133B5020C990_C5F6C308_220A8.jpg",
+      "imageHint": "marriage"
+    },
+    {
+      "id": "news-12",
+      "description": "",
+      "imageUrl": "https://news.hust.edu.cn/__local/7/A9/EC/6EBFC27BC0CF73389E7320407FA_38FE18A4_1B34A.png",
+      "imageHint": "studying"
+    },
+    {
+      "id": "news-13",
+      "description": "",
+      "imageUrl": "https://news.hust.edu.cn/__local/5/6D/4F/4A134CD1D1E44C1E44F2BE4FA2E_347480AB_D92E9.jpg",
+      "imageHint": "music"
+    },
+    {
+      "id": "news-14",
+      "description": "",
+      "imageUrl": "https://news.hust.edu.cn/__local/E/61/E0/6A4982580E9EA9DD151C4414CB4_CC492124_3B7A1.jpeg",
+      "imageHint": "meeting"
+    },
+    {
+      "id": "news-15",
+      "description": "",
+      "imageUrl": "https://news.hust.edu.cn/__local/E/5E/11/E181EF8D0BD0F20ED96F1BFBCA1_B0882787_22432.jpg",
+      "imageHint": "swimming"
+    },
+    {
+      "id": "news-16",
+      "description": "",
+      "imageUrl": "https://news.hust.edu.cn/__local/B/F9/A5/A7D2AB58CB5BB8954E3AB8D19AC_BD9A2CAA_EAB36.jpg",
+      "imageHint": "Mid-Autumn"
+    },
+    {
       "id": "avatar-1",
       "description": "Abstract colorful geometric pattern",
-      "imageUrl": "https://images.unsplash.com/photo-1489648022186-8f49310909a0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxhYnN0cmFjdCUyMGdlb21ldHJpY3xlbnwwfHx8fDE3NjA5NzExNDl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1513360371669-443f062954c8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxhYnN0cmFjdCUyMHBhdHRlcm58ZW58MHx8fHwxNzYwOTUzOTMxfDA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "abstract geometric"
     },
     {
@@ -77,24 +125,6 @@
       "description": "Starry night sky over a forest",
       "imageUrl": "https://images.unsplash.com/photo-1472552944129-b035e9ea3744?q=80&w=600&auto=format&fit=crop",
       "imageHint": "starry night"
-    },
-    {
-      "id": "avatar-6",
-      "description": "A vibrant and colorful abstract painting",
-      "imageUrl": "https://images.unsplash.com/photo-1536924940846-227afb31e2a5?q=80&w=600&auto=format&fit=crop",
-      "imageHint": "abstract painting"
-    },
-    {
-      "id": "avatar-7",
-      "description": "A playful cartoon dog character",
-      "imageUrl": "https://images.unsplash.com/photo-1541364983171-a8ba01e95cfc?q=80&w=600&auto=format&fit=crop",
-      "imageHint": "cartoon dog"
-    },
-    {
-      "id": "avatar-8",
-      "description": "Calm ocean waves on a sandy beach",
-      "imageUrl": "https://images.unsplash.com/photo-1519046904884-53103b34b206?q=80&w=600&auto=format&fit=crop",
-      "imageHint": "ocean beach"
     },
     {
       "id": "social-1",

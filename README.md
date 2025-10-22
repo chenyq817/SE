@@ -51,7 +51,7 @@ npm install
 npm run dev
 ```
 
-这将在 `http://localhost:9002` 上启动应用程序。
+这将在 `http://localhost:9003` 上启动应用程序。
 
 ### 5. Firebase 连接
 
