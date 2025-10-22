@@ -177,9 +177,9 @@ export default function SocialPage() {
                     {isLoading ? <Button size="sm" disabled><Loader2 className="h-4 w-4 animate-spin" /></Button> :
                      type === 'search' && (
                          <>
-                            {getActionType() === 'add' && <Button size="sm" onClick={() => handleFriendAction(profile.id, 'send')}><UserPlus className="mr-2 h-4 w-4" /> Add</Button>}
-                            {getActionType() === 'sent' && <Button size="sm" variant="outline" disabled>Sent</Button>}
-                            {getActionType() === 'friend' && <Button size="sm" variant="ghost" disabled>Friend</Button>}
+                            {getActionType() === 'add' && <Button size="sm" onClick={() => handleFriendAction(profile.id, 'send')}><UserPlus className="mr-2 h-4 w-4" /> 添加</Button>}
+                            {getActionType() === 'sent' && <Button size="sm" variant="outline" disabled>已发送</Button>}
+                            {getActionType() === 'friend' && <Button size="sm" variant="ghost" disabled>好友</Button>}
                          </>
                      )}
                      {type === 'request' && !isLoading && (
@@ -192,10 +192,10 @@ export default function SocialPage() {
                         <div className="flex gap-2">
                             <Button size="sm" onClick={() => handleMessage(profile.id)}>
                                 <MessageSquare className="mr-2 h-4 w-4" />
-                                Message
+                                消息
                             </Button>
                             <Button size="sm" variant="destructive" onClick={() => handleFriendAction(profile.id, 'remove')}>
-                                Remove
+                                移除
                             </Button>
                         </div>
                      )}
@@ -206,25 +206,25 @@ export default function SocialPage() {
 
     return (
         <div className="flex flex-col h-full">
-            <Header title="Social Hub" />
+            <Header title="社交中心" />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
                 <Tabs defaultValue="friends" className="max-w-4xl mx-auto">
                     <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="friends">My Friends</TabsTrigger>
-                        <TabsTrigger value="requests">Requests ({friendRequests.length})</TabsTrigger>
-                        <TabsTrigger value="search">Find People</TabsTrigger>
+                        <TabsTrigger value="friends">我的好友</TabsTrigger>
+                        <TabsTrigger value="requests">好友请求 ({friendRequests.length})</TabsTrigger>
+                        <TabsTrigger value="search">发现用户</TabsTrigger>
                     </TabsList>
                     <TabsContent value="friends">
                         <Card>
                              <CardHeader>
-                                <CardTitle>My Friends</CardTitle>
-                                <CardDescription>Manage your connections and start conversations.</CardDescription>
+                                <CardTitle>我的好友</CardTitle>
+                                <CardDescription>管理您的好友并开始对话。</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-2 h-[60vh] overflow-y-auto">
                                 {friends.length > 0 ? friends.map(profile => (
                                     <UserCard key={profile.id} profile={profile} type="friend" />
                                 )) : (
-                                    <p className="text-muted-foreground text-center pt-8">Your friends list is empty. Find some friends!</p>
+                                    <p className="text-muted-foreground text-center pt-8">您的好友列表为空，快去寻找好友吧！</p>
                                 )}
                             </CardContent>
                         </Card>
@@ -232,14 +232,14 @@ export default function SocialPage() {
                     <TabsContent value="requests">
                          <Card>
                             <CardHeader>
-                                <CardTitle>Friend Requests</CardTitle>
-                                <CardDescription>Accept or decline requests from other users.</CardDescription>
+                                <CardTitle>好友请求</CardTitle>
+                                <CardDescription>接受或拒绝来自其他用户的好友请求。</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-2 h-[60vh] overflow-y-auto">
                                {friendRequests.length > 0 ? friendRequests.map(profile => (
                                    <UserCard key={profile.id} profile={profile} type="request" />
                                )) : (
-                                 <p className="text-muted-foreground text-center pt-8">No pending friend requests.</p>
+                                 <p className="text-muted-foreground text-center pt-8">没有待处理的好友请求。</p>
                                )}
                             </CardContent>
                         </Card>
@@ -247,13 +247,13 @@ export default function SocialPage() {
                     <TabsContent value="search">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Find New Friends</CardTitle>
-                                <CardDescription>Search for other users on campus by their display name.</CardDescription>
+                                <CardTitle>发现新朋友</CardTitle>
+                                <CardDescription>按昵称搜索校园里的其他用户。</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <div className="flex gap-2">
                                     <Input
-                                        placeholder="Enter a name..."
+                                        placeholder="输入昵称..."
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                         onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -263,12 +263,12 @@ export default function SocialPage() {
                                     </Button>
                                 </div>
                                 <div className="mt-4 space-y-2 h-[50vh] overflow-y-auto">
-                                    {isSearching && <p className="text-muted-foreground text-center">Searching...</p>}
+                                    {isSearching && <p className="text-muted-foreground text-center">正在搜索...</p>}
                                     {!isSearching && searchResults.length > 0 && searchResults.map(profile => (
                                         <UserCard key={profile.id} profile={profile} type="search" />
                                     ))}
                                     {!isSearching && searchResults.length === 0 && searchTerm && (
-                                        <p className="text-muted-foreground text-center pt-4">No users found.</p>
+                                        <p className="text-muted-foreground text-center pt-4">未找到用户。</p>
                                     )}
                                 </div>
                             </CardContent>

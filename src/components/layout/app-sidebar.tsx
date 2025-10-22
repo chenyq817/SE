@@ -24,7 +24,7 @@ import {
 import { useUser } from "@/firebase";
 
 const menuItems = [
-  { href: "/", label: "仪表盘", icon: LayoutDashboard },
+  { href: "/", label: "主页", icon: LayoutDashboard },
   { href: "/news", label: "新闻", icon: Newspaper },
   { href: "/post", label: "帖子", icon: FileText },
   { href: "/social", label: "社交", icon: Users },
