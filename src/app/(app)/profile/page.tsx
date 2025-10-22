@@ -288,4 +288,47 @@ export default function ProfilePage() {
                          {form.formState.errors.age && <p className="text-sm text-destructive">{form.formState.errors.age.message}</p>}
                     </div>
                      <div className="space-y-2">
-                        <Label htmlFor="gender">性别</Label>Show in original language
+                        <Label htmlFor="gender">性别</Label>
+                        <Controller
+                            control={form.control}
+                            name="gender"
+                            render={({ field }) => (
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="选择你的性别" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Male">男</SelectItem>
+                                        <SelectItem value="Female">女</SelectItem>
+                                        <SelectItem value="Other">其他</SelectItem>
+                                        <SelectItem value="Prefer not to say">不愿透露</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="address">地址</Label>
+                        <Input id="address" {...form.register('address')} />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="bio">个人简介</Label>
+                        <Textarea id="bio" {...form.register('bio')} />
+                        {form.formState.errors.bio && <p className="text-sm text-destructive">{form.formState.errors.bio.message}</p>}
+                    </div>
+                </div>
+
+                <div className="flex justify-end">
+                    <Button type="submit" disabled={isSaving || !form.formState.isDirty}>
+                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        保存更改
+                    </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </main>
+    </div>
+  );
+}

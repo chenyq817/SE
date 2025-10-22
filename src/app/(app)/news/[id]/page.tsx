@@ -59,4 +59,9 @@ export default function NewsDetailPage({ params }: { params: { id: string } }) {
               className="prose dark:prose-invert max-w-none text-lg"
               dangerouslySetInnerHTML={{ __html: newsItem.content.replace(/\n/g, '<br />') }} 
             />
-          </
+          </article>
+        </div>
+      </main>
+    </div>
+  );
+}
