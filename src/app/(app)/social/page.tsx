@@ -192,10 +192,10 @@ export default function SocialPage() {
                         <div className="flex gap-2">
                             <Button size="sm" onClick={() => handleMessage(profile.id)}>
                                 <MessageSquare className="mr-2 h-4 w-4" />
-                                消息
+                                发送消息
                             </Button>
                             <Button size="sm" variant="destructive" onClick={() => handleFriendAction(profile.id, 'remove')}>
-                                移除
+                                移除好友
                             </Button>
                         </div>
                      )}
@@ -212,7 +212,7 @@ export default function SocialPage() {
                     <TabsList className="grid w-full grid-cols-3">
                         <TabsTrigger value="friends">我的好友</TabsTrigger>
                         <TabsTrigger value="requests">好友请求 ({friendRequests.length})</TabsTrigger>
-                        <TabsTrigger value="search">发现用户</TabsTrigger>
+                        <TabsTrigger value="search">查找用户</TabsTrigger>
                     </TabsList>
                     <TabsContent value="friends">
                         <Card>
@@ -248,7 +248,7 @@ export default function SocialPage() {
                         <Card>
                             <CardHeader>
                                 <CardTitle>发现新朋友</CardTitle>
-                                <CardDescription>按昵称搜索校园里的其他用户。</CardDescription>
+                                <CardDescription>按昵称搜索其他用户。</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <div className="flex gap-2">

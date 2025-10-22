@@ -364,3 +364,7 @@ export default function ChatPage() {
                         </Button>
                     </div>
                 </div>
+            </footer>
+        </div>
+    );
+}

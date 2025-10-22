@@ -84,7 +84,7 @@ export default function ChatListPage() {
                                                     </Avatar>
                                                     <div className="flex-grow overflow-hidden">
                                                         <p className="font-semibold truncate">{otherParticipantInfo.displayName}</p>
-                                                        <p className="text-sm text-muted-foreground truncate">{lastMessageContent || '暂无消息'}</p>
+                                                        <p className="text-sm text-muted-foreground truncate">{lastMessageContent || '暂无聊天记录'}</p>
                                                     </div>
                                                     {chat.lastMessage?.timestamp && (
                                                         <p className="text-xs text-muted-foreground self-start whitespace-nowrap">
@@ -105,4 +105,6 @@ export default function ChatListPage() {
                     </CardContent>
                 </Card>
             </main>
-        
+        </div>
+    );
+}
