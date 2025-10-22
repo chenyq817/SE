@@ -4,108 +4,81 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Header } from "@/components/layout/header";
-import { Newspaper, ArrowRight, Rss, Anchor, Users, MessageSquare, FileText } from "lucide-react";
+import { Newspaper, Users, MessageSquare, FileText } from "lucide-react";
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export default function DashboardPage() {
-  const newsImage = PlaceHolderImages.find(img => img.id === 'news-1');
   const campusImage = PlaceHolderImages.find(img => img.id === 'news-2');
 
+  const navItems = [
+    {
+      href: "/news",
+      icon: Newspaper,
+      title: "Smart News",
+      description: "Catch up on the latest campus news and events.",
+      color: "bg-blue-100 dark:bg-blue-900/50",
+      textColor: "text-blue-600 dark:text-blue-400"
+    },
+    {
+      href: "/post",
+      icon: FileText,
+      title: "Campus Posts",
+      description: "See what's happening and share your moments.",
+       color: "bg-green-100 dark:bg-green-900/50",
+       textColor: "text-green-600 dark:text-green-400"
+    },
+    {
+      href: "/social",
+      icon: Users,
+      title: "Social Hub",
+      description: "Find friends, manage connections, and start chatting.",
+      color: "bg-yellow-100 dark:bg-yellow-900/50",
+      textColor: "text-yellow-600 dark:text-yellow-400"
+    },
+    {
+      href: "/community",
+      icon: MessageSquare,
+      title: "Community Wall",
+      description: "Leave a public message for everyone to see.",
+      color: "bg-purple-100 dark:bg-purple-900/50",
+      textColor: "text-purple-600 dark:text-purple-400"
+    },
+  ];
+
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-secondary/50">
       <Header title="Dashboard" />
       <main className="flex-1 p-4 md:p-6 lg:p-8 space-y-8">
         <section
-          className="rounded-lg border bg-card text-card-foreground shadow-lg w-full p-6 md:p-8 bg-cover bg-center"
-          style={{ backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(${campusImage?.imageUrl})`}}
+          className="rounded-xl border bg-card text-card-foreground shadow-lg w-full p-8 md:p-12 bg-gradient-to-r from-primary to-blue-600"
         >
           <div className="flex flex-col items-start text-white">
-            <h2 className="text-3xl font-bold font-headline">Welcome to I know hust</h2>
-            <p className="mt-2 text-lg text-muted-foreground text-gray-200">明德厚学，求是创新</p>
+            <h2 className="text-4xl font-bold font-headline">Welcome to I know hust</h2>
+            <p className="mt-2 text-lg text-gray-200">明德厚学，求是创新</p>
           </div>
         </section>
 
-        <section className="grid gap-6 md:grid-cols-2">
-          <Card className="flex flex-col">
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <Newspaper className="w-6 h-6 text-primary" />
-                <CardTitle className="font-headline">Latest News</CardTitle>
-              </div>
-              <CardDescription>Top stories from around the campus.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex-grow space-y-4">
-               {newsImage && (
-                <div className="relative aspect-video w-full">
-                  <Image
-                    src={newsImage.imageUrl}
-                    alt={newsImage.description}
-                    fill
-                    className="rounded-md object-cover"
-                    data-ai-hint={newsImage.imageHint}
-                  />
-                </div>
-              )}
-              <h3 className="font-semibold">Major Update to Campus Library Hours</h3>
-              <p className="text-sm text-muted-foreground">Starting next month, the main library will extend its hours during the exam period...</p>
-            </CardContent>
-            <CardFooter>
-              <Link href="/news" className="w-full" passHref>
-                <Button variant="outline" className="w-full">
-                  Read More News
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-            </CardFooter>
-          </Card>
-
-          <Card className="flex flex-col">
-            <CardHeader>
-                <div className="flex items-center gap-3">
-                  <Anchor className="w-6 h-6 text-primary" />
-                  <CardTitle className="font-headline">Community Hub</CardTitle>
-                </div>
-              <CardDescription>Connect with fellow students.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex-grow grid grid-cols-1 gap-4">
-              <Link href="/post" passHref>
-                <div className="rounded-lg border p-4 hover:bg-accent/10 transition-colors h-full flex flex-col justify-center items-center gap-2">
-                  <FileText className="w-8 h-8 text-primary"/>
-                  <h3 className="font-semibold">Campus Posts</h3>
-                  <p className="text-sm text-muted-foreground text-center">See what's happening right now.</p>
-                </div>
-              </Link>
-               <Link href="/social" passHref>
-                <div className="rounded-lg border p-4 hover:bg-accent/10 transition-colors h-full flex flex-col justify-center items-center gap-2">
-                  <Users className="w-8 h-8 text-primary"/>
-                  <h3 className="font-semibold">Social Hub</h3>
-                  <p className="text-sm text-muted-foreground text-center">Find friends and connect.</p>
-                </div>
-              </Link>
-               <Link href="/community" passHref>
-                <div className="rounded-lg border p-4 hover:bg-accent/10 transition-colors h-full flex flex-col justify-center items-center gap-2">
-                  <MessageSquare className="w-8 h-8 text-primary"/>
-                  <h3 className="font-semibold">Community Wall</h3>
-                  <p className="text-sm text-muted-foreground text-center">Leave a message for everyone.</p>
-                </div>
-              </Link>
-            </CardContent>
-             <CardFooter>
-                <Link href="/social" className="w-full" passHref>
-                  <Button variant="outline" className="w-full">
-                      Manage Friends
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
-            </CardFooter>
-          </Card>
+        <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {navItems.map((item) => (
+            <Link href={item.href} key={item.href} passHref>
+              <Card className="h-full flex flex-col hover:shadow-xl hover:-translate-y-1 transition-transform duration-300">
+                <CardHeader>
+                  <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${item.color}`}>
+                     <item.icon className={`w-6 h-6 ${item.textColor}`} />
+                  </div>
+                </CardHeader>
+                <CardContent className="flex-grow">
+                  <h3 className="font-semibold text-lg">{item.title}</h3>
+                  <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
         </section>
       </main>
     </div>
