@@ -477,7 +477,7 @@ export default function PostPage() {
                                 )}
                                 <div className="flex-grow">
                                     <Textarea 
-                                        placeholder="你在想些什么？" 
+                                        placeholder="说点什么..." 
                                         className="mb-2" 
                                         value={newPostContent}
                                         onChange={(e) => setNewPostContent(e.target.value)}

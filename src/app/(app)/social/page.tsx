@@ -21,16 +21,28 @@ import { collection, query, where, getDocs, writeBatch, arrayUnion, arrayRemove,
 import type { WithId } from '@/firebase';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+
+type FriendRequest = {
+  userId: string;
+  message: string;
+};
 
 type UserProfile = {
   displayName: string;
   avatarId: string;
   imageBase64?: string;
   friendIds?: string[];
-  friendRequestsSent?: string[];
-  friendRequestsReceived?: string[];
+  friendRequestsSent?: FriendRequest[];
+  friendRequestsReceived?: FriendRequest[];
   displayName_lowercase?: string;
 };
+
+type EnrichedFriendRequest = {
+    profile: WithId<UserProfile>;
+    message: string;
+}
 
 export default function SocialPage() {
     const { user } = useUser();
@@ -40,6 +52,9 @@ export default function SocialPage() {
     const [searchResults, setSearchResults] = useState<WithId<UserProfile>[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
+    const [verificationMessage, setVerificationMessage] = useState('');
+    const [isRequestDialogOpen, setIsRequestDialogOpen] = useState(false);
+    const [selectedUserForRequest, setSelectedUserForRequest] = useState<WithId<UserProfile> | null>(null);
 
     const userProfileRef = useMemoFirebase(() => {
         if (!firestore || !user) return null;
@@ -48,9 +63,9 @@ export default function SocialPage() {
 
     const { data: currentUserProfile, refetch: refetchCurrentUserProfile } = useDoc<UserProfile>(userProfileRef);
 
-    const [friendRequests, setFriendRequests] = useState<WithId<UserProfile>[]>([]);
+    const [friendRequests, setFriendRequests] = useState<EnrichedFriendRequest[]>([]);
     const [friends, setFriends] = useState<WithId<UserProfile>[]>([]);
-
+    
     const fetchProfilesByIds = async (ids: string[]): Promise<WithId<UserProfile>[]> => {
         if (!firestore || ids.length === 0) return [];
         
@@ -64,20 +79,29 @@ export default function SocialPage() {
             })
             .catch(error => {
                 console.error("Error fetching profiles by IDs:", error);
-                // Create and emit a contextual error for better debugging
                 const permissionError = new FirestorePermissionError({
-                    path: `users/[${ids.join(',')}]`, // Indicate which user docs were being fetched
+                    path: `users/[${ids.join(',')}]`,
                     operation: 'get',
                 });
                 errorEmitter.emit('permission-error', permissionError);
-                return []; // Return empty array on error
+                return [];
             });
     };
 
 
     useEffect(() => {
         if (currentUserProfile?.friendRequestsReceived) {
-            fetchProfilesByIds(currentUserProfile.friendRequestsReceived).then(setFriendRequests);
+            const requestUserIds = currentUserProfile.friendRequestsReceived.map(req => req.userId);
+            fetchProfilesByIds(requestUserIds).then(profiles => {
+                const enrichedRequests = profiles.map(profile => {
+                    const request = currentUserProfile.friendRequestsReceived?.find(req => req.userId === profile.id);
+                    return {
+                        profile: profile,
+                        message: request?.message || ''
+                    };
+                });
+                setFriendRequests(enrichedRequests);
+            });
         } else {
             setFriendRequests([]);
         }
@@ -108,8 +132,8 @@ export default function SocialPage() {
         }
     };
     
-    const handleFriendAction = async (targetUserId: string, action: 'send' | 'accept' | 'decline' | 'remove') => {
-        if (!firestore || !user) return;
+    const handleFriendAction = async (targetUserId: string, action: 'accept' | 'decline' | 'remove', message: string = '') => {
+        if (!firestore || !user || !currentUserProfile) return;
         setActionLoading(targetUserId);
 
         const currentUserRef = doc(firestore, 'users', user.uid);
@@ -118,18 +142,33 @@ export default function SocialPage() {
         try {
             const batch = writeBatch(firestore);
 
+            const currentUserRequest = { userId: user.uid, message: message };
+            const targetUserRequest = { userId: targetUserId, message: message };
+
             switch (action) {
-                case 'send':
-                    batch.update(currentUserRef, { friendRequestsSent: arrayUnion(targetUserId) });
-                    batch.update(targetUserRef, { friendRequestsReceived: arrayUnion(user.uid) });
-                    break;
                 case 'accept':
-                    batch.update(currentUserRef, { friendIds: arrayUnion(targetUserId), friendRequestsReceived: arrayRemove(targetUserId) });
-                    batch.update(targetUserRef, { friendIds: arrayUnion(user.uid), friendRequestsSent: arrayRemove(user.uid) });
+                    const updatedReceived = currentUserProfile.friendRequestsReceived?.filter(req => req.userId !== targetUserId) || [];
+                    batch.update(currentUserRef, { 
+                        friendIds: arrayUnion(targetUserId), 
+                        friendRequestsReceived: updatedReceived 
+                    });
+                    
+                    const targetUserProfileSnap = await getDoc(targetUserRef);
+                    const targetUserProfile = targetUserProfileSnap.data() as UserProfile;
+                    const updatedSent = targetUserProfile.friendRequestsSent?.filter(req => req.userId !== user.uid) || [];
+                    batch.update(targetUserRef, { 
+                        friendIds: arrayUnion(user.uid), 
+                        friendRequestsSent: updatedSent
+                    });
                     break;
                 case 'decline':
-                    batch.update(currentUserRef, { friendRequestsReceived: arrayRemove(targetUserId) });
-                    batch.update(targetUserRef, { friendRequestsSent: arrayRemove(user.uid) });
+                    const receivedAfterDecline = currentUserProfile.friendRequestsReceived?.filter(req => req.userId !== targetUserId) || [];
+                    batch.update(currentUserRef, { friendRequestsReceived: receivedAfterDecline });
+
+                    const targetSnapDecline = await getDoc(targetUserRef);
+                    const targetProfileDecline = targetSnapDecline.data() as UserProfile;
+                    const sentAfterDecline = targetProfileDecline.friendRequestsSent?.filter(req => req.userId !== user.uid) || [];
+                    batch.update(targetUserRef, { friendRequestsSent: sentAfterDecline });
                     break;
                 case 'remove':
                      batch.update(currentUserRef, { friendIds: arrayRemove(targetUserId) });
@@ -146,60 +185,97 @@ export default function SocialPage() {
         }
     };
     
+    const handleOpenRequestDialog = (user: WithId<UserProfile>) => {
+        setSelectedUserForRequest(user);
+        setIsRequestDialogOpen(true);
+    };
+
+    const handleSendRequest = async () => {
+        if (!firestore || !user || !selectedUserForRequest) return;
+        setActionLoading(selectedUserForRequest.id);
+        setIsRequestDialogOpen(false);
+        
+        const currentUserRef = doc(firestore, 'users', user.uid);
+        const targetUserRef = doc(firestore, 'users', selectedUserForRequest.id);
+
+        try {
+            const batch = writeBatch(firestore);
+            const message = verificationMessage || `你好，我是${currentUserProfile?.displayName}。`;
+            
+            batch.update(currentUserRef, { friendRequestsSent: arrayUnion({ userId: selectedUserForRequest.id, message }) });
+            batch.update(targetUserRef, { friendRequestsReceived: arrayUnion({ userId: user.uid, message }) });
+            
+            await batch.commit();
+            if (refetchCurrentUserProfile) refetchCurrentUserProfile();
+        } catch (error) {
+            console.error("Error sending friend request:", error);
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `users/${selectedUserForRequest.id}`, operation: 'update' }));
+        } finally {
+            setActionLoading(null);
+            setVerificationMessage('');
+            setSelectedUserForRequest(null);
+        }
+    }
+
     const handleMessage = (friendId: string) => {
         if(!user) return;
         const chatId = [user.uid, friendId].sort().join('-');
         router.push(`/chat/${chatId}`);
     };
 
-    const UserCard = ({ profile, type }: { profile: WithId<UserProfile>; type: 'search' | 'request' | 'friend' }) => {
+    const UserCard = ({ profile, type, message }: { profile: WithId<UserProfile>; type: 'search' | 'request' | 'friend', message?: string }) => {
         const avatarSrc = profile.imageBase64 || PlaceHolderImages.find(p => p.id === profile.avatarId)?.imageUrl;
         const isLoading = actionLoading === profile.id;
 
         const getActionType = () => {
             if (currentUserProfile?.friendIds?.includes(profile.id)) return 'friend';
-            if (currentUserProfile?.friendRequestsSent?.includes(profile.id)) return 'sent';
+            if (currentUserProfile?.friendRequestsSent?.some(req => req.userId === profile.id)) return 'sent';
             return 'add';
         };
 
         return (
-            <div className="flex items-center justify-between p-2 rounded-lg hover:bg-secondary">
-                <div className="flex items-center gap-3">
-                    <Link href={`/profile/${profile.id}`} passHref>
-                      <Avatar>
-                          <AvatarImage src={avatarSrc} alt={profile.displayName} />
-                          <AvatarFallback>{profile.displayName.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                    </Link>
-                    <p className="font-medium">{profile.displayName}</p>
+            <div className="flex flex-col p-3 rounded-lg hover:bg-secondary">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <Link href={`/profile/${profile.id}`} passHref>
+                          <Avatar>
+                              <AvatarImage src={avatarSrc} alt={profile.displayName} />
+                              <AvatarFallback>{profile.displayName.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                        </Link>
+                        <p className="font-medium">{profile.displayName}</p>
+                    </div>
+                    <div className="flex gap-2">
+                        {isLoading ? <Button size="sm" disabled><Loader2 className="h-4 w-4 animate-spin" /></Button> :
+                         type === 'search' && (
+                             <>
+                                {getActionType() === 'add' && <Button size="sm" onClick={() => handleOpenRequestDialog(profile)}><UserPlus className="mr-2 h-4 w-4" /> 添加</Button>}
+                                {getActionType() === 'sent' && <Button size="sm" variant="outline" disabled>已发送</Button>}
+                                {getActionType() === 'friend' && <Button size="sm" variant="ghost" disabled>好友</Button>}
+                             </>
+                         )}
+                         {type === 'request' && !isLoading && (
+                             <>
+                                <Button size="icon" onClick={() => handleFriendAction(profile.id, 'accept')}><Check className="w-4 h-4" /></Button>
+                                <Button size="icon" variant="outline" onClick={() => handleFriendAction(profile.id, 'decline')}><X className="w-4 h-4" /></Button>
+                             </>
+                         )}
+                         {type === 'friend' && !isLoading && (
+                            <div className="flex gap-2">
+                                <Button size="sm" onClick={() => handleMessage(profile.id)}>
+                                    <MessageSquare className="mr-2 h-4 w-4" />
+                                    发送消息
+                                </Button>
+                                <Button size="sm" variant="destructive" onClick={() => handleFriendAction(profile.id, 'remove')}>
+                                    移除好友
+                                </Button>
+                            </div>
+                         )}
+                    </div>
                 </div>
-                <div className="flex gap-2">
-                    {isLoading ? <Button size="sm" disabled><Loader2 className="h-4 w-4 animate-spin" /></Button> :
-                     type === 'search' && (
-                         <>
-                            {getActionType() === 'add' && <Button size="sm" onClick={() => handleFriendAction(profile.id, 'send')}><UserPlus className="mr-2 h-4 w-4" /> 添加</Button>}
-                            {getActionType() === 'sent' && <Button size="sm" variant="outline" disabled>已发送</Button>}
-                            {getActionType() === 'friend' && <Button size="sm" variant="ghost" disabled>好友</Button>}
-                         </>
-                     )}
-                     {type === 'request' && !isLoading && (
-                         <>
-                            <Button size="icon" onClick={() => handleFriendAction(profile.id, 'accept')}><Check className="w-4 h-4" /></Button>
-                            <Button size="icon" variant="outline" onClick={() => handleFriendAction(profile.id, 'decline')}><X className="w-4 h-4" /></Button>
-                         </>
-                     )}
-                     {type === 'friend' && !isLoading && (
-                        <div className="flex gap-2">
-                            <Button size="sm" onClick={() => handleMessage(profile.id)}>
-                                <MessageSquare className="mr-2 h-4 w-4" />
-                                发送消息
-                            </Button>
-                            <Button size="sm" variant="destructive" onClick={() => handleFriendAction(profile.id, 'remove')}>
-                                移除好友
-                            </Button>
-                        </div>
-                     )}
-                </div>
+                 {type === 'request' && message && (
+                    <p className="text-sm text-muted-foreground mt-2 ml-12 p-2 bg-background rounded-md">{message}</p>
+                )}
             </div>
         );
     };
@@ -208,6 +284,28 @@ export default function SocialPage() {
         <div className="flex flex-col h-full">
             <Header title="社交中心" />
             <main className="flex-1 p-4 md:p-6 lg:p-8">
+                 <Dialog open={isRequestDialogOpen} onOpenChange={setIsRequestDialogOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>发送好友请求给 {selectedUserForRequest?.displayName}</DialogTitle>
+                            <DialogDescription>
+                                添加一条验证消息，让对方更好地认识你。
+                            </DialogDescription>
+                        </DialogHeader>
+                        <Textarea
+                            placeholder={`你好，我是${currentUserProfile?.displayName}...`}
+                            value={verificationMessage}
+                            onChange={(e) => setVerificationMessage(e.target.value)}
+                        />
+                        <DialogFooter>
+                             <DialogClose asChild>
+                                <Button type="button" variant="secondary">取消</Button>
+                            </DialogClose>
+                            <Button type="button" onClick={handleSendRequest}>发送</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
                 <Tabs defaultValue="friends" className="max-w-4xl mx-auto">
                     <TabsList className="grid w-full grid-cols-3">
                         <TabsTrigger value="friends">我的好友</TabsTrigger>
@@ -236,8 +334,8 @@ export default function SocialPage() {
                                 <CardDescription>接受或拒绝来自其他用户的好友请求。</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-2 h-[60vh] overflow-y-auto">
-                               {friendRequests.length > 0 ? friendRequests.map(profile => (
-                                   <UserCard key={profile.id} profile={profile} type="request" />
+                               {friendRequests.length > 0 ? friendRequests.map(req => (
+                                   <UserCard key={req.profile.id} profile={req.profile} type="request" message={req.message} />
                                )) : (
                                  <p className="text-muted-foreground text-center pt-8">没有待处理的好友请求。</p>
                                )}

@@ -159,7 +159,7 @@ export default function AdminPage() {
               <Button asChild>
                 <Link href="/admin/create-news">
                   <PlusCircle className="mr-2 h-4 w-4" />
-                  发布新新闻
+                  发布新闻
                 </Link>
               </Button>
             </CardHeader>

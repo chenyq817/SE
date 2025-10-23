@@ -117,16 +117,26 @@
         },
         "friendRequestsSent": {
           "type": "array",
-          "description": "List of user IDs to whom this user has sent a friend request.",
+          "description": "List of friend requests sent by this user.",
           "items": {
-            "type": "string"
+            "type": "object",
+            "properties": {
+              "userId": { "type": "string", "description": "The ID of the user to whom the request was sent." },
+              "message": { "type": "string", "description": "The verification message sent with the request." }
+            },
+            "required": ["userId"]
           }
         },
         "friendRequestsReceived": {
           "type": "array",
-          "description": "List of user IDs who have sent a friend request to this user.",
+          "description": "List of friend requests received by this user.",
           "items": {
-            "type": "string"
+            "type": "object",
+            "properties": {
+              "userId": { "type": "string", "description": "The ID of the user who sent the request." },
+              "message": { "type": "string", "description": "The verification message received with the request." }
+            },
+            "required": ["userId"]
           }
         },
         "lastActive": {
