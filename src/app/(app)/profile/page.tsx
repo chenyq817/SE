@@ -148,8 +148,6 @@ export default function ProfilePage() {
     // This updates the main user profile document non-blockingly
     updateDocumentNonBlocking(userProfileRef, updatedData);
     
-    // The rest of the logic performs a batch update for related content
-    const nameChanged = false; // Name change is disabled
     const avatarChanged = data.avatarId !== userProfile?.avatarId || data.imageBase64 !== userProfile?.imageBase64;
 
     if (avatarChanged) {
@@ -158,12 +156,16 @@ export default function ProfilePage() {
         try {
             // Define queries for user's content
             const postsQuery = query(collection(firestore, 'posts'), where('authorId', '==', user.uid));
+            const commentsInPostsQuery = query(collection(firestore, 'posts'), where('commentCount', '>', 0)); // Only get posts with comments
             const wallMessagesQuery = query(collection(firestore, 'wallMessages'), where('authorId', '==', user.uid));
-
+            const chatsQuery = query(collection(firestore, 'chats'), where('participantIds', 'array-contains', user.uid));
+            
             // Fetch all content types that need updating
-            const [postsSnapshot, wallMessagesSnapshot] = await Promise.all([
+            const [postsSnapshot, commentedPostsSnapshot, wallMessagesSnapshot, chatsSnapshot] = await Promise.all([
                 getDocs(postsQuery),
-                getDocs(wallMessagesQuery)
+                getDocs(commentsInPostsQuery),
+                getDocs(wallMessagesQuery),
+                getDocs(chatsQuery)
             ]);
             
             const avatarUpdatePayload = {
@@ -171,32 +173,35 @@ export default function ProfilePage() {
               authorAvatarId: data.avatarId || ""
             };
 
-            // Update posts and collect post IDs for comment updates
-            const postIds: string[] = [];
+            // Update posts
             postsSnapshot.forEach(postDoc => {
-                postIds.push(postDoc.id);
                 const postRef = doc(firestore, 'posts', postDoc.id);
                 batch.update(postRef, avatarUpdatePayload);
             });
-
-            // Update wall messages
-            wallMessagesSnapshot.forEach(msgDoc => {
-                const msgRef = doc(firestore, 'wallMessages', msgDoc.id);
-                // Wall messages don't have avatar info, only authorName. If they did, it would be updated here.
-            });
             
-            // Now, update comments inside all user's posts
-            for (const postId of postIds) {
-                const commentsQuery = query(
-                    collection(firestore, "posts", postId, "comments"),
-                    where("authorId", "==", user.uid)
-                );
+            // Update comments where user is the author
+            for (const postDoc of commentedPostsSnapshot.docs) {
+                const commentsQuery = query(collection(firestore, "posts", postDoc.id, "comments"), where("authorId", "==", user.uid));
                 const commentsSnapshot = await getDocs(commentsQuery);
                 commentsSnapshot.forEach(commentDoc => {
-                    const commentRef = doc(firestore, "posts", postId, "comments", commentDoc.id);
+                    const commentRef = doc(firestore, "posts", postDoc.id, "comments", commentDoc.id);
                     batch.update(commentRef, avatarUpdatePayload);
                 });
             }
+
+            // Update wall messages (if they stored avatar info, which they don't currently)
+
+            // Update participantInfo in chats
+            chatsSnapshot.forEach(chatDoc => {
+                const chatRef = doc(firestore, 'chats', chatDoc.id);
+                const chatData = chatDoc.data();
+                const participantInfoUpdate = {
+                    [`participantInfo.${user.uid}.imageBase64`]: data.imageBase64 || "",
+                    [`participantInfo.${user.uid}.avatarId`]: data.avatarId || ""
+                };
+                batch.update(chatRef, participantInfoUpdate);
+            });
+
 
             await batch.commit();
 

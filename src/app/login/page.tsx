@@ -129,6 +129,9 @@ export default function LoginPage() {
           age: null,
           gender: 'Prefer not to say',
           address: '',
+          friendIds: [],
+          friendRequestsSent: [],
+          friendRequestsReceived: [],
         }, { merge: true });
 
         toast({ title: 'Sign up successful! Please sign in.' });
