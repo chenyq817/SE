@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Eye, Newspaper, PlusCircle } from "lucide-react";
+import { MoreHorizontal, Eye, Newspaper, PlusCircle, ArrowLeft } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useUser, useFirestore, deleteDocumentNonBlocking, useDoc, useMemoFirebase } from "@/firebase";
 import { useRouter } from "next/navigation";
@@ -63,21 +63,17 @@ export default function AdminPage() {
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [isContentLoading, setIsContentLoading] = useState(true);
 
-  // Stricter authorization check. Redirect only when we are certain the user is not an admin.
-  useEffect(() => {
-    // Wait until both user and profile are loaded
-    if (!isUserLoading && !isProfileLoading) {
-      // If profile is loaded and isAdmin is not explicitly true, redirect.
-      if (userProfile?.isAdmin !== true) {
-        router.push('/');
-      }
-    }
-  }, [isUserLoading, isProfileLoading, userProfile, router]);
-
-  const isAuthorized = useMemo(() => userProfile?.isAdmin === true, [userProfile]);
+  const isAuthorized = userProfile?.isAdmin === true;
 
   useEffect(() => {
-    if (!firestore || !isAuthorized) return;
+    // This effect should only fetch data if the user is authorized.
+    if (!firestore || !isAuthorized) {
+        if (!isUserLoading && !isProfileLoading) {
+            // If loading is complete and user is not authorized, stop the content loader.
+            setIsContentLoading(false);
+        }
+        return;
+    };
 
     const fetchAllData = async () => {
         setIsContentLoading(true);
@@ -123,7 +119,7 @@ export default function AdminPage() {
     };
 
     fetchAllData();
-  }, [firestore, isAuthorized, user?.uid]);
+  }, [firestore, isAuthorized, user?.uid, isUserLoading, isProfileLoading]);
 
 
   const handleDelete = (item: ContentItem) => {
@@ -139,16 +135,23 @@ export default function AdminPage() {
      return (
       <div className="flex h-screen w-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
+        <p className="ml-4">正在验证权限...</p>
       </div>
     );
   }
   
   if (!isAuthorized) {
-    // This case will be hit if loading is finished but the user is not an admin.
-    // The useEffect will handle the redirect, but this prevents rendering the admin content.
     return (
-      <div className="flex h-screen w-screen items-center justify-center">
-        <p>无权访问。</p>
+      <div className="flex flex-col h-full items-center justify-center text-center">
+        <Header title="无权访问"/>
+        <main className="flex-1 flex flex-col items-center justify-center">
+            <h2 className="text-2xl font-bold">无权访问</h2>
+            <p className="text-muted-foreground mt-2">您没有权限查看此页面。</p>
+            <Button onClick={() => router.push('/')} className="mt-6">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                返回主页
+            </Button>
+        </main>
       </div>
     );
   }
@@ -240,7 +243,7 @@ export default function AdminPage() {
                         })}
                     </TableBody>
                 </Table>
-                 {!isContentLoading && allUsers.length === 0 && (
+                 {isContentLoading ? <div className="text-center p-8"><Loader2 className="h-6 w-6 animate-spin mx-auto"/></div> : allUsers.length === 0 && (
                     <div className="text-center p-8 text-muted-foreground">
                         未找到其他用户。
                     </div>
@@ -298,7 +301,7 @@ export default function AdminPage() {
                         ))}
                     </TableBody>
                 </Table>
-                 {!isContentLoading && allContent.length === 0 && (
+                 {isContentLoading ? <div className="text-center p-8"><Loader2 className="h-6 w-6 animate-spin mx-auto"/></div> : allContent.length === 0 && (
                     <div className="text-center p-8 text-muted-foreground">
                         没有需要审核的内容。
                     </div>
