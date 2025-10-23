@@ -133,10 +133,6 @@
             "type": "string",
             "format": "date-time",
             "description": "Timestamp of the user's last activity."
-        },
-        "isAdmin": {
-            "type": "boolean",
-            "description": "Flag to indicate if the user is an administrator."
         }
       },
       "required": [

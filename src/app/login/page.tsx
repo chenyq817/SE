@@ -119,14 +119,11 @@ export default function LoginPage() {
         const userProfileRef = doc(firestore, 'users', newUser.uid);
         const randomAvatarId = defaultAvatars[Math.floor(Math.random() * defaultAvatars.length)];
         
-        const isAdmin = values.displayName.toLowerCase() === 'admin';
-
         setDocumentNonBlocking(userProfileRef, {
           displayName: values.displayName,
           displayName_lowercase: values.displayName.toLowerCase(),
           email: values.email,
           avatarId: randomAvatarId,
-          isAdmin: isAdmin,
           bio: '',
           age: null,
           gender: '不愿透露',

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Header } from "@/components/layout/header";
@@ -45,7 +44,6 @@ type UserProfile = WithId<{
   displayName: string;
   avatarId: string;
   imageBase64?: string;
-  isAdmin?: boolean;
 }>;
 
 
@@ -54,17 +52,11 @@ export default function AdminPage() {
   const router = useRouter();
   const firestore = useFirestore();
 
-  const userProfileRef = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return doc(firestore, 'users', user.uid);
-  }, [firestore, user]);
-  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
-
   const [allContent, setAllContent] = useState<ContentItem[]>([]);
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [isContentLoading, setIsContentLoading] = useState(true);
 
-  const isAuthorized = userProfile?.isAdmin === true;
+  const isAuthorized = user?.email === 'admin@111.com';
 
   useEffect(() => {
     // Only run if authorized. The main component render will handle unauthorized state.
@@ -127,7 +119,7 @@ export default function AdminPage() {
   };
 
 
-  if (isUserLoading || isProfileLoading) {
+  if (isUserLoading) {
      return (
       <div className="flex h-screen w-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -136,7 +128,7 @@ export default function AdminPage() {
     );
   }
   
-  if (!user || userProfile?.isAdmin !== true) {
+  if (!isAuthorized) {
     return (
       <div className="flex flex-col h-full items-center justify-center text-center">
         <Header title="无权访问"/>
@@ -227,7 +219,7 @@ export default function AdminPage() {
                                 </TableCell>
                                 <TableCell className="font-medium flex items-center gap-2">
                                   {profile.displayName}
-                                  {profile.isAdmin && <Badge variant="destructive">管理员</Badge>}
+                                  {profile.displayName === 'admin' && <Badge variant="destructive">管理员</Badge>}
                                 </TableCell>
                                 <TableCell className="text-right">
                                     <Button asChild variant="outline" size="sm">

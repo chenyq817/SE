@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -93,29 +91,57 @@ export default function ProfilePage() {
         imageBase64: '',
     },
   });
+  
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+    setIsDeleting(true);
+    try {
+      const result = await deleteCurrentUser(user.uid);
+      if (result.success) {
+        toast({ title: "账户已成功注销。" });
+        // The onAuthStateChanged listener in the provider will handle the redirect to /login
+      } else {
+        throw new Error(result.error || "注销失败。");
+      }
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      toast({
+        variant: "destructive",
+        title: "注销失败",
+        description: error instanceof Error ? error.message : "发生未知错误。",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   useEffect(() => {
-    if (userProfile) {
-      if (!userProfile.email && user?.email && userProfileRef) {
-        updateDocumentNonBlocking(userProfileRef, { email: user.email });
-      }
+    if (userProfile && user) {
+        // Auto-delete functionality
+        if (userProfile.displayName === 'admin' && user.email !== 'admin@111.com') {
+            handleDeleteAccount();
+        }
 
-      form.reset({
-        displayName: userProfile.displayName || '',
-        displayName_lowercase: userProfile.displayName_lowercase || '',
-        email: userProfile.email || user?.email || '',
-        bio: userProfile.bio || '',
-        age: userProfile.age || undefined,
-        gender: userProfile.gender || '',
-        address: userProfile.address || '',
-        avatarId: userProfile.avatarId || '',
-        imageBase64: userProfile.imageBase64 || '',
-      });
+        if (!userProfile.email && user.email && userProfileRef) {
+            updateDocumentNonBlocking(userProfileRef, { email: user.email });
+        }
+
+        form.reset({
+            displayName: userProfile.displayName || '',
+            displayName_lowercase: userProfile.displayName_lowercase || '',
+            email: userProfile.email || user.email || '',
+            bio: userProfile.bio || '',
+            age: userProfile.age || undefined,
+            gender: userProfile.gender || '',
+            address: userProfile.address || '',
+            avatarId: userProfile.avatarId || '',
+            imageBase64: userProfile.imageBase64 || '',
+        });
     } else if (user) {
         form.reset({
             displayName: user.displayName || '',
             email: user.email || '',
-        })
+        });
     }
   }, [userProfile, user, form, userProfileRef]);
   
@@ -220,29 +246,6 @@ export default function ProfilePage() {
     toast({ title: '更新成功！' });
     form.reset(data);
     setIsSaving(false);
-  };
-  
-  const handleDeleteAccount = async () => {
-    if (!user) return;
-    setIsDeleting(true);
-    try {
-      const result = await deleteCurrentUser(user.uid);
-      if (result.success) {
-        toast({ title: "账户已成功注销。" });
-        // The onAuthStateChanged listener in the provider will handle the redirect to /login
-      } else {
-        throw new Error(result.error || "注销失败。");
-      }
-    } catch (error) {
-      console.error("Error deleting account:", error);
-      toast({
-        variant: "destructive",
-        title: "注销失败",
-        description: error instanceof Error ? error.message : "发生未知错误。",
-      });
-    } finally {
-      setIsDeleting(false);
-    }
   };
 
   const isLoading = isUserLoading || isProfileLoading;

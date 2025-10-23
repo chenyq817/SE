@@ -75,7 +75,6 @@ type UserProfile = {
   age?: number;
   gender?: string;
   address?: string;
-  isAdmin?: boolean;
 };
 
 const formatTimestamp = (timestamp: any) => {
@@ -103,15 +102,9 @@ function CommentCard({ post, comment }: { post: WithId<Post>, comment: WithId<Co
     const { user } = useUser();
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-    const userProfileRef = useMemoFirebase(() => {
-        if (!firestore || !user) return null;
-        return doc(firestore, 'users', user.uid);
-    }, [firestore, user]);
-    const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
-    
     const authorAvatarSrc = comment.authorImageBase64 || PlaceHolderImages.find(img => img.id === comment.authorAvatarId)?.imageUrl;
     
-    const isAdmin = userProfile?.isAdmin;
+    const isAdmin = user?.email === 'admin@111.com';
     const isAuthor = user?.uid === comment.authorId;
     const canDelete = isAdmin || isAuthor;
 
@@ -255,16 +248,10 @@ function SocialPostCard({ post }: { post: WithId<Post> }) {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isCommentSectionOpen, setIsCommentSectionOpen] = useState(false);
 
-    const userProfileRef = useMemoFirebase(() => {
-        if (!firestore || !user) return null;
-        return doc(firestore, 'users', user.uid);
-    }, [firestore, user]);
-    const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
-    
     const authorAvatarSrc = post.authorImageBase64 || PlaceHolderImages.find(img => img.id === post.authorAvatarId)?.imageUrl;
     
     const isLiked = user ? post.likeIds.includes(user.uid) : false;
-    const isAdmin = userProfile?.isAdmin;
+    const isAdmin = user?.email === 'admin@111.com';
     const isAuthor = user ? user.uid === post.authorId : false;
     const canDelete = isAdmin || isAuthor;
 
