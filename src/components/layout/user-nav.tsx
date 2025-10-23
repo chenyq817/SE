@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -51,7 +50,7 @@ export function UserNav() {
 
     if (!user) {
         return (
-            <Button onClick={() => router.push('/login')}>Login</Button>
+            <Button onClick={() => router.push('/login')}>登录</Button>
         );
     }
   
@@ -60,7 +59,7 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            {avatarSrc && <AvatarImage src={avatarSrc} alt="User avatar" />}
+            {avatarSrc && <AvatarImage src={avatarSrc} alt="用户头像" />}
             <AvatarFallback>
                 {userProfile?.displayName?.charAt(0) || <UserIcon className="h-5 w-5"/>}
             </AvatarFallback>
@@ -71,7 +70,7 @@ export function UserNav() {
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">
-              {userProfile?.displayName || user.email?.split('@')[0] || "Anonymous User"}
+              {userProfile?.displayName || user.email?.split('@')[0] || "匿名用户"}
             </p>
             <p className="text-xs leading-none text-muted-foreground">
               {user.email}
@@ -83,14 +82,14 @@ export function UserNav() {
            <Link href="/profile" passHref>
               <DropdownMenuItem>
                 <UserIcon className="mr-2 h-4 w-4" />
-                <span>Profile</span>
+                <span>个人资料</span>
               </DropdownMenuItem>
             </Link>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
-          <span>Log out</span>
+          <span>退出登录</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
