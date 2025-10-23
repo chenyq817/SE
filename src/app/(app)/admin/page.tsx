@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Header } from "@/components/layout/header";
@@ -18,7 +19,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Eye } from "lucide-react";
+import { MoreHorizontal, Eye, Newspaper, PlusCircle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useUser, useFirestore, useCollection, useMemoFirebase, deleteDocumentNonBlocking } from "@/firebase";
 import { useRouter } from "next/navigation";
@@ -29,6 +30,7 @@ import type { WithId } from "@/firebase";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import Link from "next/link";
+import { newsItems } from '@/lib/news-data';
 
 type ContentItem = {
     id: string;
@@ -134,6 +136,48 @@ export default function AdminPage() {
     <div className="flex flex-col h-full">
       <Header title="管理后台" />
       <main className="flex-1 p-4 md:p-6 lg:p-8 space-y-6">
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>新闻管理</CardTitle>
+                <CardDescription>创建和管理静态新闻内容。</CardDescription>
+              </div>
+              <Button asChild>
+                <Link href="/admin/create-news">
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  发布新新闻
+                </Link>
+              </Button>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>标题</TableHead>
+                            <TableHead>分类</TableHead>
+                            <TableHead>发布日期</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {newsItems.slice(0, 5).map(item => (
+                            <TableRow key={item.id}>
+                                <TableCell className="font-medium">{item.title}</TableCell>
+                                <TableCell>
+                                    <Badge variant="secondary">{item.category}</Badge>
+                                </TableCell>
+                                <TableCell>{item.date}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+                 {!isLoading && newsItems.length === 0 && (
+                    <div className="text-center p-8 text-muted-foreground">
+                        暂无新闻。
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+
         <Card>
             <CardHeader>
                 <CardTitle>用户管理</CardTitle>

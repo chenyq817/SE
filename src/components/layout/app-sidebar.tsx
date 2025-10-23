@@ -19,7 +19,8 @@ import {
   Shield,
   Bot,
   FileText,
-  MessageSquare
+  MessageSquare,
+  PlusCircle,
 } from "lucide-react";
 import { useUser } from "@/firebase";
 
@@ -31,7 +32,11 @@ const menuItems = [
   { href: "/community", label: "社区", icon: MessageSquare },
 ];
 
-const adminMenuItem = { href: "/admin", label: "管理后台", icon: Shield };
+const adminMenuItems = [
+    { href: "/admin", label: "管理后台", icon: Shield },
+    { href: "/admin/create-news", label: "发布新闻", icon: PlusCircle },
+]
+
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -41,6 +46,10 @@ export function AppSidebar() {
   const isActive = (href: string) => {
     if (href === '/') {
         return pathname === href;
+    }
+    // For admin, check for exact match, otherwise use startsWith
+    if(href.startsWith('/admin')) {
+      return pathname === href;
     }
     return pathname.startsWith(href);
   };
@@ -74,17 +83,19 @@ export function AppSidebar() {
         
         {isAdmin && (
           <SidebarMenu className="mt-auto">
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                href={adminMenuItem.href}
-                isActive={isActive(adminMenuItem.href)}
-                tooltip={adminMenuItem.label}
-                className="text-base"
-              >
-                  <adminMenuItem.icon />
-                  <span>{adminMenuItem.label}</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+            {adminMenuItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                <SidebarMenuButton
+                    href={item.href}
+                    isActive={isActive(item.href)}
+                    tooltip={item.label}
+                    className="text-base"
+                >
+                    <item.icon />
+                    <span>{item.label}</span>
+                </SidebarMenuButton>
+                </SidebarMenuItem>
+            ))}
           </SidebarMenu>
         )}
       </SidebarContent>
