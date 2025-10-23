@@ -9,7 +9,7 @@ import { Header } from '@/components/layout/header';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { Loader2, User, ArrowLeft, Cake, VenetianMask, MapPin } from 'lucide-react';
+import { Loader2, User, ArrowLeft, Cake, VenetianMask, MapPin, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 type UserProfile = {
@@ -20,6 +20,7 @@ type UserProfile = {
   age?: number;
   gender?: string;
   address?: string;
+  email?: string;
 };
 
 export default function UserProfilePage() {
@@ -81,6 +82,11 @@ export default function UserProfilePage() {
                 </div>
             </CardHeader>
             <CardContent className="border-t pt-6 grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                  <div className="flex items-center gap-3">
+                    <Mail className="w-5 h-5 text-muted-foreground"/>
+                    <span className="text-muted-foreground">邮箱:</span>
+                    <span className="font-medium">{userProfile.email || ''}</span>
+                  </div>
                   <div className="flex items-center gap-3">
                     <Cake className="w-5 h-5 text-muted-foreground"/>
                     <span className="text-muted-foreground">年龄:</span>
