@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -119,7 +120,7 @@ export default function LoginPage() {
         const userProfileRef = doc(firestore, 'users', newUser.uid);
         const randomAvatarId = defaultAvatars[Math.floor(Math.random() * defaultAvatars.length)];
         
-        setDocumentNonBlocking(userProfileRef, {
+        const userProfileData = {
           displayName: values.displayName,
           displayName_lowercase: values.displayName.toLowerCase(),
           email: values.email,
@@ -131,7 +132,10 @@ export default function LoginPage() {
           friendIds: [],
           friendRequestsSent: [],
           friendRequestsReceived: [],
-        }, { merge: true });
+        };
+        
+        // Use setDoc with merge:true which acts as an upsert.
+        setDocumentNonBlocking(userProfileRef, userProfileData, { merge: true });
 
         toast({ title: '注册成功！请登录。' });
         setActiveTab('signin'); 
@@ -139,10 +143,16 @@ export default function LoginPage() {
         signInForm.reset({ email: values.email, password: '' });
 
     } catch (error: any) {
+      let description = '发生未知错误，请稍后再试。';
+      if (error.code === 'auth/email-already-in-use') {
+        description = '该邮箱已被注册，请使用其他邮箱或直接登录。';
+      } else if (error.code === 'auth/weak-password') {
+        description = '密码强度太低，请使用更复杂的密码。';
+      }
       toast({
         variant: 'destructive',
         title: '注册失败',
-        description: '该邮箱可能已被注册，或密码格式不正确。',
+        description: description,
       });
     } finally {
         setIsLoading(false);

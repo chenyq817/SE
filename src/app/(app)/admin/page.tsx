@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Header } from "@/components/layout/header";
@@ -44,6 +45,7 @@ type UserProfile = WithId<{
   displayName: string;
   avatarId: string;
   imageBase64?: string;
+  email?: string; // Add email to the type
 }>;
 
 
@@ -219,7 +221,7 @@ export default function AdminPage() {
                                 </TableCell>
                                 <TableCell className="font-medium flex items-center gap-2">
                                   {profile.displayName}
-                                  {profile.displayName === 'admin' && <Badge variant="destructive">管理员</Badge>}
+                                  {profile.email === 'admin@111.com' && <Badge variant="destructive">管理员</Badge>}
                                 </TableCell>
                                 <TableCell className="text-right">
                                     <Button asChild variant="outline" size="sm">
