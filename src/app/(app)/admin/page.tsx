@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Eye, Newspaper, PlusCircle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useUser, useFirestore, useCollection, useMemoFirebase, deleteDocumentNonBlocking, useDoc } from "@/firebase";
+import { useUser, useFirestore, deleteDocumentNonBlocking, useDoc, useMemoFirebase } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useMemo } from "react";
 import { Loader2 } from "lucide-react";
@@ -63,15 +63,18 @@ export default function AdminPage() {
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [isContentLoading, setIsContentLoading] = useState(true);
 
-  const isLoading = isUserLoading || isProfileLoading;
-  const isAuthorized = userProfile?.isAdmin;
-
+  // Stricter authorization check. Redirect only when we are certain the user is not an admin.
   useEffect(() => {
-    // Only redirect if all data is loaded and we are sure the user is not an admin.
-    if (!isLoading && !isAuthorized) {
+    // Wait until both user and profile are loaded
+    if (!isUserLoading && !isProfileLoading) {
+      // If profile is loaded and isAdmin is not explicitly true, redirect.
+      if (userProfile?.isAdmin !== true) {
         router.push('/');
+      }
     }
-  }, [isLoading, isAuthorized, router]);
+  }, [isUserLoading, isProfileLoading, userProfile, router]);
+
+  const isAuthorized = useMemo(() => userProfile?.isAdmin === true, [userProfile]);
 
   useEffect(() => {
     if (!firestore || !isAuthorized) return;
@@ -132,10 +135,20 @@ export default function AdminPage() {
   };
 
 
-  if (isLoading || !isAuthorized) {
+  if (isUserLoading || isProfileLoading) {
      return (
       <div className="flex h-screen w-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+  
+  if (!isAuthorized) {
+    // This case will be hit if loading is finished but the user is not an admin.
+    // The useEffect will handle the redirect, but this prevents rendering the admin content.
+    return (
+      <div className="flex h-screen w-screen items-center justify-center">
+        <p>无权访问。</p>
       </div>
     );
   }
