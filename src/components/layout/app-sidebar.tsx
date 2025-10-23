@@ -45,8 +45,8 @@ export function AppSidebar() {
   const { user } = useUser();
   const isAdmin = user?.email === 'admin@111.com';
   
-  // 您可以在 @/lib/placeholder-images.json 文件中修改 ID 为 'avatar-1' 的图片来更换这里的 Logo
-  const logoImage = PlaceHolderImages.find(img => img.id === 'avatar-1');
+  // 您可以在 @/lib/placeholder-images.json 文件中修改 ID 为 'app-logo' 的图片来更换这里的 Logo
+  const logoImage = PlaceHolderImages.find(img => img.id === 'app-logo');
 
   const isActive = (href: string) => {
     if (href === '/') {
