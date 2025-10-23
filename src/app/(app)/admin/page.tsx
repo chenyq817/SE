@@ -67,11 +67,8 @@ export default function AdminPage() {
   const isAuthorized = userProfile?.isAdmin === true;
 
   useEffect(() => {
-    if (isUserLoading || isProfileLoading) return;
-    if (!isAuthorized) {
-        setIsContentLoading(false);
-        return;
-    };
+    // Only run if authorized. The main component render will handle unauthorized state.
+    if (!isAuthorized) return;
     if (!firestore) return;
 
     const fetchAllData = async () => {
@@ -106,7 +103,7 @@ export default function AdminPage() {
             const usersSnapshot = await getDocs(usersQuery);
             const usersData = usersSnapshot.docs
               .map(doc => ({ id: doc.id, ...doc.data() } as UserProfile))
-              .filter(u => !u.isAdmin); // Filter to only show non-admins
+              .filter(u => u.isAdmin !== true); // Only show non-admins
             
             setAllUsers(usersData);
 
@@ -118,7 +115,7 @@ export default function AdminPage() {
     };
 
     fetchAllData();
-  }, [firestore, isAuthorized, user?.uid, isUserLoading, isProfileLoading]);
+  }, [firestore, isAuthorized]);
 
 
   const handleDelete = (item: ContentItem) => {
@@ -139,7 +136,7 @@ export default function AdminPage() {
     );
   }
   
-  if (!isAuthorized) {
+  if (userProfile?.isAdmin !== true) {
     return (
       <div className="flex flex-col h-full items-center justify-center text-center">
         <Header title="无权访问"/>
