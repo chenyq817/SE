@@ -135,7 +135,7 @@ export default function ProfilePage() {
     const updatedData: Partial<ProfileFormValues> = { 
         ...data,
         displayName_lowercase: data.displayName.toLowerCase(),
-        email: data.email || user.email, // Ensure email is saved
+        email: user.email || data.email, // Always use the auth email
     };
     
     // Ensure only one of avatarId or imageBase64 is saved
@@ -310,7 +310,7 @@ export default function ProfilePage() {
                             control={form.control}
                             name="gender"
                             render={({ field }) => (
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <Select onValueChange={field.onChange} value={field.value}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="选择你的性别" />
                                     </SelectTrigger>

@@ -85,22 +85,22 @@ export default function UserProfilePage() {
                   <div className="flex items-center gap-3">
                     <Mail className="w-5 h-5 text-muted-foreground"/>
                     <span className="text-muted-foreground">邮箱:</span>
-                    <span className="font-medium">{userProfile.email || ''}</span>
+                    <span className="font-medium">{userProfile.email || '未设置'}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <Cake className="w-5 h-5 text-muted-foreground"/>
                     <span className="text-muted-foreground">年龄:</span>
-                    <span className="font-medium">{userProfile.age || ''}</span>
+                    <span className="font-medium">{userProfile.age || '未设置'}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <VenetianMask className="w-5 h-5 text-muted-foreground"/>
                     <span className="text-muted-foreground">性别:</span>
-                    <span className="font-medium">{userProfile.gender && userProfile.gender !== "Prefer not to say" ? userProfile.gender : ''}</span>
+                    <span className="font-medium">{userProfile.gender && userProfile.gender !== "Prefer not to say" ? userProfile.gender : '未设置'}</span>
                   </div>
                   <div className="flex items-center gap-3 md:col-span-2">
                     <MapPin className="w-5 h-5 text-muted-foreground"/>
                     <span className="text-muted-foreground">位置:</span>
-                    <span className="font-medium">{userProfile.address || ''}</span>
+                    <span className="font-medium">{userProfile.address || '未设置'}</span>
                   </div>
             </CardContent>
           </Card>
