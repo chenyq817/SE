@@ -2,6 +2,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 import {
   Sidebar,
   SidebarHeader,
@@ -17,12 +18,13 @@ import {
   Users,
   Anchor,
   Shield,
-  Bot,
   FileText,
   MessageSquare,
   PlusCircle,
 } from "lucide-react";
 import { useUser } from "@/firebase";
+import { PlaceHolderImages } from "@/lib/placeholder-images";
+
 
 const menuItems = [
   { href: "/", label: "主页", icon: LayoutDashboard },
@@ -42,6 +44,9 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { user } = useUser();
   const isAdmin = user?.email === 'admin@111.com';
+  
+  // 您可以在 @/lib/placeholder-images.json 文件中修改 ID 为 'avatar-1' 的图片来更换这里的 Logo
+  const logoImage = PlaceHolderImages.find(img => img.id === 'avatar-1');
 
   const isActive = (href: string) => {
     if (href === '/') {
@@ -57,8 +62,16 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader>
-        <div className="flex items-center gap-2">
-          <Bot className="w-8 h-8 text-sidebar-foreground" />
+        <div className="flex items-center gap-3">
+          {logoImage && (
+            <Image
+              src={logoImage.imageUrl}
+              alt={logoImage.description}
+              width={32}
+              height={32}
+              className="rounded-full"
+            />
+          )}
           <h1 className="text-xl font-semibold font-headline text-sidebar-foreground">
             I know hust
           </h1>
