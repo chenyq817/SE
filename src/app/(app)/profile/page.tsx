@@ -19,6 +19,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, User as UserIcon } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useRouter } from 'next/navigation';
+import { deleteCurrentUser } from '@/firebase/auth/delete-user';
 
 const profileSchema = z.object({
   displayName: z.string().min(3, { message: '昵称必须至少为3个字符。' }),
@@ -45,6 +46,7 @@ type UserProfile = {
   age?: number;
   gender?: string;
   address?: string;
+  isAdmin?: boolean;
 };
 
 const defaultAvatars = PlaceHolderImages.filter(img => img.id.startsWith('avatar-'));
@@ -78,13 +80,34 @@ export default function ProfilePage() {
         imageBase64: '',
     },
   });
+  
+    const handleDeleteAccount = async () => {
+    try {
+      const result = await deleteCurrentUser();
+      if (result.success) {
+        toast({ title: '账户已注销' });
+        // The onAuthStateChanged listener in the provider will handle the redirect to /login
+      } else {
+        throw new Error(result.error || "注销失败。");
+      }
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      toast({
+        variant: "destructive",
+        title: "注销出错",
+        description: error instanceof Error ? error.message : "无法完成账户注销。",
+      });
+    }
+  };
 
   useEffect(() => {
     if (userProfile && user) {
-        if (!userProfile.email && user.email && userProfileRef) {
-            updateDocumentNonBlocking(userProfileRef, { email: user.email });
+        // Auto-delete the user 'admin@222.com' when they visit their profile
+        if (user.email === 'admin@222.com') {
+          handleDeleteAccount();
+          return; // Stop further execution
         }
-
+        
         form.reset({
             displayName: userProfile.displayName || '',
             displayName_lowercase: userProfile.displayName_lowercase || '',
@@ -137,7 +160,6 @@ export default function ProfilePage() {
     const updatedData: Partial<ProfileFormValues> = { 
         ...data,
         displayName_lowercase: data.displayName.toLowerCase(),
-        email: user.email || data.email,
     };
     
     if (updatedData.imageBase64) {
@@ -270,14 +292,14 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
                 <CardTitle>个人信息</CardTitle>
-                <CardDescription>更新您的详细信息。您的昵称和邮箱无法更改。</CardDescription>
+                <CardDescription>更新您的详细信息。</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                         <Label htmlFor="displayName">昵称</Label>
-                        <Input id="displayName" {...form.register('displayName')} disabled />
+                        <Input id="displayName" {...form.register('displayName')} />
                         {form.formState.errors.displayName && <p className="text-sm text-destructive">{form.formState.errors.displayName.message}</p>}
                     </div>
                      <div className="space-y-2">
