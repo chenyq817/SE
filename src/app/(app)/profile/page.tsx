@@ -205,7 +205,7 @@ export default function ProfilePage() {
     }
 
 
-    toast({ title: '个人资料更新已启动！' });
+    toast({ title: '更新成功！' });
     form.reset(data);
     setIsSaving(false);
   };
