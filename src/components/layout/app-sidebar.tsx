@@ -21,10 +21,8 @@ import {
   MessageSquare,
   PlusCircle,
 } from "lucide-react";
-import { useUser, useDoc, useFirestore, useMemoFirebase } from "@/firebase";
+import { useUser } from "@/firebase";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { doc } from "firebase/firestore";
-
 
 const menuItems = [
   { href: "/", label: "主页", icon: LayoutDashboard },
@@ -43,15 +41,8 @@ const adminMenuItems = [
 export function AppSidebar() {
   const pathname = usePathname();
   const { user } = useUser();
-  const firestore = useFirestore();
-
-  const userProfileRef = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return doc(firestore, 'users', user.uid);
-  }, [firestore, user]);
-  const { data: userProfile } = useDoc<{ isAdmin?: boolean }>(userProfileRef);
   
-  const isAdmin = userProfile?.isAdmin;
+  const isAdmin = user?.email === 'admin@111.com';
   
   // 您可以在 @/lib/placeholder-images.json 文件中修改 ID 为 'app-logo' 的图片来更换这里的 Logo
   const logoImage = PlaceHolderImages.find(img => img.id === 'app-logo');
