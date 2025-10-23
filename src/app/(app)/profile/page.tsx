@@ -25,6 +25,7 @@ import { updateProfile } from 'firebase/auth';
 const profileSchema = z.object({
   displayName: z.string().min(3, { message: '昵称必须至少为3个字符。' }),
   displayName_lowercase: z.string().optional(),
+  email: z.string().email().optional(),
   bio: z.string().max(160, { message: '个人简介必须在160个字符以内。' }).optional(),
   age: z.coerce.number().min(0).optional(),
   gender: z.string().optional(),
@@ -38,6 +39,7 @@ type ProfileFormValues = z.infer<typeof profileSchema>;
 type UserProfile = {
   displayName: string;
   displayName_lowercase?: string;
+  email?: string;
   avatarId: string;
   avatarUrl?: string; 
   imageBase64?: string;
@@ -68,6 +70,7 @@ export default function ProfilePage() {
     defaultValues: {
         displayName: '',
         displayName_lowercase: '',
+        email: '',
         bio: '',
         age: undefined,
         gender: '',
@@ -82,6 +85,7 @@ export default function ProfilePage() {
       form.reset({
         displayName: userProfile.displayName || '',
         displayName_lowercase: userProfile.displayName_lowercase || '',
+        email: userProfile.email || user?.email || '', // Fallback to auth email
         bio: userProfile.bio || '',
         age: userProfile.age || undefined,
         gender: userProfile.gender || '',
@@ -89,8 +93,14 @@ export default function ProfilePage() {
         avatarId: userProfile.avatarId || '',
         imageBase64: userProfile.imageBase64 || '',
       });
+    } else if (user) {
+        // Pre-fill from auth if profile is not yet created
+        form.reset({
+            displayName: user.displayName || '',
+            email: user.email || '',
+        })
     }
-  }, [userProfile, form]);
+  }, [userProfile, user, form]);
   
   const handleAvatarSelect = (avatarId: string) => {
     form.setValue('avatarId', avatarId, { shouldDirty: true });
@@ -125,6 +135,7 @@ export default function ProfilePage() {
     const updatedData: Partial<ProfileFormValues> = { 
         ...data,
         displayName_lowercase: data.displayName.toLowerCase(),
+        email: data.email || user.email, // Ensure email is saved
     };
     
     // Ensure only one of avatarId or imageBase64 is saved
@@ -268,7 +279,7 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
                 <CardTitle>个人信息</CardTitle>
-                <CardDescription>更新您的详细信息。您的昵称无法更改。</CardDescription>
+                <CardDescription>更新您的详细信息。您的昵称和邮箱无法更改。</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -280,7 +291,8 @@ export default function ProfilePage() {
                     </div>
                      <div className="space-y-2">
                         <Label htmlFor="email">邮箱</Label>
-                        <Input id="email" value={user?.email || ''} disabled />
+                        <Input id="email" {...form.register('email')} disabled />
+                         {form.formState.errors.email && <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>}
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="age">年龄</Label>
