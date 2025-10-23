@@ -82,6 +82,11 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (userProfile) {
+      // Backfill email if it's missing in Firestore but present in auth
+      if (!userProfile.email && user?.email && userProfileRef) {
+        updateDocumentNonBlocking(userProfileRef, { email: user.email });
+      }
+
       form.reset({
         displayName: userProfile.displayName || '',
         displayName_lowercase: userProfile.displayName_lowercase || '',
@@ -100,7 +105,7 @@ export default function ProfilePage() {
             email: user.email || '',
         })
     }
-  }, [userProfile, user, form]);
+  }, [userProfile, user, form, userProfileRef]);
   
   const handleAvatarSelect = (avatarId: string) => {
     form.setValue('avatarId', avatarId, { shouldDirty: true });
@@ -165,7 +170,7 @@ export default function ProfilePage() {
                 getDocs(postsQuery),
                 getDocs(commentsInPostsQuery),
                 getDocs(wallMessagesQuery),
-                getDocs(chatsQuery)
+                getDocs(chatsSnapshot)
             ]);
             
             const avatarUpdatePayload = {
@@ -349,3 +354,4 @@ export default function ProfilePage() {
     </div>
   );
 }
+
