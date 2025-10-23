@@ -63,16 +63,18 @@ export default function AdminPage() {
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [isContentLoading, setIsContentLoading] = useState(true);
 
-  useEffect(() => {
-    if (!isUserLoading && !isProfileLoading) {
-      if (!user || !userProfile?.isAdmin) {
-        router.push('/');
-      }
-    }
-  }, [user, isUserLoading, userProfile, isProfileLoading, router]);
+  const isLoading = isUserLoading || isProfileLoading;
+  const isAuthorized = userProfile?.isAdmin;
 
   useEffect(() => {
-    if (!firestore || !userProfile?.isAdmin) return;
+    // Only redirect if all data is loaded and we are sure the user is not an admin.
+    if (!isLoading && !isAuthorized) {
+        router.push('/');
+    }
+  }, [isLoading, isAuthorized, router]);
+
+  useEffect(() => {
+    if (!firestore || !isAuthorized) return;
 
     const fetchAllData = async () => {
         setIsContentLoading(true);
@@ -118,7 +120,7 @@ export default function AdminPage() {
     };
 
     fetchAllData();
-  }, [firestore, userProfile]);
+  }, [firestore, isAuthorized, user?.uid]);
 
 
   const handleDelete = (item: ContentItem) => {
@@ -129,9 +131,8 @@ export default function AdminPage() {
     setAllContent(prevContent => prevContent.filter(content => content.id !== item.id));
   };
 
-  const isLoading = isUserLoading || isProfileLoading || isContentLoading;
 
-  if (isLoading || !userProfile?.isAdmin) {
+  if (isLoading || !isAuthorized) {
      return (
       <div className="flex h-screen w-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -177,7 +178,7 @@ export default function AdminPage() {
                         ))}
                     </TableBody>
                 </Table>
-                 {!isLoading && newsItems.length === 0 && (
+                 {!isContentLoading && newsItems.length === 0 && (
                     <div className="text-center p-8 text-muted-foreground">
                         暂无新闻。
                     </div>
@@ -226,7 +227,7 @@ export default function AdminPage() {
                         })}
                     </TableBody>
                 </Table>
-                 {!isLoading && allUsers.length === 0 && (
+                 {!isContentLoading && allUsers.length === 0 && (
                     <div className="text-center p-8 text-muted-foreground">
                         未找到其他用户。
                     </div>
@@ -284,7 +285,7 @@ export default function AdminPage() {
                         ))}
                     </TableBody>
                 </Table>
-                 {!isLoading && allContent.length === 0 && (
+                 {!isContentLoading && allContent.length === 0 && (
                     <div className="text-center p-8 text-muted-foreground">
                         没有需要审核的内容。
                     </div>
