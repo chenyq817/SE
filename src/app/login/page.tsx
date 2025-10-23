@@ -123,7 +123,7 @@ export default function LoginPage() {
         setDocumentNonBlocking(userProfileRef, {
           displayName: values.displayName,
           displayName_lowercase: values.displayName.toLowerCase(),
-          email: values.email, // <-- Ensure email is saved
+          email: values.email,
           avatarId: randomAvatarId,
           bio: '',
           age: null,
