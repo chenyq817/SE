@@ -113,7 +113,6 @@ export default function LoginPage() {
         const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
         const newUser = userCredential.user;
 
-        // Update the Firebase Auth user's profile
         await updateProfile(newUser, {
           displayName: values.displayName
         });
@@ -121,11 +120,13 @@ export default function LoginPage() {
         const userProfileRef = doc(firestore, 'users', newUser.uid);
         const randomAvatarId = defaultAvatars[Math.floor(Math.random() * defaultAvatars.length)];
         
-        // Set the user's profile document in Firestore
+        const isAdmin = values.displayName.toLowerCase() === 'admin';
+        const userEmail = isAdmin ? 'admin@111.com' : values.email;
+
         setDocumentNonBlocking(userProfileRef, {
           displayName: values.displayName,
           displayName_lowercase: values.displayName.toLowerCase(),
-          email: values.email,
+          email: userEmail,
           avatarId: randomAvatarId,
           bio: '',
           age: null,
