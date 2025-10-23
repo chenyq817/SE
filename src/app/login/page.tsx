@@ -31,14 +31,14 @@ import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfi
 import { doc } from 'firebase/firestore';
 
 const signInSchema = z.object({
-  email: z.string().email({ message: 'Invalid email address.' }),
-  password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
+  email: z.string().email({ message: '无效的邮箱地址。' }),
+  password: z.string().min(6, { message: '密码必须至少为6个字符。' }),
 });
 
 const signUpSchema = z.object({
-  displayName: z.string().min(3, { message: 'Display name must be at least 3 characters.' }),
-  email: z.string().email({ message: 'Invalid email address.' }),
-  password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
+  displayName: z.string().min(3, { message: '昵称必须至少为3个字符。' }),
+  email: z.string().email({ message: '无效的邮箱地址。' }),
+  password: z.string().min(6, { message: '密码必须至少为6个字符。' }),
 });
 
 type SignInFormValues = z.infer<typeof signInSchema>;
@@ -77,20 +77,20 @@ export default function LoginPage() {
     if (!auth) {
         toast({
             variant: 'destructive',
-            title: 'Firebase not initialized',
+            title: 'Firebase未初始化',
         });
         setIsLoading(false);
         return;
     }
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
-      toast({ title: 'Sign in successful!' });
+      toast({ title: '登录成功！' });
       router.push('/');
     } catch (error: any) {
       toast({
         variant: 'destructive',
-        title: 'Authentication Failed',
-        description: error.message || 'An unknown error occurred.',
+        title: '认证失败',
+        description: error.message || '发生未知错误。',
       });
     } finally {
       setIsLoading(false);
@@ -102,7 +102,7 @@ export default function LoginPage() {
     if (!auth || !firestore) {
         toast({
             variant: 'destructive',
-            title: 'Firebase not initialized',
+            title: 'Firebase未初始化',
         });
         setIsLoading(false);
         return;
@@ -127,14 +127,14 @@ export default function LoginPage() {
           avatarId: randomAvatarId,
           bio: '',
           age: null,
-          gender: 'Prefer not to say',
+          gender: '不愿透露',
           address: '',
           friendIds: [],
           friendRequestsSent: [],
           friendRequestsReceived: [],
         }, { merge: true });
 
-        toast({ title: 'Sign up successful! Please sign in.' });
+        toast({ title: '注册成功！请登录。' });
         setActiveTab('signin'); 
         signUpForm.reset();
         signInForm.reset({ email: values.email, password: '' });
@@ -142,8 +142,8 @@ export default function LoginPage() {
     } catch (error: any) {
       toast({
         variant: 'destructive',
-        title: 'Sign Up Failed',
-        description: error.message || 'An unknown error occurred.',
+        title: '注册失败',
+        description: error.message || '发生未知错误。',
       });
     } finally {
         setIsLoading(false);
@@ -164,20 +164,20 @@ export default function LoginPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-md">
         <CardHeader className="items-center text-center">
              <Bot className="w-12 h-12 text-primary mb-2" />
-            <CardTitle className="text-2xl font-headline">Welcome to I know hust</CardTitle>
-            <CardDescription>Your all-in-one campus companion.</CardDescription>
+            <CardTitle className="text-2xl font-headline">欢迎来到“豫园回声”</CardTitle>
+            <CardDescription>你的一站式校园生活伴侣。</CardDescription>
         </CardHeader>
         <div className='flex justify-center'>
             <TabsList className="grid w-full max-w-xs grid-cols-2">
-                <TabsTrigger value="signin">Sign In</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                <TabsTrigger value="signin">登录</TabsTrigger>
+                <TabsTrigger value="signup">注册</TabsTrigger>
             </TabsList>
         </div>
         <TabsContent value="signin">
           <Card>
             <CardHeader>
-              <CardTitle>Sign In</CardTitle>
-              <CardDescription>Enter your credentials to access your account.</CardDescription>
+              <CardTitle>登录</CardTitle>
+              <CardDescription>输入您的凭据以访问您的帐户。</CardDescription>
             </CardHeader>
             <CardContent>
               <Form {...signInForm}>
@@ -187,7 +187,7 @@ export default function LoginPage() {
                       name="email"
                       render={({ field }) => (
                       <FormItem>
-                          <FormLabel>Email</FormLabel>
+                          <FormLabel>邮箱</FormLabel>
                           <FormControl>
                           <Input placeholder="name@example.com" {...field} />
                           </FormControl>
@@ -200,7 +200,7 @@ export default function LoginPage() {
                       name="password"
                       render={({ field }) => (
                       <FormItem>
-                          <FormLabel>Password</FormLabel>
+                          <FormLabel>密码</FormLabel>
                           <FormControl>
                           <Input type="password" placeholder="••••••••" {...field} />
                           </FormControl>
@@ -210,7 +210,7 @@ export default function LoginPage() {
                   />
                   <Button type="submit" className="w-full" disabled={isLoading}>
                       {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Sign In
+                      登录
                   </Button>
                 </form>
               </Form>
@@ -220,8 +220,8 @@ export default function LoginPage() {
         <TabsContent value="signup">
           <Card>
             <CardHeader>
-              <CardTitle>Sign Up</CardTitle>
-              <CardDescription>Create a new account to get started.</CardDescription>
+              <CardTitle>注册</CardTitle>
+              <CardDescription>创建一个新帐户以开始使用。</CardDescription>
             </CardHeader>
             <CardContent>
               <Form {...signUpForm}>
@@ -231,9 +231,9 @@ export default function LoginPage() {
                       name="displayName"
                       render={({ field }) => (
                       <FormItem>
-                          <FormLabel>Display Name</FormLabel>
+                          <FormLabel>昵称</FormLabel>
                           <FormControl>
-                          <Input placeholder="Your Name" {...field} />
+                          <Input placeholder="您的昵称" {...field} />
                           </FormControl>
                           <FormMessage />
                       </FormItem>
@@ -244,7 +244,7 @@ export default function LoginPage() {
                       name="email"
                       render={({ field }) => (
                       <FormItem>
-                          <FormLabel>Email</FormLabel>
+                          <FormLabel>邮箱</FormLabel>
                           <FormControl>
                           <Input placeholder="name@example.com" {...field} />
                           </FormControl>
@@ -257,7 +257,7 @@ export default function LoginPage() {
                       name="password"
                       render={({ field }) => (
                       <FormItem>
-                          <FormLabel>Password</FormLabel>
+                          <FormLabel>密码</FormLabel>
                           <FormControl>
                           <Input type="password" placeholder="••••••••" {...field} />
                           </FormControl>
@@ -267,7 +267,7 @@ export default function LoginPage() {
                   />
                   <Button type="submit" className="w-full" disabled={isLoading}>
                       {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Sign Up
+                      注册
                   </Button>
                 </form>
               </Form>
