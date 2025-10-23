@@ -16,10 +16,9 @@ import { useUser, useFirestore, useDoc, useMemoFirebase, updateDocumentNonBlocki
 import { doc, writeBatch, collection, query, where, getDocs } from 'firebase/firestore';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, User as UserIcon } from 'lucide-react';
+import { Loader2, User as UserIcon, Trash2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useRouter } from 'next/navigation';
-import { deleteCurrentUser } from '@/firebase/auth/delete-user';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 const profileSchema = z.object({
   displayName: z.string().min(3, { message: '昵称必须至少为3个字符。' }),
@@ -46,7 +45,6 @@ type UserProfile = {
   age?: number;
   gender?: string;
   address?: string;
-  isAdmin?: boolean;
 };
 
 const defaultAvatars = PlaceHolderImages.filter(img => img.id.startsWith('avatar-'));
@@ -55,7 +53,6 @@ export default function ProfilePage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
-  const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
   
@@ -80,34 +77,9 @@ export default function ProfilePage() {
         imageBase64: '',
     },
   });
-  
-    const handleDeleteAccount = async () => {
-    try {
-      const result = await deleteCurrentUser();
-      if (result.success) {
-        toast({ title: '账户已注销' });
-        // The onAuthStateChanged listener in the provider will handle the redirect to /login
-      } else {
-        throw new Error(result.error || "注销失败。");
-      }
-    } catch (error) {
-      console.error("Error deleting account:", error);
-      toast({
-        variant: "destructive",
-        title: "注销出错",
-        description: error instanceof Error ? error.message : "无法完成账户注销。",
-      });
-    }
-  };
 
   useEffect(() => {
     if (userProfile && user) {
-        // Auto-delete the user 'admin@222.com' when they visit their profile
-        if (user.email === 'admin@222.com') {
-          handleDeleteAccount();
-          return; // Stop further execution
-        }
-        
         form.reset({
             displayName: userProfile.displayName || '',
             displayName_lowercase: userProfile.displayName_lowercase || '',
@@ -119,13 +91,15 @@ export default function ProfilePage() {
             avatarId: userProfile.avatarId || '',
             imageBase64: userProfile.imageBase64 || '',
         });
-    } else if (user) {
+    } else if (user && !userProfile) {
+        // This case handles a new user who has auth data but no profile doc yet.
+        // It pre-fills the form with what's available from the auth object.
         form.reset({
             displayName: user.displayName || '',
             email: user.email || '',
         });
     }
-  }, [userProfile, user, form, userProfileRef]);
+  }, [userProfile, user, form]);
   
   const handleAvatarSelect = (avatarId: string) => {
     form.setValue('avatarId', avatarId, { shouldDirty: true });
@@ -162,52 +136,74 @@ export default function ProfilePage() {
         displayName_lowercase: data.displayName.toLowerCase(),
     };
     
+    // If a custom image is set, clear the avatarId.
     if (updatedData.imageBase64) {
       updatedData.avatarId = '';
-    } else {
-      updatedData.imageBase64 = '';
     }
 
+    // This is an upsert operation. If the document doesn't exist, it's created.
+    // If it exists, it's updated with the new data.
     updateDocumentNonBlocking(userProfileRef, updatedData);
     
+    const displayNameChanged = data.displayName !== userProfile?.displayName;
     const avatarChanged = data.avatarId !== userProfile?.avatarId || data.imageBase64 !== userProfile?.imageBase64;
 
-    if (avatarChanged) {
+    // Batch update denormalized data only if something relevant changed
+    if (displayNameChanged || avatarChanged) {
         const batch = writeBatch(firestore);
 
         try {
+            // Find all posts and comments by the user to update their info
             const postsQuery = query(collection(firestore, 'posts'), where('authorId', '==', user.uid));
+             // Find all chats the user is a participant in
             const chatsQuery = query(collection(firestore, 'chats'), where('participantIds', 'array-contains', user.uid));
             
             const [postsSnapshot, chatsSnapshot] = await Promise.all([
                 getDocs(postsQuery),
-                getDocs(chatsQuery)
+                getDocs(chatsQuery),
             ]);
             
-            const avatarUpdatePayload = {
-              authorImageBase64: data.imageBase64 || "",
-              authorAvatarId: data.avatarId || ""
-            };
+            const nameUpdatePayload: any = {};
+            if(displayNameChanged) {
+              nameUpdatePayload.authorName = data.displayName;
+            }
+            
+            const avatarUpdatePayload: any = {};
+            if(avatarChanged) {
+               avatarUpdatePayload.authorImageBase64 = data.imageBase64 || "";
+               avatarUpdatePayload.authorAvatarId = data.avatarId || "";
+            }
+            
+            const combinedUpdatePayload = { ...nameUpdatePayload, ...avatarUpdatePayload };
 
+            // Update user's posts and their comments
             for (const postDoc of postsSnapshot.docs) {
                 const postRef = doc(firestore, 'posts', postDoc.id);
-                batch.update(postRef, avatarUpdatePayload);
+                batch.update(postRef, combinedUpdatePayload);
 
                 const commentsQuery = query(collection(firestore, "posts", postDoc.id, "comments"), where("authorId", "==", user.uid));
                 const commentsSnapshot = await getDocs(commentsQuery);
                 commentsSnapshot.forEach(commentDoc => {
                     const commentRef = doc(firestore, "posts", postDoc.id, "comments", commentDoc.id);
-                    batch.update(commentRef, avatarUpdatePayload);
+                    batch.update(commentRef, combinedUpdatePayload);
                 });
             }
 
+            // Update user's info in chats
             chatsSnapshot.forEach(chatDoc => {
                 const chatRef = doc(firestore, 'chats', chatDoc.id);
-                const participantInfoUpdate = {
-                    [`participantInfo.${user.uid}.imageBase64`]: data.imageBase64 || "",
-                    [`participantInfo.${user.uid}.avatarId`]: data.avatarId || ""
-                };
-                batch.update(chatRef, participantInfoUpdate);
+                const participantInfoUpdate: any = {};
+                 if (displayNameChanged) {
+                    participantInfoUpdate[`participantInfo.${user.uid}.displayName`] = data.displayName;
+                }
+                if (avatarChanged) {
+                    participantInfoUpdate[`participantInfo.${user.uid}.imageBase64`] = data.imageBase64 || "";
+                    participantInfoUpdate[`participantInfo.${user.uid}.avatarId`] = data.avatarId || "";
+                }
+                
+                if(Object.keys(participantInfoUpdate).length > 0) {
+                  batch.update(chatRef, participantInfoUpdate);
+                }
             });
 
             await batch.commit();
@@ -225,7 +221,7 @@ export default function ProfilePage() {
 
 
     toast({ title: '更新成功！' });
-    form.reset(data);
+    form.reset(data); // reset the form with the new values to clear the dirty state
     setIsSaving(false);
   };
 
@@ -352,6 +348,7 @@ export default function ProfilePage() {
               </form>
             </CardContent>
           </Card>
+
         </div>
       </main>
     </div>
