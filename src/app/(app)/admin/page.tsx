@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Header } from "@/components/layout/header";
@@ -66,14 +67,12 @@ export default function AdminPage() {
   const isAuthorized = userProfile?.isAdmin === true;
 
   useEffect(() => {
-    // This effect should only fetch data if the user is authorized.
-    if (!firestore || !isAuthorized) {
-        if (!isUserLoading && !isProfileLoading) {
-            // If loading is complete and user is not authorized, stop the content loader.
-            setIsContentLoading(false);
-        }
+    if (isUserLoading || isProfileLoading) return;
+    if (!isAuthorized) {
+        setIsContentLoading(false);
         return;
     };
+    if (!firestore) return;
 
     const fetchAllData = async () => {
         setIsContentLoading(true);
@@ -107,7 +106,7 @@ export default function AdminPage() {
             const usersSnapshot = await getDocs(usersQuery);
             const usersData = usersSnapshot.docs
               .map(doc => ({ id: doc.id, ...doc.data() } as UserProfile))
-              .filter(u => u.id !== user?.uid); // Filter out admin
+              .filter(u => !u.isAdmin); // Filter to only show non-admins
             
             setAllUsers(usersData);
 
@@ -205,7 +204,7 @@ export default function AdminPage() {
         <Card>
             <CardHeader>
                 <CardTitle>用户管理</CardTitle>
-                <CardDescription>查看和管理所有已注册用户。</CardDescription>
+                <CardDescription>查看和管理所有已注册的普通用户。</CardDescription>
             </CardHeader>
             <CardContent>
                 <Table>
@@ -312,3 +311,5 @@ export default function AdminPage() {
     </div>
   );
 }
+
+    
