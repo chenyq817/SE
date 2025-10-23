@@ -15,7 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Upload, Image as ImageIcon, X } from 'lucide-react';
 import Image from 'next/image';
-import { createNews } from '@/ai/flows/create-news-flow';
+import { createNewsSnippet } from '@/ai/flows/create-news-flow';
+import { updateNewsFiles } from './actions';
 
 const newsSchema = z.object({
   title: z.string().min(5, { message: '标题必须至少为5个字符。' }),
@@ -70,13 +71,25 @@ export default function CreateNewsPage() {
   const onSubmit = async (data: NewsFormValues) => {
     setIsSubmitting(true);
     try {
-      await createNews(data);
-      toast({
-        title: '发布成功！',
-        description: '新闻已成功添加到代码中。请刷新页面查看最新应用状态。',
+      // 1. Call the Genkit flow to get the code snippets as strings
+      const snippets = await createNewsSnippet(data);
+      
+      // 2. Call the new server action to update the files on the server
+      const result = await updateNewsFiles({
+        newsItemString: snippets.newsItemString,
+        imageItemString: snippets.imageItemString,
       });
-      form.reset();
-      setImagePreview(null);
+
+      if (result.success) {
+        toast({
+          title: '发布成功！',
+          description: '新闻已成功写入后端代码。请刷新页面查看最新应用状态。',
+        });
+        form.reset();
+        setImagePreview(null);
+      } else {
+        throw new Error(result.message);
+      }
     } catch (error) {
       console.error('发布新闻时出错:', error);
       toast({

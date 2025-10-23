@@ -1,22 +1,17 @@
 
 'use server';
 /**
- * @fileOverview A Genkit flow for creating a new news article and updating the source code.
+ * @fileOverview A Genkit flow for creating a news article snippet.
  *
  * This flow takes news article data (title, content, category, and an image),
- * and generates the updated content for `news-data.ts` and `placeholder-images.json`.
- *
- * It is designed to be called from a client-side form. The client is then
- * responsible for taking the returned file contents and applying them.
+ * and generates stringified JSON objects for a new news item and a new
+ * image placeholder. These strings are intended to be inserted into
+ * `news-data.ts` and `placeholder-images.json` by a separate server action.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { v4 as uuidv4 } from 'uuid';
-
-// We can't read files directly in this environment, so we pass the content as strings.
-import newsDataContent from '!!raw-loader!@/lib/news-data.ts';
-import placeholderImagesContent from '!!raw-loader!@/lib/placeholder-images.json';
 
 // Define the input schema for the flow
 const CreateNewsInputSchema = z.object({
@@ -27,10 +22,10 @@ const CreateNewsInputSchema = z.object({
 });
 export type CreateNewsInput = z.infer<typeof CreateNewsInputSchema>;
 
-// Define the output schema for the flow, which will be the content of the modified files.
+// Define the output schema for the flow, which will be the stringified objects.
 const CreateNewsOutputSchema = z.object({
-  newsDataTs: z.string().describe('The full, updated content of the `src/lib/news-data.ts` file.'),
-  placeholderImagesJson: z.string().describe('The full, updated content of the `src/lib/placeholder-images.json` file.'),
+  newsItemString: z.string().describe('The stringified JSON object for the new news item.'),
+  imageItemString: z.string().describe('The stringified JSON object for the new image placeholder item.'),
 });
 export type CreateNewsOutput = z.infer<typeof CreateNewsOutputSchema>;
 
@@ -39,15 +34,15 @@ export type CreateNewsOutput = z.infer<typeof CreateNewsOutputSchema>;
  * The main exported function that clients will call.
  * This is a simple wrapper around the Genkit flow.
  */
-export async function createNews(input: CreateNewsInput): Promise<CreateNewsOutput> {
-  return createNewsFlow(input);
+export async function createNewsSnippet(input: CreateNewsInput): Promise<CreateNewsOutput> {
+  return createNewsSnippetFlow(input);
 }
 
 
 // Define the Genkit flow
-const createNewsFlow = ai.defineFlow(
+const createNewsSnippetFlow = ai.defineFlow(
   {
-    name: 'createNewsFlow',
+    name: 'createNewsSnippetFlow',
     inputSchema: CreateNewsInputSchema,
     outputSchema: CreateNewsOutputSchema,
   },
@@ -57,20 +52,15 @@ const createNewsFlow = ai.defineFlow(
     const newsId = uuidv4().substring(0, 8); // A shorter ID for news
     const imageId = `news-${newsId}`;
 
-    // 2. Process `placeholder-images.json`
-    const imagesJson = JSON.parse(placeholderImagesContent);
+    // 2. Create the new image placeholder object
     const newImageEntry = {
       id: imageId,
       description: input.title, // Use news title as description
       imageUrl: input.imageBase64,
       imageHint: "custom upload"
     };
-    // Add the new image to the start of the array
-    imagesJson.placeholderImages.unshift(newImageEntry);
-    const updatedImagesJsonString = JSON.stringify(imagesJson, null, 2);
 
-    // 3. Process `news-data.ts`
-    // Create the new news item object
+    // 3. Create the new news item object
     const newNewsItem = {
       id: newsId,
       title: input.title,
@@ -80,28 +70,11 @@ const createNewsFlow = ai.defineFlow(
       imageId: imageId,
       date: new Date().toISOString().split('T')[0], // Format as YYYY-MM-DD
     };
-    
-    // This is a bit of a hack to add the new object to the TS file.
-    // We find the start of the array and insert the new object string.
-    const newsArrayRegex = /export const newsItems = \[/s;
-    const match = newsDataContent.match(newsArrayRegex);
-
-    if (!match || typeof match.index === 'undefined') {
-      throw new Error('Could not find `export const newsItems = [` in news-data.ts');
-    }
-
-    const insertionIndex = match.index + match[0].length;
-    const newNewsItemString = `\n  ${JSON.stringify(newNewsItem, null, 2)},`;
-
-    const updatedNewsDataTsString =
-      newsDataContent.slice(0, insertionIndex) +
-      newNewsItemString +
-      newsDataContent.slice(insertionIndex);
       
-    // 4. Return the updated file contents
+    // 4. Return the stringified versions of the objects
     return {
-      newsDataTs: updatedNewsDataTsString,
-      placeholderImagesJson: updatedImagesJsonString,
+      newsItemString: JSON.stringify(newNewsItem, null, 2),
+      imageItemString: JSON.stringify(newImageEntry, null, 2),
     };
   }
 );

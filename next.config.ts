@@ -12,6 +12,7 @@ const nextConfig: NextConfig = {
         'localhost:9002',
       ],
     },
+    serverComponentsExternalPackages: ['!raw-loader'],
   },
   typescript: {
     ignoreBuildErrors: true,
