@@ -23,9 +23,9 @@ import { MoreHorizontal, Eye, Newspaper, PlusCircle, ArrowLeft } from "lucide-re
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useUser, useFirestore, deleteDocumentNonBlocking, useDoc, useMemoFirebase } from "@/firebase";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { collection, query, orderBy, doc, getDocs, where } from "firebase/firestore";
+import { collection, query, orderBy, doc, getDocs } from "firebase/firestore";
 import type { WithId } from "@/firebase";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
@@ -68,7 +68,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     // Only run if authorized. The main component render will handle unauthorized state.
-    if (!isAuthorized) return;
+    if (!user || !isAuthorized) return;
     if (!firestore) return;
 
     const fetchAllData = async () => {
@@ -103,7 +103,7 @@ export default function AdminPage() {
             const usersSnapshot = await getDocs(usersQuery);
             const usersData = usersSnapshot.docs
               .map(doc => ({ id: doc.id, ...doc.data() } as UserProfile))
-              .filter(u => u.isAdmin !== true); // Only show non-admins
+              .filter(u => u.id !== user.uid); // Only show users other than the current admin
             
             setAllUsers(usersData);
 
@@ -115,7 +115,7 @@ export default function AdminPage() {
     };
 
     fetchAllData();
-  }, [firestore, isAuthorized]);
+  }, [firestore, user, isAuthorized]);
 
 
   const handleDelete = (item: ContentItem) => {
@@ -136,7 +136,7 @@ export default function AdminPage() {
     );
   }
   
-  if (userProfile?.isAdmin !== true) {
+  if (!user || userProfile?.isAdmin !== true) {
     return (
       <div className="flex flex-col h-full items-center justify-center text-center">
         <Header title="无权访问"/>
@@ -201,7 +201,7 @@ export default function AdminPage() {
         <Card>
             <CardHeader>
                 <CardTitle>用户管理</CardTitle>
-                <CardDescription>查看和管理所有已注册的普通用户。</CardDescription>
+                <CardDescription>查看和管理系统中除您之外的所有用户。</CardDescription>
             </CardHeader>
             <CardContent>
                 <Table>
@@ -225,7 +225,10 @@ export default function AdminPage() {
                                     </Avatar>
                                   </Link>
                                 </TableCell>
-                                <TableCell className="font-medium">{profile.displayName}</TableCell>
+                                <TableCell className="font-medium flex items-center gap-2">
+                                  {profile.displayName}
+                                  {profile.isAdmin && <Badge variant="destructive">管理员</Badge>}
+                                </TableCell>
                                 <TableCell className="text-right">
                                     <Button asChild variant="outline" size="sm">
                                       <Link href={`/profile/${profile.id}`}>
@@ -308,5 +311,3 @@ export default function AdminPage() {
     </div>
   );
 }
-
-    
