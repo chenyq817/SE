@@ -18,9 +18,16 @@ type UserProfile = {
   imageBase64?: string;
   bio?: string;
   age?: number;
-  gender?: string;
+  gender?: '男' | '女' | '其他' | '不愿透露';
   address?: string;
   email?: string;
+};
+
+const genderMap = {
+  'Male': '男',
+  'Female': '女',
+  'Other': '其他',
+  'Prefer not to say': '不愿透露'
 };
 
 export default function UserProfilePage() {
@@ -59,6 +66,10 @@ export default function UserProfilePage() {
   }
   
   const profileAvatarSrc = userProfile.imageBase64 || PlaceHolderImages.find(p => p.id === userProfile.avatarId)?.imageUrl;
+  const displayGender = userProfile.gender && userProfile.gender !== "不愿透露" 
+    ? (genderMap[userProfile.gender as keyof typeof genderMap] || userProfile.gender) 
+    : '未设置';
+
 
   return (
     <div className="flex flex-col h-full">
@@ -95,7 +106,7 @@ export default function UserProfilePage() {
                   <div className="flex items-center gap-3">
                     <VenetianMask className="w-5 h-5 text-muted-foreground"/>
                     <span className="text-muted-foreground">性别:</span>
-                    <span className="font-medium">{userProfile.gender && userProfile.gender !== "Prefer not to say" ? userProfile.gender : '未设置'}</span>
+                    <span className="font-medium">{displayGender}</span>
                   </div>
                   <div className="flex items-center gap-3 md:col-span-2">
                     <MapPin className="w-5 h-5 text-muted-foreground"/>

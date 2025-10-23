@@ -94,10 +94,10 @@
           "type": "string",
           "description": "The user's gender.",
           "enum": [
-            "Male",
-            "Female",
-            "Other",
-            "Prefer not to say"
+            "男",
+            "女",
+            "其他",
+            "不愿透露"
           ]
         },
         "address": {
