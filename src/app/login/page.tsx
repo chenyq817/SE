@@ -164,7 +164,7 @@ export default function LoginPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-md">
         <CardHeader className="items-center text-center">
              <Bot className="w-12 h-12 text-primary mb-2" />
-            <CardTitle className="text-2xl font-headline">欢迎来到“豫园回声”</CardTitle>
+            <CardTitle className="text-2xl font-headline">欢迎来到“I know hust”</CardTitle>
             <CardDescription>你的一站式校园生活伴侣。</CardDescription>
         </CardHeader>
         <div className='flex justify-center'>
