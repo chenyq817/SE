@@ -16,20 +16,8 @@ import { useUser, useFirestore, useDoc, useMemoFirebase, updateDocumentNonBlocki
 import { doc, writeBatch, collection, query, where, getDocs } from 'firebase/firestore';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, User as UserIcon, AlertTriangle } from 'lucide-react';
+import { Loader2, User as UserIcon } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { deleteCurrentUser } from '@/firebase/auth/delete-user';
 import { useRouter } from 'next/navigation';
 
 const profileSchema = z.object({
@@ -67,7 +55,6 @@ export default function ProfilePage() {
   const { toast } = useToast();
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
   
   const userProfileRef = useMemoFirebase(() => {
@@ -91,37 +78,9 @@ export default function ProfilePage() {
         imageBase64: '',
     },
   });
-  
-  const handleDeleteAccount = async () => {
-    if (!user) return;
-    setIsDeleting(true);
-    try {
-      const result = await deleteCurrentUser(user.uid);
-      if (result.success) {
-        toast({ title: "账户已成功注销。" });
-        // The onAuthStateChanged listener in the provider will handle the redirect to /login
-      } else {
-        throw new Error(result.error || "注销失败。");
-      }
-    } catch (error) {
-      console.error("Error deleting account:", error);
-      toast({
-        variant: "destructive",
-        title: "注销失败",
-        description: error instanceof Error ? error.message : "发生未知错误。",
-      });
-    } finally {
-      setIsDeleting(false);
-    }
-  };
 
   useEffect(() => {
     if (userProfile && user) {
-        // Auto-delete functionality
-        if (userProfile.displayName === 'admin' && user.email !== 'admin@111.com') {
-            handleDeleteAccount();
-        }
-
         if (!userProfile.email && user.email && userProfileRef) {
             updateDocumentNonBlocking(userProfileRef, { email: user.email });
         }
@@ -369,44 +328,6 @@ export default function ProfilePage() {
                     </Button>
                 </div>
               </form>
-            </CardContent>
-          </Card>
-           <Card className="border-destructive">
-            <CardHeader>
-              <CardTitle className="text-destructive flex items-center gap-2">
-                <AlertTriangle />
-                危险区域
-              </CardTitle>
-              <CardDescription>
-                以下操作不可逆，请谨慎操作。
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" disabled={isDeleting}>
-                    {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    注销账户
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>您确定要注销账户吗？</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      此操作无法撤销。您的个人资料和所有发布的内容（帖子、评论等）都将被永久删除。
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>取消</AlertDialogCancel>
-                    <AlertDialogAction
-                      className="bg-destructive hover:bg-destructive/90"
-                      onClick={handleDeleteAccount}
-                    >
-                      我确定，注销账户
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
             </CardContent>
           </Card>
         </div>
