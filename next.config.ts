@@ -48,6 +48,12 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'bkimg.cdn.bcebos.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
         hostname: 'tse1.mm.bing.net',
         port: '',
         pathname: '/**',
