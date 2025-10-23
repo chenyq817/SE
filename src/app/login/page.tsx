@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -92,7 +91,7 @@ export default function LoginPage() {
       toast({
         variant: 'destructive',
         title: '认证失败',
-        description: error.message || '发生未知错误。',
+        description: '邮箱或密码不正确，请重试。',
       });
     } finally {
       setIsLoading(false);
@@ -121,13 +120,13 @@ export default function LoginPage() {
         const randomAvatarId = defaultAvatars[Math.floor(Math.random() * defaultAvatars.length)];
         
         const isAdmin = values.displayName.toLowerCase() === 'admin';
-        const userEmail = isAdmin ? 'admin@111.com' : values.email;
 
         setDocumentNonBlocking(userProfileRef, {
           displayName: values.displayName,
           displayName_lowercase: values.displayName.toLowerCase(),
-          email: userEmail,
+          email: values.email,
           avatarId: randomAvatarId,
+          isAdmin: isAdmin,
           bio: '',
           age: null,
           gender: '不愿透露',
@@ -146,7 +145,7 @@ export default function LoginPage() {
       toast({
         variant: 'destructive',
         title: '注册失败',
-        description: error.message || '发生未知错误。',
+        description: '该邮箱可能已被注册，或密码格式不正确。',
       });
     } finally {
         setIsLoading(false);

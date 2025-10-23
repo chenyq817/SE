@@ -1,8 +1,6 @@
-
-
 'use client';
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Header } from "@/components/layout/header";
 import {
   Card,
@@ -21,6 +19,7 @@ import type { WithId } from "@/firebase";
 
 type UserProfile = {
   displayName: string;
+  isAdmin?: boolean;
 };
 
 type WallMessage = {
@@ -34,7 +33,13 @@ const WallMessageCard = ({ msg }: { msg: WithId<WallMessage> }) => {
     const { user } = useUser();
     const firestore = useFirestore();
 
-    const isAdmin = user?.email === 'admin@111.com';
+    const userProfileRef = useMemoFirebase(() => {
+        if (!firestore || !user) return null;
+        return doc(firestore, 'users', user.uid);
+    }, [firestore, user]);
+    const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
+
+    const isAdmin = userProfile?.isAdmin;
     const isAuthor = user?.uid === msg.authorId;
     const canDelete = isAdmin || isAuthor;
 

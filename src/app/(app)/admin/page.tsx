@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Header } from "@/components/layout/header";
@@ -21,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Eye, Newspaper, PlusCircle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useUser, useFirestore, useCollection, useMemoFirebase, deleteDocumentNonBlocking } from "@/firebase";
+import { useUser, useFirestore, useCollection, useMemoFirebase, deleteDocumentNonBlocking, useDoc } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useMemo } from "react";
 import { Loader2 } from "lucide-react";
@@ -45,6 +44,7 @@ type UserProfile = WithId<{
   displayName: string;
   avatarId: string;
   imageBase64?: string;
+  isAdmin?: boolean;
 }>;
 
 
@@ -52,20 +52,27 @@ export default function AdminPage() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const firestore = useFirestore();
+
+  const userProfileRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
+
   const [allContent, setAllContent] = useState<ContentItem[]>([]);
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [isContentLoading, setIsContentLoading] = useState(true);
 
   useEffect(() => {
-    if (!isUserLoading) {
-      if (!user || user.email !== 'admin@111.com') {
+    if (!isUserLoading && !isProfileLoading) {
+      if (!user || !userProfile?.isAdmin) {
         router.push('/');
       }
     }
-  }, [user, isUserLoading, router]);
+  }, [user, isUserLoading, userProfile, isProfileLoading, router]);
 
   useEffect(() => {
-    if (!firestore || !user || user.email !== 'admin@111.com') return;
+    if (!firestore || !userProfile?.isAdmin) return;
 
     const fetchAllData = async () => {
         setIsContentLoading(true);
@@ -99,7 +106,7 @@ export default function AdminPage() {
             const usersSnapshot = await getDocs(usersQuery);
             const usersData = usersSnapshot.docs
               .map(doc => ({ id: doc.id, ...doc.data() } as UserProfile))
-              .filter(u => u.id !== user.uid); // Filter out admin
+              .filter(u => u.id !== user?.uid); // Filter out admin
             
             setAllUsers(usersData);
 
@@ -111,7 +118,7 @@ export default function AdminPage() {
     };
 
     fetchAllData();
-  }, [firestore, user]);
+  }, [firestore, userProfile]);
 
 
   const handleDelete = (item: ContentItem) => {
@@ -122,9 +129,9 @@ export default function AdminPage() {
     setAllContent(prevContent => prevContent.filter(content => content.id !== item.id));
   };
 
-  const isLoading = isUserLoading || isContentLoading;
+  const isLoading = isUserLoading || isProfileLoading || isContentLoading;
 
-  if (isLoading || !user || user.email !== 'admin@111.com') {
+  if (isLoading || !userProfile?.isAdmin) {
      return (
       <div className="flex h-screen w-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
