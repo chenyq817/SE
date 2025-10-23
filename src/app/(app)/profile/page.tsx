@@ -143,14 +143,12 @@ export default function ProfilePage() {
         email: user.email || data.email, // Always use the auth email
     };
     
-    // Ensure only one of avatarId or imageBase64 is saved
     if (updatedData.imageBase64) {
       updatedData.avatarId = '';
     } else {
       updatedData.imageBase64 = '';
     }
 
-    // This updates the main user profile document non-blockingly
     updateDocumentNonBlocking(userProfileRef, updatedData);
     
     const avatarChanged = data.avatarId !== userProfile?.avatarId || data.imageBase64 !== userProfile?.imageBase64;
@@ -159,18 +157,12 @@ export default function ProfilePage() {
         const batch = writeBatch(firestore);
 
         try {
-            // Define queries for user's content
             const postsQuery = query(collection(firestore, 'posts'), where('authorId', '==', user.uid));
-            const commentsInPostsQuery = query(collection(firestore, 'posts'), where('commentCount', '>', 0)); // Only get posts with comments
-            const wallMessagesQuery = query(collection(firestore, 'wallMessages'), where('authorId', '==', user.uid));
             const chatsQuery = query(collection(firestore, 'chats'), where('participantIds', 'array-contains', user.uid));
             
-            // Fetch all content types that need updating
-            const [postsSnapshot, commentedPostsSnapshot, wallMessagesSnapshot, chatsSnapshot] = await Promise.all([
+            const [postsSnapshot, chatsSnapshot] = await Promise.all([
                 getDocs(postsQuery),
-                getDocs(commentsInPostsQuery),
-                getDocs(wallMessagesQuery),
-                getDocs(chatsSnapshot)
+                getDocs(chatsQuery)
             ]);
             
             const avatarUpdatePayload = {
@@ -178,14 +170,10 @@ export default function ProfilePage() {
               authorAvatarId: data.avatarId || ""
             };
 
-            // Update posts
-            postsSnapshot.forEach(postDoc => {
+            for (const postDoc of postsSnapshot.docs) {
                 const postRef = doc(firestore, 'posts', postDoc.id);
                 batch.update(postRef, avatarUpdatePayload);
-            });
-            
-            // Update comments where user is the author
-            for (const postDoc of commentedPostsSnapshot.docs) {
+
                 const commentsQuery = query(collection(firestore, "posts", postDoc.id, "comments"), where("authorId", "==", user.uid));
                 const commentsSnapshot = await getDocs(commentsQuery);
                 commentsSnapshot.forEach(commentDoc => {
@@ -194,12 +182,8 @@ export default function ProfilePage() {
                 });
             }
 
-            // Update wall messages (if they stored avatar info, which they don't currently)
-
-            // Update participantInfo in chats
             chatsSnapshot.forEach(chatDoc => {
                 const chatRef = doc(firestore, 'chats', chatDoc.id);
-                const chatData = chatDoc.data();
                 const participantInfoUpdate = {
                     [`participantInfo.${user.uid}.imageBase64`]: data.imageBase64 || "",
                     [`participantInfo.${user.uid}.avatarId`]: data.avatarId || ""
@@ -207,16 +191,16 @@ export default function ProfilePage() {
                 batch.update(chatRef, participantInfoUpdate);
             });
 
-
             await batch.commit();
 
         } catch (error) {
-            console.error("更新用户内容时出错:", error);
-            const permissionError = new FirestorePermissionError({
-                path: '用户内容的批量更新',
-                operation: 'update',
-            });
-            errorEmitter.emit('permission-error', permissionError);
+            console.error("Error updating user content:", error);
+            if (error instanceof Error && 'code' in error && error.code === 'permission-denied') {
+                 errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: 'Failed during batch update of user content.',
+                    operation: 'update',
+                }));
+            }
         }
     }
 
