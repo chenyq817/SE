@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -29,6 +30,7 @@ import { Bot, Loader2 } from 'lucide-react';
 import { useAuth, useUser, useFirestore, setDocumentNonBlocking } from '@/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc } from 'firebase/firestore';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const signInSchema = z.object({
   email: z.string().email({ message: '无效的邮箱地址。' }),
@@ -159,11 +161,23 @@ export default function LoginPage() {
     );
   }
 
+  const logoImage = PlaceHolderImages.find(img => img.id === 'app-logo');
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-secondary/30 p-4">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-md">
         <CardHeader className="items-center text-center">
-             <Bot className="w-12 h-12 text-primary mb-2" />
+            {logoImage ? (
+                <Image
+                    src={logoImage.imageUrl}
+                    alt={logoImage.description}
+                    width={48}
+                    height={48}
+                    className="mb-2 rounded-full"
+                />
+            ) : (
+                <Bot className="w-12 h-12 text-primary mb-2" />
+            )}
             <CardTitle className="text-2xl font-headline">欢迎来到“I know hust”</CardTitle>
             <CardDescription>你的一站式校园生活伴侣。</CardDescription>
         </CardHeader>
